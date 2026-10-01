@@ -36,6 +36,14 @@ Este archivo define las reglas de arquitectura, convenciones técnicas y restric
 * **Iconografía:** Iconify (con prefijo de bundle o clases estándar tipo `tabler-*`).
 * **Lenguaje:** TypeScript estricto. Toda nueva funcionalidad debe compilar limpiamente con `tsc --noEmit`.
 
+### R3. Reutilización de Componentes de la Plantilla
+* **Regla:** Antes de crear cualquier componente de interfaz (tablas de datos, tarjetas estadísticas KPI, filtros, modales, drawers, formularios), se debe verificar y reutilizar la implementación y patrones ya existentes en `Archivador/full-version`.
+* **Justificación:** Vuexy ya incluye soluciones probadas y estilizadas (`card-statistics`, `ProductListTable`, `TablePaginationComponent`, `TableFilters`, etc.). No reinventar la rueda; adaptar los componentes existentes a las necesidades del ERP.
+
+### R4. Localización Fiscal y Cálculos Opcionales (Feature Flags)
+* **Regla:** Toda lógica de negocio, campo de formulario, cálculo de costos/márgenes o indicador visual relacionado con impuestos locales (SENIAT, alícuotas de IVA 16%/8%/exento, IGTF, retenciones ISLR) debe ser estrictamente modular y opcional, gobernada por configuración o Feature Flags.
+* **Justificación:** El ERP debe ser capaz de operar en modo neto universal para cualquier cliente o país. Si los impuestos están desactivados, los precios, márgenes y reportes operan limpiamente con precios base sin sobrecarga de cálculos fiscales.
+
 ---
 
 ## 3. Estructura de Documentación de Specs
