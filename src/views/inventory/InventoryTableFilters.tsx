@@ -86,10 +86,30 @@ const InventoryTableFilters = ({
             value={filters.productType}
             onChange={e => onFilterChange('productType', e.target.value)}
           >
-            <MenuItem value='ALL'>Todos los Tipos</MenuItem>
-            <MenuItem value='storable'>📦 Almacenable (Kardex)</MenuItem>
-            <MenuItem value='consumable'>🧻 Consumible</MenuItem>
-            <MenuItem value='service'>💼 Servicio (Intangible)</MenuItem>
+            <MenuItem value='ALL'>
+              <div className='flex items-center gap-2'>
+                <i className='tabler-category text-lg text-textSecondary' />
+                <span>Todos los Tipos</span>
+              </div>
+            </MenuItem>
+            <MenuItem value='storable'>
+              <div className='flex items-center gap-2'>
+                <i className='tabler-box text-lg text-textSecondary' />
+                <span>Almacenable (Kardex)</span>
+              </div>
+            </MenuItem>
+            <MenuItem value='consumable'>
+              <div className='flex items-center gap-2'>
+                <i className='tabler-package text-lg text-textSecondary' />
+                <span>Consumible</span>
+              </div>
+            </MenuItem>
+            <MenuItem value='service'>
+              <div className='flex items-center gap-2'>
+                <i className='tabler-briefcase text-lg text-textSecondary' />
+                <span>Servicio (Intangible)</span>
+              </div>
+            </MenuItem>
           </CustomTextField>
         </Grid>
 

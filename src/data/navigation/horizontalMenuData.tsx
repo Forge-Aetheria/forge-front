@@ -13,6 +13,16 @@ const horizontalMenuData = (): HorizontalMenuDataType[] => [
     icon: 'tabler-packages'
   },
   {
+    label: 'Contactos',
+    href: '/contacts',
+    icon: 'tabler-address-book'
+  },
+  {
+    label: 'Ventas',
+    href: '/sales/quotes',
+    icon: 'tabler-file-invoice'
+  },
+  {
     label: 'Terminal POS',
     href: '/pos/terminal',
     icon: 'tabler-device-tablet'
