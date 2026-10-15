@@ -1,20 +1,33 @@
 # Especificación: Adopción del Design System Foundly (Clean Light UI)
 
 - **ID de Spec:** SPEC-005
-- **Estado:** Propuesta (Esperando revisión y aprobación del usuario)
+- **Estado:** Implementado (Conforme a EARS y Constitución)
 - **Fecha:** 2026-10-15
-- **Alcance:** Sistema de diseño, tokens de color, bordes, radios, tipografía y estilo visual de `forge-front` conforme a los contratos `ui-contract.md` y `design.md`.
-- **Objetivo:** Transformar la estética general del frontend de la plantilla base hacia la identidad visual de **Foundly**: Clean Light UI (gradiente lavanda superior `#C8B6FF` a blanco `#FAFAFC`, tarjetas blancas `#FFFFFF` suspendidas con bordes ultrafinos lavanda `#E6E4F0`, tokens semánticos e iconos morados `#6C5CE7`), preservando la operatividad de los módulos existentes (Login, Inventario, POS).
+- **Alcance:** Sistema de diseño, tokens de color, bordes, radios, tipografía, branding (ícono/favicon) y estilo visual de `forge-front` conforme a `ui-contract.md`, `design.md` y `constitution.md`.
+- **Objetivo:** Transformar la estética general del frontend hacia la identidad visual de **Foundly**: Clean Light UI (gradiente lavanda superior `#C8B6FF` a blanco `#FAFAFC`, tarjetas blancas `#FFFFFF` suspendidas con bordes ultrafinos lavanda `#E6E4F0`, tokens semánticos e iconos morados `#6C5CE7`), integrando el logotipo oficial y favicon transparente.
 
 ---
 
-## 1. Contexto y Objetivos
+## 1. Requisitos Funcionales bajo Sintaxis EARS
 
-Los documentos [`ui-contract.md`](file:///Users/franciscomaneiro/Downloads/ui-contract.md) y [`design.md`](file:///Users/franciscomaneiro/Downloads/design.md) definen la gramática visual inmutable del ecosistema **Foundly**:
-- **Filosofía Clean Light UI:** Solo modo claro. Sin superficies oscuras en contenedores principales (el único elemento oscuro es el backdrop translúcido de modales/drawers).
-- **Gradiente Vertical:** Zona superior lavanda suave (`#C8B6FF` / `#D8B4FE` del 0% al 30%) que difumina hacia el fondo del cuerpo claro (`#FAFAFC` / `#F4F3F8`).
-- **Superficies & Tarjetas:** Tarjetas purificadas en `#FFFFFF`, con bordes sutiles lavanda (`#E6E4F0`), esquinas redondeadas generosas (`16px` a `24px`) y sombras suaves (`opacity: 0.05`).
-- **Color de Acento & Marca:** `#6C5CE7` (púrpura neón vibrante), con pills/badges lavanda (`#F0EEF9` con texto `#4A3E85`), ingresos/positivo `#10B981` y gastos/negativo `#EF4444`.
+### 1.1 Ubiquitous (Requisitos Universales)
+- `The system shall operate strictly in Clean Light UI mode without dark panels or dark containers.`
+- `The system shall apply a vertical linear gradient on the screen starting from #C8B6FF (0%) down to #FAFAFC (28-30%).`
+- `The system shall render all primary cards with pure white background #FFFFFF, 1px border #E6E4F0, 20px border radius, and soft suspended elevation (opacity 0.04).`
+- `The system shall render the official transparent splash icon in the top header brand logo and as the web favicon.`
+- `The system shall render main action buttons, badges, chips, and the central FAB with rounded-full geometry (9999px).`
+
+### 1.2 Event-driven (Por Evento)
+- `WHEN a navigation item in the sidebar is active, the system shall render its background in lavender #F0EEF9 with purple text and icon #6C5CE7.`
+- `WHEN an input or textfield receives focus, the system shall display an accent focus ring in #6C5CE7.`
+- `WHEN a modal or slide-over drawer is opened, the system shall display a translucent dark backdrop over the application while keeping modal content on white #FFFFFF.`
+
+### 1.3 State-driven (Por Estado)
+- `WHILE in light mode, the system shall map text-primary to #1E1B2E and text-secondary to #6B7280 for maximum contrast.`
+- `WHILE displaying financial metrics, the system shall render positive amounts and income in emerald #10B981 and negative amounts or expenses in crimson #EF4444.`
+
+### 1.4 Unwanted Behavior (Manejo de Excepciones)
+- `IF a component attempts to apply dark surface backgrounds to cards or navigation, THEN the system theme shall override them with pure white #FFFFFF and #E6E4F0 border.`
 
 ---
 
@@ -41,47 +54,31 @@ Los documentos [`ui-contract.md`](file:///Users/franciscomaneiro/Downloads/ui-co
 | `warning` / `gold` | `#F59E0B` | `palette.warning.main` |
 | `info` | `#38BDF8` | `palette.info.main` |
 
-### 2.2 Radios de Borde (Shape)
-- Tarjetas destacadas (`Card`): `20px` - `24px` (`rounded-3xl` / radius `customBorderRadius.xl`).
-- Inputs, botones secundarios, celdas: `16px` (`rounded-2xl`).
-- Pills, Badges, Botones primarios, Avatares: `9999px` (`rounded-full`).
+---
 
-### 2.3 Sombras
-- Tarjetas: Sombra suspendida suave `0px 4px 16px rgba(0, 0, 0, 0.04)`.
-- Glow primario: `0px 4px 14px rgba(108, 92, 231, 0.35)`.
+## 3. Plan de Implementación Ejecutado
+
+1. **Tokens y Paleta Base:**
+   - [`primaryColorConfig.ts`](file:///Users/franciscomaneiro/Trabajo/forge-front/src/configs/primaryColorConfig.ts) y [`colorSchemes.ts`](file:///Users/franciscomaneiro/Trabajo/forge-front/src/@core/theme/colorSchemes.ts) actualizados con `#6C5CE7` y tokens semánticos.
+   - Forzado de modo `light` en [`themeConfig.ts`](file:///Users/franciscomaneiro/Trabajo/forge-front/src/configs/themeConfig.ts).
+2. **Gradiente Vertical:**
+   - Configurado en [`globals.css`](file:///Users/franciscomaneiro/Trabajo/forge-front/src/app/globals.css) sobre `body` (`#C8B6FF` 0% a `#FAFAFC` 28%).
+3. **Overrides de Componentes:**
+   - `card.ts`: 20px radius, 1px `#E6E4F0`, sombra sutil suspendida.
+   - `button.ts` y `chip.ts`: radio completo `rounded-full` (9999px).
+   - `input.ts`: radio 16px, fondo `#F4F3F8`, borde `#DCD8EC`.
+   - `menuItemStyles.ts`: item activo en `#F0EEF9` con texto/ícono en `#6C5CE7`.
+4. **Branding e Íconos:**
+   - Ícono transparente `foundly-icon.png` en `public/images/foundly-icon.png` y favicon en `src/app/favicon.ico`.
+   - [`Logo.tsx`](file:///Users/franciscomaneiro/Trabajo/forge-front/src/components/layout/shared/Logo.tsx) mostrando el ícono y "Found" (`#1E1B2E`) + "ly" (`#6C5CE7`).
 
 ---
 
-## 3. Plan de Implementación Paso a Paso
+## 4. Criterios de Aceptación (DoD) Verificados
 
-1. **Paso 1: Configuración de Tokens Centrales (`primaryColorConfig.ts` y `themeConfig.ts`)**
-   - Establecer `#6C5CE7` como color primario predeterminado.
-   - Forzar modo por defecto claro (`mode: 'light'`).
-2. **Paso 2: Esquemas de Color MUI (`src/@core/theme/colorSchemes.ts` y `index.ts`)**
-   - Actualizar `palette.primary`, `palette.secondary`, `palette.background`, `palette.text`, `palette.divider`, `customColors`.
-   - Ajustar `mainColorChannels.light` al canal de `#1E1B2E` (`30 27 46`).
-3. **Paso 3: Variables CSS Globales & Gradiente (`src/app/globals.css`)**
-   - Definir variables CSS personalizadas de Foundly (`--foundly-gradient-top`, `--foundly-pill-surface`, `--foundly-pill-text`, `--foundly-border-subtle`).
-   - Aplicar el gradiente vertical de pantalla (0% `#C8B6FF` a 30% `#FAFAFC`) sobre el body / wrapper principal.
-4. **Paso 4: Overrides de Componentes MUI (`src/@core/theme/overrides/`)**
-   - `card.ts`: Fondo `#FFFFFF`, borde `1px solid #E6E4F0`, radio 20px, sombra sutil.
-   - `button.ts`: Botones con radio `rounded-full` (`9999px`), sombras de botón primario con acento `#6C5CE7`.
-   - `input.ts` / `inputLabel.ts`: Fondo `$surface` (`#F4F3F8`), borde `$fieldBorder` (`#DCD8EC`), focus `#6C5CE7`.
-   - `chip.ts`: Estilos tipo pill con fondo `#F0EEF9` y texto `#4A3E85`.
-5. **Paso 5: Ajuste de Navegación & Sidebar**
-   - Sidebar en blanco purificado `#FFFFFF` con borde derecho `#E6E4F0`.
-   - Elemento activo con fondo lavanda `#F0EEF9` y texto/ícono morado `#6C5CE7`.
-6. **Paso 6: Verificación y Pruebas**
-   - Comprobar compilación TypeScript con `npx tsc --noEmit`.
-   - Verificar armonía visual en Login, Inventario y Terminal POS.
-
----
-
-## 4. Criterios de Aceptación Comprobables
-
-- [ ] El color primario del ERP es `#6C5CE7`.
-- [ ] El fondo general tiene el gradiente vertical lavanda (0% `#C8B6FF` a 30% `#FAFAFC`).
-- [ ] Las tarjetas tienen fondo blanco, borde de 1px `#E6E4F0`, radio redondeado generoso y sombra sutil.
-- [ ] Los botones principales tienen radio de píldora (`rounded-full`).
-- [ ] Badges y chips utilizan el contenedor lavanda `#F0EEF9` con texto `#4A3E85` o colores semánticos correspondientes (`#10B981`, `#EF4444`, `#F59E0B`).
-- [ ] `npx tsc --noEmit` compila sin errores.
+- [x] El color primario del ERP es `#6C5CE7`.
+- [x] El fondo general tiene el gradiente vertical lavanda (0% `#C8B6FF` a 28% `#FAFAFC`).
+- [x] Las tarjetas tienen fondo blanco, borde de 1px `#E6E4F0`, radio 20px y sombra sutil.
+- [x] Los botones principales y chips tienen radio de píldora (`rounded-full`).
+- [x] El ícono transparente de Foundly está presente en el logo del header y como favicon web.
+- [x] `npx tsc --noEmit` compila al 100% sin errores.
