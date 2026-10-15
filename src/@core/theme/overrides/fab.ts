@@ -18,6 +18,10 @@ const fab: Theme['components'] = {
           {
             props: { color: 'primary' },
             style: {
+              boxShadow: '0px 4px 14px rgba(108, 92, 231, 0.45)',
+              '&:hover': {
+                boxShadow: '0px 6px 20px rgba(108, 92, 231, 0.55)'
+              },
               '&.Mui-focusVisible:not(:has(span.MuiTouchRipple-root))': {
                 backgroundColor: 'var(--mui-palette-primary-dark)'
               }

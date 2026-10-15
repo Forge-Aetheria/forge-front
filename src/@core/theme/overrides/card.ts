@@ -8,15 +8,15 @@ const card = (skin: Skin): Theme['components'] => {
   return {
     MuiCard: {
       defaultProps: {
-        ...(skin === 'bordered' && {
-          variant: 'outlined'
-        })
+        variant: 'outlined'
       },
       styleOverrides: {
-        root: ({ ownerState }) => ({
-          ...(ownerState.variant !== 'outlined' && {
-            boxShadow: 'var(--mui-customShadows-md)'
-          })
+        root: () => ({
+          backgroundColor: '#FFFFFF',
+          borderRadius: 20,
+          border: '1px solid #E6E4F0',
+          boxShadow: '0px 4px 16px rgba(0, 0, 0, 0.04)',
+          transition: 'all 0.2s ease-in-out'
         })
       }
     },

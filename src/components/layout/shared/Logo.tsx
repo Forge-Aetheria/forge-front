@@ -80,7 +80,8 @@ const Logo = ({ color }: { color?: CSSProperties['color'] }) => {
         transitionDuration={transitionDuration}
         isBreakpointReached={isBreakpointReached}
       >
-        {themeConfig.templateName}
+        <span className='text-[#1E1B2E]'>Found</span>
+        <span className='text-[#6C5CE7]'>ly</span>
       </LogoText>
     </div>
   )

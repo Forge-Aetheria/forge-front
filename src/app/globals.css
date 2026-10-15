@@ -81,9 +81,9 @@
 
 :root {
   --border-radius: var(--mui-shape-borderRadius);
-  --border-color: var(--mui-palette-divider);
-  --primary-color: var(--mui-palette-primary-main);
-  --background-color: var(--mui-palette-background-default);
+  --border-color: #E6E4F0;
+  --primary-color: #6C5CE7;
+  --background-color: #FAFAFC;
   --background-color-rgb: var(--mui-palette-background-paperChannel);
   --header-height: 54px;
   --header-z-index: var(--mui-zIndex-appBar);
@@ -91,12 +91,28 @@
   --customizer-z-index: var(--mui-zIndex-drawer);
   --search-z-index: var(--mui-zIndex-tooltip);
   --drawer-z-index: var(--mui-zIndex-drawer);
-  --backdrop-color: rgb(var(--mui-mainColorChannels-light) / 0.5);
+  --backdrop-color: rgb(30 27 46 / 0.45);
   --mui-mainColorChannels-shadow: var(--mui-mainColorChannels-lightShadow);
+
+  /* Foundly Custom Design Tokens */
+  --foundly-gradient-top: #C8B6FF;
+  --foundly-app-body: #FAFAFC;
+  --foundly-card-surface: #FFFFFF;
+  --foundly-surface: #F4F3F8;
+  --foundly-pill-surface: #F0EEF9;
+  --foundly-pill-text: #4A3E85;
+  --foundly-card-border: #E6E4F0;
+  --foundly-field-border: #DCD8EC;
+  --foundly-text-primary: #1E1B2E;
+  --foundly-text-secondary: #6B7280;
+  --foundly-accent: #6C5CE7;
+  --foundly-accent-glow: rgba(108, 92, 231, 0.35);
+  --foundly-success: #10B981;
+  --foundly-error: #EF4444;
 }
 
 [data-dark] {
-  --backdrop-color: rgb(23 25 37 / 0.6);
+  --backdrop-color: rgb(30 27 46 / 0.6);
   --mui-mainColorChannels-shadow: var(--mui-mainColorChannels-darkShadow);
 }
 
@@ -116,6 +132,15 @@ html {
   display: flex;
   inline-size: 100%;
   min-block-size: 100%;
+  background-color: var(--foundly-app-body);
+}
+
+body {
+  inline-size: 100%;
+  min-block-size: 100%;
+  background: linear-gradient(180deg, #C8B6FF 0%, #EFEBFD 12%, #FAFAFC 28%, #FAFAFC 100%) no-repeat;
+  background-attachment: fixed;
+  color: var(--foundly-text-primary);
 }
 
 a {

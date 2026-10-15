@@ -15,9 +15,9 @@ const drawer = (skin: Skin): Theme['components'] => ({
     },
     styleOverrides: {
       paper: {
-        ...(skin !== 'bordered' && {
-          boxShadow: 'var(--mui-customShadows-lg)'
-        })
+        backgroundColor: '#FFFFFF',
+        borderColor: '#E6E4F0',
+        boxShadow: '0px 4px 20px rgba(0, 0, 0, 0.05)'
       }
     }
   }

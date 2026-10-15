@@ -66,28 +66,33 @@ const input: Theme['components'] = {
   MuiOutlinedInput: {
     styleOverrides: {
       root: {
+        borderRadius: 16,
+        backgroundColor: '#F4F3F8',
         '&:not(.Mui-focused):not(.Mui-error):not(.Mui-disabled):hover .MuiOutlinedInput-notchedOutline': {
-          borderColor: 'var(--mui-palette-action-active)'
+          borderColor: '#6C5CE7'
         },
         '&.Mui-disabled .MuiOutlinedInput-notchedOutline': {
-          borderColor: 'var(--mui-palette-divider)'
+          borderColor: '#E6E4F0'
         },
         '&:not(.Mui-error).MuiInputBase-colorPrimary.Mui-focused': {
-          boxShadow: 'var(--mui-customShadows-primary-sm)'
+          boxShadow: '0px 0px 0px 3px rgba(108, 92, 231, 0.2)'
         }
       },
       input: ({ theme, ownerState }) => ({
         ...(ownerState?.size === 'medium' && {
           '&:not(.MuiInputBase-inputMultiline, .MuiInputBase-inputAdornedStart)': {
-            padding: theme.spacing(4)
+            padding: theme.spacing(3.5, 4)
           },
           height: '1.5em'
         }),
         '& ~ .MuiOutlinedInput-notchedOutline': {
-          borderColor: 'var(--mui-palette-customColors-inputBorder)'
+          borderColor: '#DCD8EC',
+          borderWidth: '1px'
         }
       }),
       notchedOutline: {
+        borderColor: '#DCD8EC',
+        borderRadius: 16,
         '& legend': {
           fontSize: '0.867em'
         }
