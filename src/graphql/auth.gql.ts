@@ -1,0 +1,43 @@
+// Documentos GraphQL para el ciclo de autenticación y sesión
+
+export const SIGN_IN_MUTATION = `
+  mutation SignIn($input: IniciarSesionInput!) {
+    signIn(input: $input) {
+      accessToken
+      refreshToken
+      tokenType
+      expiresIn
+      expiresAt
+    }
+  }
+`
+
+export const ME_QUERY = `
+  query Me {
+    me {
+      id
+      email
+      tenantId
+      tenantName
+      tenantSlug
+    }
+  }
+`
+
+export const REFRESH_SESSION_MUTATION = `
+  mutation RefreshSession($input: RefrescarSesionInput!) {
+    refreshSession(input: $input) {
+      accessToken
+      refreshToken
+      tokenType
+      expiresIn
+      expiresAt
+    }
+  }
+`
+
+export const SIGN_OUT_MUTATION = `
+  mutation SignOut($scope: SignOutScope) {
+    signOut(scope: $scope)
+  }
+`
