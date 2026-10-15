@@ -7,16 +7,10 @@ const chip: Theme['components'] = {
       root: ({ ownerState, theme }) => ({
         ...theme.typography.body2,
         fontWeight: theme.typography.fontWeightMedium,
+        borderRadius: 9999,
         '&.MuiChip-outlined:not(.MuiChip-colorDefault)': {
           borderColor: `var(--mui-palette-${ownerState.color}-main)`
         },
-        ...(ownerState.size === 'small'
-          ? {
-              borderRadius: 'var(--mui-shape-customBorderRadius-sm)'
-            }
-          : {
-              borderRadius: 'var(--mui-shape-borderRadius)'
-            }),
 
         '& .MuiChip-deleteIcon': {
           ...(ownerState.size === 'small'

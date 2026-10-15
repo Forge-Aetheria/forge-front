@@ -36,29 +36,13 @@ const menuItemStyles = (verticalNavOptions: VerticalNavState, theme: Theme): Men
         }
       },
       [`&:not(.${menuClasses.subMenuRoot}) > .${menuClasses.button}.${menuClasses.active}`]: {
-        ...(popoutCollapsed && level > 0
-          ? {
-              backgroundColor: 'var(--mui-palette-primary-lightOpacity)',
-              color: 'var(--mui-palette-primary-main)',
-              [`& .${menuClasses.icon}`]: {
-                color: 'var(--mui-palette-primary-main)'
-              }
-            }
-          : {
-              color: 'var(--mui-palette-primary-contrastText)',
-              background:
-                theme.direction === 'ltr'
-                  ? `linear-gradient(270deg,
-                    rgb(var(--mui-palette-primary-mainChannel) / 0.7) 0%,
-                    var(--mui-palette-primary-main) 100%) !important`
-                  : `linear-gradient(270deg,
-                     var(--mui-palette-primary-main) 100%,
-                     rgb(var(--mui-palette-primary-mainChannel) / 0.7) 100%) !important`,
-              boxShadow: 'var(--mui-customShadows-primary-sm)',
-              [`& .${menuClasses.icon}`]: {
-                color: 'inherit'
-              }
-            })
+        backgroundColor: '#F0EEF9 !important',
+        color: '#6C5CE7 !important',
+        fontWeight: 600,
+        boxShadow: 'none',
+        [`& .${menuClasses.icon}`]: {
+          color: '#6C5CE7 !important'
+        }
       }
     }),
     button: ({ level, active }) => ({
