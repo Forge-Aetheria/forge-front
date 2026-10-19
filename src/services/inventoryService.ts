@@ -4,8 +4,17 @@ import type {
   StockMovement,
   StockAdjustmentRecord,
   AdjustmentReason,
-  WarehouseOperationsDashboard
+  WarehouseOperationsDashboard,
+  FiscalConfig
 } from '@/types/inventoryTypes'
+import { executeGraphQL } from '@/libs/graphqlClient'
+import {
+  GET_TEMPLATES_QUERY,
+  GET_TEMPLATE_BY_ID_QUERY,
+  GET_KARDEX_QUERY
+} from '@/graphql/inventory.gql'
+import type { GqlProductTemplate, GqlKardexPage, GqlStockMove } from '@/types/inventoryDto'
+import { mapGqlTemplateToFrontend } from '@/services/adapters/inventoryAdapter'
 import {
   getActiveBcvRate,
   getFiscalConfig,
@@ -44,14 +53,60 @@ export {
 // PRODUCT TEMPLATES & VARIANTS CRUD
 // ==========================================
 export const getInventoryTemplates = async (): Promise<ProductTemplate[]> => {
+  try {
+    const res = await executeGraphQL<{ templates: { nodes: GqlProductTemplate[] } }>(
+      GET_TEMPLATES_QUERY,
+      { page: 1, perPage: 100 }
+    )
+
+    if (res?.templates?.nodes && res.templates.nodes.length > 0) {
+      return res.templates.nodes.map(mapGqlTemplateToFrontend)
+    }
+  } catch {
+    // Fallback controlado a datos persistidos/mock si el backend no está disponible o no hay red
+  }
+
   return Promise.resolve(loadStoredTemplates())
 }
 
 export const getInventoryTemplateById = async (id: string): Promise<ProductTemplate | null> => {
+  try {
+    const res = await executeGraphQL<{ template: GqlProductTemplate }>(
+      GET_TEMPLATE_BY_ID_QUERY,
+      { id }
+    )
+
+    if (res?.template) {
+      return mapGqlTemplateToFrontend(res.template)
+    }
+  } catch {
+    // Fallback a almacenamiento local
+  }
+
   const templates = loadStoredTemplates()
   const item = templates.find(template => template.id === id) || null
 
-  return Promise.resolve(item)
+  return item
+}
+
+/**
+ * Consulta de histórico de Kárdex transaccional para una variante de producto.
+ */
+export const getVariantKardex = async (variantId: string): Promise<GqlStockMove[]> => {
+  try {
+    const res = await executeGraphQL<{ kardex: GqlKardexPage }>(
+      GET_KARDEX_QUERY,
+      { variantId, page: 1, perPage: 50 }
+    )
+
+    if (res?.kardex?.nodes) {
+      return res.kardex.nodes
+    }
+  } catch {
+    // Si falla o no hay datos, retornar array vacío
+  }
+
+  return []
 }
 
 export const createProductTemplate = async (
