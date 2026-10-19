@@ -21,6 +21,9 @@ import Divider from '@mui/material/Divider'
 import MenuItem from '@mui/material/MenuItem'
 import Button from '@mui/material/Button'
 
+// Context Imports
+import { useAuth } from '@/contexts/AuthContext'
+
 // Hook Imports
 import { useSettings } from '@core/hooks/useSettings'
 
@@ -43,8 +46,8 @@ const UserDropdown = () => {
 
   // Hooks
   const router = useRouter()
-
   const { settings } = useSettings()
+  const { user, signOut } = useAuth()
 
   const handleDropdownOpen = () => {
     !open ? setOpen(true) : setOpen(false)
@@ -63,9 +66,12 @@ const UserDropdown = () => {
   }
 
   const handleUserLogout = async () => {
-    // Redirect to login page
-    router.push('/login')
+    setOpen(false)
+    await signOut()
   }
+
+  const userInitial = user?.email ? user.email.charAt(0).toUpperCase() : 'U'
+  const userDisplayName = user?.email?.split('@')[0] || 'Usuario'
 
   return (
     <>
@@ -78,11 +84,12 @@ const UserDropdown = () => {
       >
         <Avatar
           ref={anchorRef}
-          alt='John Doe'
-          src='/images/avatars/1.png'
+          alt={user?.email || 'Usuario'}
           onClick={handleDropdownOpen}
-          className='cursor-pointer bs-[38px] is-[38px]'
-        />
+          className='cursor-pointer bs-[38px] is-[38px] bg-primary text-white font-bold'
+        >
+          {userInitial}
+        </Avatar>
       </Badge>
       <Popper
         open={open}
@@ -102,32 +109,38 @@ const UserDropdown = () => {
             <Paper className={settings.skin === 'bordered' ? 'border shadow-none' : 'shadow-lg'}>
               <ClickAwayListener onClickAway={e => handleDropdownClose(e as MouseEvent | TouchEvent)}>
                 <MenuList>
-                  <div className='flex items-center plb-2 pli-6 gap-2' tabIndex={-1}>
-                    <Avatar alt='John Doe' src='/images/avatars/1.png' />
+                  <div className='flex items-center plb-2 pli-6 gap-3' tabIndex={-1}>
+                    <Avatar alt={userDisplayName} className='bg-primary text-white font-bold'>
+                      {userInitial}
+                    </Avatar>
                     <div className='flex items-start flex-col'>
-                      <Typography className='font-medium' color='text.primary'>
-                        John Doe
+                      <Typography className='font-semibold capitalize text-sm' color='text.primary'>
+                        {userDisplayName}
                       </Typography>
-                      <Typography variant='caption'>admin@vuexy.com</Typography>
+                      <Typography variant='caption' className='text-xs text-textSecondary'>
+                        {user?.email || 'Invitado'}
+                      </Typography>
+                      {user?.tenantName && (
+                        <Typography variant='caption' className='text-xs font-semibold text-primary'>
+                          🏢 {user.tenantName}
+                        </Typography>
+                      )}
                     </div>
                   </div>
                   <Divider className='mlb-1' />
-                  <MenuItem className='mli-2 gap-3' onClick={e => handleDropdownClose(e)}>
-                    <i className='tabler-user' />
-                    <Typography color='text.primary'>My Profile</Typography>
+                  <MenuItem className='mli-2 gap-3' onClick={e => handleDropdownClose(e, '/home')}>
+                    <i className='tabler-smart-home' />
+                    <Typography color='text.primary'>Inicio</Typography>
                   </MenuItem>
-                  <MenuItem className='mli-2 gap-3' onClick={e => handleDropdownClose(e)}>
-                    <i className='tabler-settings' />
-                    <Typography color='text.primary'>Settings</Typography>
+                  <MenuItem className='mli-2 gap-3' onClick={e => handleDropdownClose(e, '/inventory')}>
+                    <i className='tabler-box' />
+                    <Typography color='text.primary'>Inventario</Typography>
                   </MenuItem>
-                  <MenuItem className='mli-2 gap-3' onClick={e => handleDropdownClose(e)}>
-                    <i className='tabler-currency-dollar' />
-                    <Typography color='text.primary'>Pricing</Typography>
+                  <MenuItem className='mli-2 gap-3' onClick={e => handleDropdownClose(e, '/pos/terminal')}>
+                    <i className='tabler-device-laptop' />
+                    <Typography color='text.primary'>Terminal POS</Typography>
                   </MenuItem>
-                  <MenuItem className='mli-2 gap-3' onClick={e => handleDropdownClose(e)}>
-                    <i className='tabler-help-circle' />
-                    <Typography color='text.primary'>FAQ</Typography>
-                  </MenuItem>
+                  <Divider className='mlb-1' />
                   <div className='flex items-center plb-2 pli-3'>
                     <Button
                       fullWidth
@@ -138,7 +151,7 @@ const UserDropdown = () => {
                       onClick={handleUserLogout}
                       sx={{ '& .MuiButton-endIcon': { marginInlineStart: 1.5 } }}
                     >
-                      Logout
+                      Cerrar Sesión
                     </Button>
                   </div>
                 </MenuList>

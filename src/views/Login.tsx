@@ -1,7 +1,7 @@
 'use client'
 
 // React Imports
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 // Next Imports
 import { useRouter } from 'next/navigation'
@@ -16,10 +16,14 @@ import InputAdornment from '@mui/material/InputAdornment'
 import Checkbox from '@mui/material/Checkbox'
 import Button from '@mui/material/Button'
 import FormControlLabel from '@mui/material/FormControlLabel'
-import Divider from '@mui/material/Divider'
+import Alert from '@mui/material/Alert'
+import CircularProgress from '@mui/material/CircularProgress'
 
 // Type Imports
 import type { SystemMode } from '@core/types'
+
+// Context & Hook Imports
+import { useAuth } from '@/contexts/AuthContext'
 
 // Component Imports
 import Link from '@components/Link'
@@ -67,47 +71,103 @@ const AuthIllustrationWrapper = styled('div')(({ theme }) => ({
 }))
 
 const Login = ({ mode }: { mode?: SystemMode }) => {
-  // States
-  const [isPasswordShown, setIsPasswordShown] = useState(false)
-
   // Hooks
   const router = useRouter()
+  const { signIn, isAuthenticated, isLoading: authLoading } = useAuth()
+
+  // Form States
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [isPasswordShown, setIsPasswordShown] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  // Si ya está autenticado, redirigir a /home
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.push('/home')
+    }
+  }, [isAuthenticated, router])
 
   const handleClickShowPassword = () => setIsPasswordShown(show => !show)
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setErrorMessage(null)
+
+    if (!email.trim() || !password) {
+      setErrorMessage('Por favor ingresa tu correo electrónico y contraseña.')
+      return
+    }
+
+    setIsSubmitting(true)
+
+    const res = await signIn({
+      email: email.trim().toLowerCase(),
+      password
+    })
+
+    setIsSubmitting(false)
+
+    if (res.success) {
+      router.push('/home')
+    } else {
+      setErrorMessage(res.error || 'Error al iniciar sesión.')
+    }
+  }
 
   return (
     <div className='flex flex-col justify-center items-center min-bs-[100dvh] p-6'>
       <AuthIllustrationWrapper>
-        <Card className='flex flex-col sm:is-[450px]'>
-          <CardContent className='p-6 sm:!p-12'>
+        <Card className='flex flex-col sm:is-[450px] shadow-md'>
+          <CardContent className='p-6 sm:!p-10'>
             <Link href='/' className='flex justify-center mbe-6'>
               <Logo />
             </Link>
-            <div className='flex flex-col gap-1 mbe-6'>
-              <Typography variant='h4'>{`Welcome to ${themeConfig.templateName}! 👋🏻`}</Typography>
-              <Typography>Please sign-in to your account and start the adventure</Typography>
+            <div className='flex flex-col gap-1 mbe-6 text-center'>
+              <Typography variant='h5' className='font-bold text-[#1E1B2E]'>
+                ¡Bienvenido a {themeConfig.templateName}! 👋🏻
+              </Typography>
+              <Typography variant='body2' className='text-[#6B7280]'>
+                Ingresa tus credenciales para acceder al ERP
+              </Typography>
             </div>
-            <form
-              noValidate
-              autoComplete='off'
-              onSubmit={e => {
-                e.preventDefault()
-                router.push('/')
-              }}
-              className='flex flex-col gap-6'
-            >
-              <CustomTextField autoFocus fullWidth label='Email or Username' placeholder='Enter your email or username' />
+
+            {errorMessage && (
+              <Alert severity='error' className='mbe-6 text-sm' onClose={() => setErrorMessage(null)}>
+                {errorMessage}
+              </Alert>
+            )}
+
+            <form noValidate autoComplete='off' onSubmit={handleSubmit} className='flex flex-col gap-5'>
+              <CustomTextField
+                autoFocus
+                fullWidth
+                label='Correo electrónico'
+                placeholder='tu-email@empresa.com'
+                type='email'
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                disabled={isSubmitting || authLoading}
+              />
               <CustomTextField
                 fullWidth
-                label='Password'
+                label='Contraseña'
                 placeholder='············'
                 id='outlined-adornment-password'
                 type={isPasswordShown ? 'text' : 'password'}
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                disabled={isSubmitting || authLoading}
                 slotProps={{
                   input: {
                     endAdornment: (
                       <InputAdornment position='end'>
-                        <IconButton edge='end' onClick={handleClickShowPassword} onMouseDown={e => e.preventDefault()}>
+                        <IconButton
+                          edge='end'
+                          onClick={handleClickShowPassword}
+                          onMouseDown={e => e.preventDefault()}
+                        >
                           <i className={isPasswordShown ? 'tabler-eye-off' : 'tabler-eye'} />
                         </IconButton>
                       </InputAdornment>
@@ -116,35 +176,21 @@ const Login = ({ mode }: { mode?: SystemMode }) => {
                 }}
               />
               <div className='flex justify-between items-center gap-x-3 gap-y-1 flex-wrap'>
-                <FormControlLabel control={<Checkbox />} label='Remember me' />
+                <FormControlLabel control={<Checkbox defaultChecked />} label='Recordar sesión' />
                 <Typography className='text-end' color='primary.main' component={Link} href='/forgot-password'>
-                  Forgot password?
+                  ¿Olvidaste tu contraseña?
                 </Typography>
               </div>
-              <Button fullWidth variant='contained' type='submit'>
-                Login
+              <Button
+                fullWidth
+                variant='contained'
+                type='submit'
+                size='large'
+                disabled={isSubmitting || authLoading}
+                startIcon={isSubmitting ? <CircularProgress size={20} color='inherit' /> : null}
+              >
+                {isSubmitting ? 'Iniciando sesión...' : 'Iniciar Sesión'}
               </Button>
-              <div className='flex justify-center items-center flex-wrap gap-2'>
-                <Typography>New on our platform?</Typography>
-                <Typography component={Link} href='/register' color='primary.main'>
-                  Create an account
-                </Typography>
-              </div>
-              <Divider className='gap-2 text-textPrimary'>or</Divider>
-              <div className='flex justify-center items-center gap-1.5'>
-                <IconButton className='text-facebook' size='small'>
-                  <i className='tabler-brand-facebook-filled' />
-                </IconButton>
-                <IconButton className='text-twitter' size='small'>
-                  <i className='tabler-brand-twitter-filled' />
-                </IconButton>
-                <IconButton className='text-textPrimary' size='small'>
-                  <i className='tabler-brand-github-filled' />
-                </IconButton>
-                <IconButton className='text-error' size='small'>
-                  <i className='tabler-brand-google-filled' />
-                </IconButton>
-              </div>
             </form>
           </CardContent>
         </Card>
