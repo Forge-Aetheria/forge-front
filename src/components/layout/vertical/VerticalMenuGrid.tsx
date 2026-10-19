@@ -1,8 +1,5 @@
 'use client'
 
-// React Imports
-import type { ReactNode } from 'react'
-
 // Next Imports
 import { usePathname } from 'next/navigation'
 
@@ -14,7 +11,11 @@ import Chip from '@mui/material/Chip'
 import classnames from 'classnames'
 
 // Type Imports
-import type { VerticalMenuDataType, VerticalMenuItemDataType } from '@/types/menuTypes'
+import type {
+  VerticalMenuDataType,
+  VerticalMenuItemDataType,
+  VerticalSubMenuDataType
+} from '@/types/menuTypes'
 
 // Component Imports
 import Link from '@components/Link'
@@ -23,21 +24,47 @@ type Props = {
   items: VerticalMenuDataType[]
 }
 
-const isMenuItem = (item: VerticalMenuDataType): item is VerticalMenuItemDataType => {
-  return !('isSection' in item) && 'href' in item
+const flattenNavigableItems = (items: VerticalMenuDataType[]): VerticalMenuItemDataType[] => {
+  const result: VerticalMenuItemDataType[] = []
+
+  items.forEach(item => {
+    if ('isSection' in item && item.children) {
+      result.push(...flattenNavigableItems(item.children))
+    } else if ('children' in item && Array.isArray((item as VerticalSubMenuDataType).children)) {
+      const subMenu = item as VerticalSubMenuDataType
+      const firstChild = subMenu.children.find(c => 'href' in c) as VerticalMenuItemDataType | undefined
+
+      if (firstChild) {
+        result.push({
+          label: subMenu.label,
+          href: firstChild.href,
+          icon: subMenu.icon || firstChild.icon,
+          suffix: subMenu.suffix
+        })
+      }
+    } else if ('href' in item) {
+      result.push(item as VerticalMenuItemDataType)
+    }
+  })
+
+  return result
 }
 
 const VerticalMenuGrid = ({ items }: Props) => {
   // Hooks
   const pathname = usePathname()
 
-  // Filter only navigable items for the touch grid
-  const menuItems = items.filter(isMenuItem)
+  // Extract navigable items (including parent submenu tiles pointing to their primary view)
+  const menuItems = flattenNavigableItems(items)
 
   return (
     <div className='grid grid-cols-2 gap-2.5 p-3'>
       {menuItems.map((item, index) => {
-        const isCurrentActive = item.href ? (item.href === '/' ? pathname === '/' : pathname.startsWith(item.href)) : false
+        const isCurrentActive = item.href
+          ? item.href === '/'
+            ? pathname === '/'
+            : pathname.startsWith(item.href)
+          : false
 
         return (
           <Link

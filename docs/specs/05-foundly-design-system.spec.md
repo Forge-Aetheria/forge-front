@@ -29,6 +29,15 @@
 ### 1.4 Unwanted Behavior (Manejo de Excepciones)
 - `IF a component attempts to apply dark surface backgrounds to cards or navigation, THEN the system theme shall override them with pure white #FFFFFF and #E6E4F0 border.`
 
+### 1.5 DataGrid Master Standard (Sintaxis EARS)
+- `The system shall render a master checkbox in every main table header supporting checked, unchecked, and indeterminate states.`
+- `The system shall render individual row selection checkboxes with stopPropagation to isolate selection from row-click inspection.`
+- `WHILE one or more table rows are selected, the system shall display a pill badge with the count of selected items and an "Acciones" batch action button.`
+- `WHEN the user clicks the "Columnas" button, the system shall display a menu allowing toggling of non-essential columns and a "Restablecer Columnas" action.`
+- `WHEN a batch destructive action is triggered, the system shall require explicit confirmation through a styled confirmation Dialog before executing the change.`
+- `The system shall render the primary creation action button labeled simply as "Nuevo" (or "+ Nuevo") with vector icon rather than verbose phrases, maximizing visual cleanliness.`
+- `The system shall present short, single-line header subtitles under section titles (max ~50 chars) to conserve screen real estate and reduce vertical footprint.`
+
 ---
 
 ## 2. Mapeo de Tokens de Color & Estilos
