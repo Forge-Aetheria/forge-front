@@ -69,3 +69,31 @@ Toda especificación funcional previa a codificar debe redactarse formalmente en
 
 ### 4.5 Type Safety Estricto
 - Ningún cambio o commit se considera finalizado sin verificar compilación limpia al 100% mediante `npx tsc --noEmit`.
+
+---
+
+## 5. Estándar de Tablas y Listados Maestros (DataGrid Standard Contract)
+
+Toda tabla o listado de registros principales en el ERP (Contactos, Ventas, Compras, Catálogo de Inventario, Operaciones de Almacén) debe implementar uniformemente el **Patrón Maestro de Tablas Foundly**:
+
+### 5.1 Selección Múltiple y Estado Indeterminado
+- **Checkbox Maestro en Cabecera:** Ubicado en la primera columna (`padding="checkbox"`, ancho `44px`), con soporte de tres estados (`checked`, `unchecked` e `indeterminate` o guion cuando hay selección parcial de registros).
+- **Checkboxes de Fila:** Checkbox individual por fila con evento `stopPropagation()` para evitar la activación involuntaria del click en fila (apertura de Drawer o navegación).
+- **Feedback de Selección:** Toda fila seleccionada debe reflejar la clase o estilo de selección sutil de marca (`rgba(108, 92, 231, 0.08)` o `.Mui-selected`).
+
+### 5.2 Barra de Herramientas & Acciones en Lote (Batch Actions)
+- **Indicador de Selección Activa:** Cuando `selectedIds.length > 0`, se despliega una pastilla interactiva animada con formato `X seleccionados` en fondo lavanda `#F3F0FF`, texto y borde `#6C5CE7` con botón `X` de deselección inmediata.
+- **Botón `Acciones`:** Botón de píldora (`rounded-full`, borde `#E6E4F0`, fondo blanco `#FFFFFF`, tipografía `#1E1B2E` font-semibold, icono `tabler-settings` y chevron hacia abajo) que abre un menú flotante con:
+  1. *Copiar Códigos/Correlativos Seleccionados* (hacia el portapapeles con feedback en Toast).
+  2. *Acción de Estado Masivo / Anulación / Validación en Lote* (acompañado de modal `Dialog` de confirmación destructiva en caso de cancelaciones).
+  3. *Deseleccionar* (limpia la selección activa).
+
+### 5.3 Control Dinámico de Visibilidad de Columnas (`Columnas`)
+- **Botón `Columnas`:** Botón de píldora estilizado (`variant="outlined"`, `rounded-full`, borde `#E6E4F0`, texto e ícono `tabler-layout-columns` en morado de marca `#6C5CE7`) ubicado en la barra superior o cabecera de la tabla junto al contador de registros.
+- **Menú Interactivo:** Despliega un menú con checkboxes que permite ocultar o mostrar dinámicamente columnas de datos secundarias para optimizar el espacio de lectura.
+- **Opción de Restablecimiento:** Incluye al pie del menú la opción destacada `Restablecer Columnas` con icono `tabler-rotate` para revertir rápidamente al diseño de columnas por defecto del sistema.
+
+### 5.4 Botón Primario Conciso ("Nuevo") y Encabezados Compactos
+- **Botón de Creación Primario:** El botón de acción principal de creación debe etiquetarse de manera concisa y uniforme como `"Nuevo"` (o `"+ Nuevo"`, acompañado del ícono semántico vectorial correspondiente, ej. `tabler-plus`), evitando frases redundantes o excesivamente largas como *"Nueva Recepción"*, *"Nueva Entrega"*, *"Nueva Solicitud / Cotización"* o *"Nuevo Producto"*.
+- **Subtítulos de Sección Compactos:** Los textos explicativos situados inmediatamente debajo del título de cada vista o apartado deben ser concisos, directos y de una sola línea (máximo ~50 caracteres), preservando el espacio vertical de la pantalla para el trabajo operativo útil y evitando párrafos redundantes.
+

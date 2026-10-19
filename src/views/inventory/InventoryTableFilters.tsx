@@ -4,10 +4,10 @@
 import CardContent from '@mui/material/CardContent'
 import Grid from '@mui/material/Grid'
 import MenuItem from '@mui/material/MenuItem'
-import FormControlLabel from '@mui/material/FormControlLabel'
 import Switch from '@mui/material/Switch'
 import Typography from '@mui/material/Typography'
 import InputAdornment from '@mui/material/InputAdornment'
+import Button from '@mui/material/Button'
 
 // Component Imports
 import CustomTextField from '@core/components/mui/TextField'
@@ -21,6 +21,7 @@ type Props = {
   fiscalEnabled: boolean
   onToggleFiscal: (enabled: boolean) => void
   categories: string[]
+  onResetFilters?: () => void
 }
 
 const InventoryTableFilters = ({
@@ -28,49 +29,62 @@ const InventoryTableFilters = ({
   onFilterChange,
   fiscalEnabled,
   onToggleFiscal,
-  categories
+  categories,
+  onResetFilters
 }: Props) => {
+  const hasActiveFilters =
+    filters.search !== '' ||
+    filters.productType !== 'ALL' ||
+    filters.category !== 'ALL' ||
+    filters.stockStatus !== 'ALL' ||
+    filters.operation !== 'ALL'
+
   return (
-    <CardContent className='flex flex-col gap-4 border-b border-[var(--mui-palette-divider)]'>
-      <div className='flex items-center justify-between flex-wrap gap-2'>
-        <Typography variant='h5' className='font-semibold'>
-          Catálogo Maestro de Artículos
-        </Typography>
+    <CardContent className='p-5 flex flex-col gap-4 border-b border-[#E6E4F0] bg-[#FFFFFF]'>
+      <div className='flex items-center justify-between flex-wrap gap-3'>
+        <div>
+          <Typography variant='h6' className='font-bold text-[#1E1B2E]'>
+            Filtros de Catálogo Maestro
+          </Typography>
+          <span className='text-xs text-[#6B7280]'>
+            Busque por código maestro, SKU de variante, código EAN, categoría o disponibilidad
+          </span>
+        </div>
 
         {/* Feature Flag: Localización Fiscal SENIAT */}
-        <div className='flex items-center gap-2 bg-[var(--mui-palette-action-hover)] px-3 py-1 rounded-lg border border-[var(--mui-palette-divider)]'>
-          <i className='tabler-receipt-tax text-primary text-lg' />
-          <FormControlLabel
-            control={
-              <Switch
-                size='small'
-                checked={fiscalEnabled}
-                onChange={e => onToggleFiscal(e.target.checked)}
-              />
-            }
-            label={
-              <Typography variant='body2' className='font-medium select-none'>
-                Localización Fiscal (SENIAT / IVA)
-              </Typography>
-            }
-            className='m-0'
+        <div className='flex items-center gap-2.5 bg-[#F8F7FC] px-3.5 py-1.5 rounded-full border border-[#E6E4F0]'>
+          <i className='tabler-receipt-tax text-[#6C5CE7] text-base' />
+          <span className='text-xs font-semibold text-[#1E1B2E] select-none'>
+            Localización Fiscal (SENIAT / IVA)
+          </span>
+          <Switch
+            size='small'
+            checked={fiscalEnabled}
+            onChange={e => onToggleFiscal(e.target.checked)}
+            sx={{
+              '& .MuiSwitch-switchBase.Mui-checked': {
+                color: '#6C5CE7',
+                '& + .MuiSwitch-track': { backgroundColor: '#6C5CE7' }
+              }
+            }}
           />
         </div>
       </div>
 
-      <Grid container spacing={4}>
+      <Grid container spacing={2.5} alignItems='center'>
         {/* Search */}
-        <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+        <Grid size={{ xs: 12, sm: 6, md: 3.5 }}>
           <CustomTextField
             fullWidth
-            placeholder='Buscar por Nombre, SKU, Código EAN o Tag...'
+            size='small'
+            placeholder='Buscar por Nombre, SKU, EAN o Tag...'
             value={filters.search}
             onChange={e => onFilterChange('search', e.target.value)}
             slotProps={{
               input: {
                 startAdornment: (
                   <InputAdornment position='start'>
-                    <i className='tabler-search text-xl' />
+                    <i className='tabler-search text-base text-[#6B7280]' />
                   </InputAdornment>
                 )
               }
@@ -79,45 +93,27 @@ const InventoryTableFilters = ({
         </Grid>
 
         {/* Product Type Filter */}
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+        <Grid size={{ xs: 12, sm: 6, md: 2.5 }}>
           <CustomTextField
             select
             fullWidth
+            size='small'
             value={filters.productType}
             onChange={e => onFilterChange('productType', e.target.value)}
           >
-            <MenuItem value='ALL'>
-              <div className='flex items-center gap-2'>
-                <i className='tabler-category text-lg text-textSecondary' />
-                <span>Todos los Tipos</span>
-              </div>
-            </MenuItem>
-            <MenuItem value='storable'>
-              <div className='flex items-center gap-2'>
-                <i className='tabler-box text-lg text-textSecondary' />
-                <span>Almacenable (Kardex)</span>
-              </div>
-            </MenuItem>
-            <MenuItem value='consumable'>
-              <div className='flex items-center gap-2'>
-                <i className='tabler-package text-lg text-textSecondary' />
-                <span>Consumible</span>
-              </div>
-            </MenuItem>
-            <MenuItem value='service'>
-              <div className='flex items-center gap-2'>
-                <i className='tabler-briefcase text-lg text-textSecondary' />
-                <span>Servicio (Intangible)</span>
-              </div>
-            </MenuItem>
+            <MenuItem value='ALL'>Todos los Tipos</MenuItem>
+            <MenuItem value='storable'>Almacenable (Kárdex)</MenuItem>
+            <MenuItem value='consumable'>Consumible</MenuItem>
+            <MenuItem value='service'>Servicio (Intangible)</MenuItem>
           </CustomTextField>
         </Grid>
 
         {/* Category Filter */}
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+        <Grid size={{ xs: 12, sm: 4, md: 2.5 }}>
           <CustomTextField
             select
             fullWidth
+            size='small'
             value={filters.category}
             onChange={e => onFilterChange('category', e.target.value)}
           >
@@ -130,18 +126,51 @@ const InventoryTableFilters = ({
           </CustomTextField>
         </Grid>
 
-        {/* Operative Filter */}
-        <Grid size={{ xs: 12, sm: 6, md: 2 }}>
+        {/* Stock Status Filter */}
+        <Grid size={{ xs: 12, sm: 4, md: 2 }}>
           <CustomTextField
             select
             fullWidth
+            size='small'
+            value={filters.stockStatus}
+            onChange={e => onFilterChange('stockStatus', e.target.value)}
+          >
+            <MenuItem value='ALL'>Todo Estado Stock</MenuItem>
+            <MenuItem value='IN_STOCK'>En Stock Normal</MenuItem>
+            <MenuItem value='LOW_STOCK'>Stock Bajo (Alerta)</MenuItem>
+            <MenuItem value='OUT_OF_STOCK'>Agotados (0)</MenuItem>
+          </CustomTextField>
+        </Grid>
+
+        {/* Operative Filter / Reset */}
+        <Grid size={{ xs: 12, sm: 4, md: 1.5 }} className='flex items-center gap-1'>
+          <CustomTextField
+            select
+            fullWidth
+            size='small'
             value={filters.operation}
             onChange={e => onFilterChange('operation', e.target.value)}
           >
-            <MenuItem value='ALL'>Toda Operación</MenuItem>
-            <MenuItem value='CAN_SELL'>Para la Venta</MenuItem>
-            <MenuItem value='CAN_BUY'>Para la Compra</MenuItem>
+            <MenuItem value='ALL'>Operación: Todas</MenuItem>
+            <MenuItem value='CAN_SELL'>Para Venta</MenuItem>
+            <MenuItem value='CAN_BUY'>Para Compra</MenuItem>
           </CustomTextField>
+
+          {hasActiveFilters && onResetFilters && (
+            <Button
+              size='small'
+              onClick={onResetFilters}
+              sx={{
+                minWidth: 'auto',
+                p: 1,
+                borderRadius: '9999px',
+                color: '#EF4444'
+              }}
+              title='Limpiar filtros'
+            >
+              <i className='tabler-filter-off text-base' />
+            </Button>
+          )}
         </Grid>
       </Grid>
     </CardContent>

@@ -221,7 +221,7 @@ export const EntityContactsTab: React.FC<ContactsTabProps> = ({ readOnly = false
             Contactos & Directorio
           </Typography>
           <Typography variant="body2" className="text-textSecondary">
-            Gestión centralizada de clientes, proveedores, personas naturales y empresas asociadas
+            Directorio de clientes, proveedores y empresas
           </Typography>
         </div>
 
@@ -282,7 +282,7 @@ export const EntityContactsTab: React.FC<ContactsTabProps> = ({ readOnly = false
                 '&:hover': { backgroundColor: '#5A4AD1' }
               }}
             >
-              Nuevo Contacto
+              Nuevo
             </Button>
           </div>
         )}

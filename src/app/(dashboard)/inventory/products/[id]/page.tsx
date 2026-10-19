@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+
 import InventoryDetailView from '@/views/inventory/InventoryDetailView'
 
 type Props = {
@@ -7,13 +8,13 @@ type Props = {
 
 export const metadata: Metadata = {
   title: 'Ficha de Artículo | Forge ERP',
-  description: 'Detalle de especificaciones, variantes y kardex'
+  description: 'Detalle de especificaciones, variantes, calculadora de margen y kárdex'
 }
 
-const InventoryItemPage = async ({ params }: Props) => {
+const InventoryProductDetailPage = async ({ params }: Props) => {
   const { id } = await params
 
   return <InventoryDetailView id={id} />
 }
 
-export default InventoryItemPage
+export default InventoryProductDetailPage

@@ -160,3 +160,12 @@ export interface QuoteTotalsCalculation {
   igtf_ves: number;
   total_ves: number;
 }
+
+export interface QuoteVisibleColumns {
+  cliente?: boolean;
+  emision?: boolean;
+  vencimiento?: boolean;
+  montoUsd?: boolean;
+  montoVes?: boolean;
+  estado?: boolean;
+}

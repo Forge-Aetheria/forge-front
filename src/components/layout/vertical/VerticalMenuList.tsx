@@ -5,10 +5,11 @@ import { useTheme } from '@mui/material/styles'
 
 // Type Imports
 import type { VerticalMenuContextProps } from '@menu/components/vertical-menu/Menu'
-import type { VerticalMenuDataType, VerticalMenuItemDataType } from '@/types/menuTypes'
+import type { VerticalMenuDataType } from '@/types/menuTypes'
 
 // Component Imports
-import { Menu, MenuItem } from '@menu/vertical-menu'
+import { Menu } from '@menu/vertical-menu'
+import { GenerateVerticalMenu } from '@components/GenerateMenu'
 
 // Hook Imports
 import useVerticalNav from '@menu/hooks/useVerticalNav'
@@ -35,10 +36,6 @@ const RenderExpandIcon = ({ open, transitionDuration }: RenderExpandIconProps) =
   </StyledVerticalNavExpandIcon>
 )
 
-const isMenuItem = (item: VerticalMenuDataType): item is VerticalMenuItemDataType => {
-  return !('isSection' in item) && 'href' in item
-}
-
 const VerticalMenuList = ({ items }: Props) => {
   // Hooks
   const theme = useTheme()
@@ -46,7 +43,6 @@ const VerticalMenuList = ({ items }: Props) => {
 
   // Vars
   const { transitionDuration } = verticalNavOptions
-  const menuItems = items.filter(isMenuItem)
 
   return (
     <Menu
@@ -56,19 +52,7 @@ const VerticalMenuList = ({ items }: Props) => {
       renderExpandedMenuItemIcon={{ icon: <i className='tabler-circle text-xs' /> }}
       menuSectionStyles={menuSectionStyles(verticalNavOptions, theme)}
     >
-      {menuItems.map((item, index) => {
-        const { label, icon, prefix, suffix, excludeLang, ...rest } = item
-
-        return (
-          <MenuItem
-            key={item.href || index}
-            icon={icon ? <i className={icon} /> : undefined}
-            {...rest}
-          >
-            {label}
-          </MenuItem>
-        )
-      })}
+      <GenerateVerticalMenu menuData={items} />
     </Menu>
   )
 }
