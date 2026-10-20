@@ -63,9 +63,14 @@ const horizontalMenuData = (): HorizontalMenuDataType[] => [
             icon: 'tabler-category'
           },
           {
-            label: 'Almacenes y Ubicaciones',
+            label: 'Almacenes',
             href: '/inventory/settings/warehouses',
             icon: 'tabler-building-warehouse'
+          },
+          {
+            label: 'Ubicaciones',
+            href: '/inventory/settings/locations',
+            icon: 'tabler-map-pin'
           }
         ]
       }

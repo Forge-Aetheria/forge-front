@@ -43,6 +43,7 @@ export {
   deleteWarehouseLocation
 } from './inventory/categoryWarehouseService'
 export {
+  getWarehouseOperationOrderById,
   getWarehouseOperationOrders,
   createWarehouseOperationOrder,
   validateWarehouseOperationOrder,
@@ -50,23 +51,50 @@ export {
 } from './inventory/operationOrdersService'
 
 // ==========================================
-// PRODUCT TEMPLATES & VARIANTS CRUD
+// PRODUCT TEMPLATES & VARIANTS CRUD (WITH IN-MEMORY CACHE)
 // ==========================================
-export const getInventoryTemplates = async (): Promise<ProductTemplate[]> => {
-  try {
-    const res = await executeGraphQL<{ templates: { nodes: GqlProductTemplate[] } }>(
-      GET_TEMPLATES_QUERY,
-      { page: 1, perPage: 100 }
-    )
+let cachedTemplates: ProductTemplate[] | null = null
+let fetchTemplatesPromise: Promise<ProductTemplate[]> | null = null
 
-    if (res?.templates?.nodes && res.templates.nodes.length > 0) {
-      return res.templates.nodes.map(mapGqlTemplateToFrontend)
-    }
-  } catch {
-    // Fallback controlado a datos persistidos/mock si el backend no está disponible o no hay red
+export const invalidateTemplatesCache = (): void => {
+  cachedTemplates = null
+  fetchTemplatesPromise = null
+}
+
+export const getInventoryTemplates = async (forceRefresh = false): Promise<ProductTemplate[]> => {
+  if (!forceRefresh && cachedTemplates) {
+    return cachedTemplates
   }
 
-  return Promise.resolve(loadStoredTemplates())
+  if (!forceRefresh && fetchTemplatesPromise) {
+    return fetchTemplatesPromise
+  }
+
+  fetchTemplatesPromise = (async () => {
+    try {
+      const res = await executeGraphQL<{ templates: { nodes: GqlProductTemplate[] } }>(
+        GET_TEMPLATES_QUERY,
+        { page: 1, perPage: 100 }
+      )
+
+      if (res?.templates?.nodes && res.templates.nodes.length > 0) {
+        const mapped = res.templates.nodes.map(mapGqlTemplateToFrontend)
+        cachedTemplates = mapped
+        saveStoredTemplates(mapped)
+        return mapped
+      }
+    } catch {
+      // Fallback controlado a datos persistidos/mock si el backend no está disponible o no hay red
+    } finally {
+      fetchTemplatesPromise = null
+    }
+
+    const stored = loadStoredTemplates()
+    cachedTemplates = stored
+    return stored
+  })()
+
+  return fetchTemplatesPromise
 }
 
 export const getInventoryTemplateById = async (id: string): Promise<ProductTemplate | null> => {
@@ -170,6 +198,7 @@ export const createProductTemplate = async (
   const updated = [newTemplate, ...templates]
 
   saveStoredTemplates(updated)
+  invalidateTemplatesCache()
 
   return Promise.resolve(newTemplate)
 }
@@ -213,6 +242,7 @@ export const updateProductTemplate = async (
 
   templates[index] = updatedTemplate
   saveStoredTemplates(templates)
+  invalidateTemplatesCache()
 
   return Promise.resolve(updatedTemplate)
 }
@@ -222,6 +252,7 @@ export const deleteProductTemplate = async (id: string): Promise<void> => {
   const filtered = templates.filter(t => t.id !== id)
 
   saveStoredTemplates(filtered)
+  invalidateTemplatesCache()
 
   return Promise.resolve()
 }
@@ -289,6 +320,7 @@ export const applyStockAdjustment = async (input: {
   template.updatedAt = new Date().toISOString()
   templates[tIdx] = template
   saveStoredTemplates(templates)
+  invalidateTemplatesCache()
 
   const now = new Date().toISOString()
   const nextNumber = (adjustments.length + 1).toString().padStart(4, '0')

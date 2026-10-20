@@ -352,7 +352,7 @@ const InventoryDetailView: React.FC<Props> = ({ id }) => {
       : 'tabler-briefcase'
 
   return (
-    <div className='flex flex-col gap-6 max-w-7xl mx-auto pb-12'>
+    <div className='flex flex-col gap-6 w-full pb-12'>
       {/* Top Navigation Bar (Coherencia visual exacta con Contactos) */}
       <div className='flex items-center justify-between gap-4 flex-wrap sm:flex-nowrap'>
         {/* Izquierda: Botón Volver + Título limpio */}

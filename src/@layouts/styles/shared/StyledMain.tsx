@@ -13,12 +13,10 @@ type StyledMainProps = {
 
 const StyledMain = styled.main<StyledMainProps>`
   padding: ${themeConfig.layoutPadding}px;
-  ${({ isContentCompact }) =>
-    isContentCompact &&
-    `
-    margin-inline: auto;
-    max-inline-size: ${themeConfig.compactContentWidth}px;
-  `}
+  width: 100%;
+  max-width: 100%;
+  margin-inline: 0;
+  box-sizing: border-box;
 
   &:has(.${commonLayoutClasses.contentHeightFixed}) {
     display: flex;

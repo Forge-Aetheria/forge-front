@@ -110,7 +110,13 @@ const MenuItem: ForwardRefRenderFunction<HTMLLIElement, MenuItemProps> = (props,
 
     if (href) {
       // Check if the current url matches any of the children urls
-      if (exactMatch ? pathname === href : activeUrl && pathname.includes(activeUrl)) {
+      const isMatch = exactMatch
+        ? pathname === href || (href !== '/' && (pathname.startsWith(href + '/') || pathname.startsWith(href + '?')))
+        : activeUrl
+          ? pathname.includes(activeUrl)
+          : pathname.startsWith(href)
+
+      if (isMatch) {
         setActive(true)
       } else {
         setActive(false)

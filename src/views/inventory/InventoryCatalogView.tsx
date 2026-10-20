@@ -85,55 +85,8 @@ const InventoryCatalogView = () => {
 
         <div className='flex items-center gap-2.5 flex-wrap'>
           <Button
-            component={Link}
-            href='/inventory'
-            variant='outlined'
-            sx={{
-              borderRadius: '9999px',
-              textTransform: 'none',
-              borderColor: '#DCD8EC',
-              color: '#6B7280',
-              fontWeight: 600,
-              backgroundColor: '#FFFFFF'
-            }}
-            startIcon={<i className='tabler-layout-dashboard text-base' />}
-          >
-            Panel Operativo
-          </Button>
-
-          <Button
-            variant='outlined'
-            onClick={() => {
-              setAdjustingProduct(null)
-              setAdjustModalOpen(true)
-            }}
-            sx={{
-              borderRadius: '9999px',
-              textTransform: 'none',
-              borderColor: '#6C5CE7',
-              color: '#6C5CE7',
-              fontWeight: 600,
-              backgroundColor: '#FFFFFF',
-              '&:hover': { backgroundColor: '#F0EEF9' }
-            }}
-            startIcon={<i className='tabler-adjustments-horizontal text-base' />}
-          >
-            Ajuste de Stock
-          </Button>
-
-          <Button
             variant='contained'
             onClick={handleOpenCreate}
-            sx={{
-              borderRadius: '9999px',
-              textTransform: 'none',
-              backgroundColor: '#6C5CE7',
-              color: '#FFFFFF',
-              fontWeight: 600,
-              px: 3,
-              boxShadow: '0 4px 14px rgba(108, 92, 231, 0.3)',
-              '&:hover': { backgroundColor: '#5B4CDB' }
-            }}
             startIcon={<i className='tabler-plus text-base' />}
           >
             Nuevo

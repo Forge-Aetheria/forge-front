@@ -74,10 +74,22 @@ export const SettingsProvider = (props: Props) => {
     JSON.stringify(props.settingsCookie) !== '{}' ? props.settingsCookie : updatedInitialSettings
   )
 
+  // Enforce Foundly Clean Light UI and Wide layout (100% width, no huge margin boxes)
+  const initialSanitized: Settings = useMemo(() => {
+    const base = JSON.stringify(settingsCookie) !== '{}' ? settingsCookie : updatedInitialSettings
+
+    return {
+      ...base,
+      mode: 'light',
+      semiDark: false,
+      contentWidth: 'wide',
+      navbarContentWidth: 'wide',
+      footerContentWidth: 'wide'
+    }
+  }, [settingsCookie, updatedInitialSettings])
+
   // State
-  const [_settingsState, _updateSettingsState] = useState<Settings>(
-    JSON.stringify(settingsCookie) !== '{}' ? settingsCookie : updatedInitialSettings
-  )
+  const [_settingsState, _updateSettingsState] = useState<Settings>(initialSanitized)
 
   const updateSettings = (settings: Partial<Settings>, options?: UpdateSettingsOptions) => {
     const { updateCookie = true } = options || {}

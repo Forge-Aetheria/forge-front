@@ -193,19 +193,9 @@ const InventoryCategoriesView = () => {
 
         <div className='flex items-center gap-2.5'>
           <Button
-            component={Link}
-            href='/inventory/products'
-            variant='tonal'
-            color='secondary'
-            className='rounded-full font-medium'
-            startIcon={<i className='tabler-box' />}
-          >
-            Ir al Catálogo
-          </Button>
-          <Button
             variant='contained'
             color='primary'
-            className='rounded-full font-semibold shadow-sm'
+            className='font-semibold shadow-sm'
             startIcon={<i className='tabler-plus' />}
             onClick={() => setShowNewCatRow(true)}
           >
@@ -237,32 +227,44 @@ const InventoryCategoriesView = () => {
           </div>
         </CardContent>
 
+        {/* Toolbar Strip unificado con estándar Foundly */}
+        <div className='flex items-center justify-between flex-wrap gap-3 px-5 py-3 border-b border-[#E6E4F0] bg-[#FAF9FF]'>
+          <div className='flex items-center gap-2.5'>
+            <Typography variant='h6' className='font-semibold text-[#1E1B2E] text-sm'>
+              Categorías Configuradas
+            </Typography>
+            <span className='text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#F3F0FF] text-[#6C5CE7] border border-[#E9D5FF]'>
+              {filteredCategories.length} {filteredCategories.length === 1 ? 'categoría' : 'categorías'}
+            </span>
+          </div>
+        </div>
+
         {loading ? (
           <div className='p-8 text-center text-textSecondary'>Cargando categorías...</div>
         ) : (
           <div className='overflow-x-auto'>
             <Table size='small'>
-              <TableHead className='bg-[#F8F7FA] border-b border-[#E6E4F0]'>
+              <TableHead className='bg-[#F4F3F8] border-b border-[#E6E4F0]'>
                 <TableRow>
                   <TableCell
-                    className='font-semibold text-xs uppercase text-textSecondary text-center'
-                    style={{ width: 28, maxWidth: 28, padding: '8px 4px' }}
+                    className='text-[11px] uppercase tracking-wider text-[#6B7280] font-bold text-center'
+                    style={{ width: 36, maxWidth: 36, padding: '10px 4px' }}
                   >
                     #
                   </TableCell>
-                  <TableCell className='font-semibold text-xs uppercase text-textSecondary' style={{ width: 130 }}>
+                  <TableCell className='text-[11px] uppercase tracking-wider text-[#6B7280] font-bold py-2.5' style={{ width: 130 }}>
                     Código Prefijo
                   </TableCell>
-                  <TableCell className='font-semibold text-xs uppercase text-textSecondary' style={{ minWidth: 220 }}>
+                  <TableCell className='text-[11px] uppercase tracking-wider text-[#6B7280] font-bold py-2.5' style={{ minWidth: 220 }}>
                     Nombre de la Categoría
                   </TableCell>
-                  <TableCell className='font-semibold text-xs uppercase text-textSecondary'>
+                  <TableCell className='text-[11px] uppercase tracking-wider text-[#6B7280] font-bold py-2.5'>
                     Descripción / Uso
                   </TableCell>
-                  <TableCell className='font-semibold text-xs uppercase text-textSecondary text-center'>
+                  <TableCell className='text-[11px] uppercase tracking-wider text-[#6B7280] font-bold text-center py-2.5'>
                     Artículos
                   </TableCell>
-                  <TableCell className='font-semibold text-xs uppercase text-textSecondary text-right'>
+                  <TableCell className='text-[11px] uppercase tracking-wider text-[#6B7280] font-bold text-right py-2.5'>
                     Acciones
                   </TableCell>
                 </TableRow>
@@ -383,7 +385,7 @@ const InventoryCategoriesView = () => {
                   const count = productCountByCategory[cat.name] || 0
 
                   return (
-                    <TableRow key={cat.id} hover className='border-b border-[#E6E4F0] last:border-none'>
+                    <TableRow key={cat.id} hover className='border-b border-[#E6E4F0] last:border-none hover:bg-[#FAF9FF] transition-colors'>
                       <TableCell
                         className='text-center font-mono text-xs text-textSecondary'
                         style={{ width: 28, maxWidth: 28, padding: '6px 4px' }}

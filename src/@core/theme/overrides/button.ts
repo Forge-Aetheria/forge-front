@@ -31,7 +31,7 @@ const button: Theme['components'] = {
   MuiButton: {
     styleOverrides: {
       root: ({ theme, ownerState }) => ({
-        borderRadius: 9999,
+        borderRadius: 'var(--mui-shape-borderRadius)',
         textTransform: 'none',
         fontWeight: 600,
         '&.Mui-disabled': {

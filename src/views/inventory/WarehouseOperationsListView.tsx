@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import Typography from '@mui/material/Typography'
 import Card from '@mui/material/Card'
 import CardContent from '@mui/material/CardContent'
@@ -44,8 +45,6 @@ import {
   type FlattenedVariantOption,
   type NewOrderLineDraft
 } from './components/operations/operationConstants'
-import OperationDetailDrawer from './components/operations/OperationDetailDrawer'
-import OperationCreateDrawer from './components/operations/OperationCreateDrawer'
 
 interface WarehouseOperationsListViewProps {
   operationType: WarehouseOperationType
@@ -54,8 +53,22 @@ interface WarehouseOperationsListViewProps {
 const WarehouseOperationsListView: React.FC<WarehouseOperationsListViewProps> = ({
   operationType
 }) => {
+  const router = useRouter()
   const cfg = OPERATION_CONFIG[operationType]
   const bcvRate = getActiveBcvRate()
+
+  const currentBaseRoute = useMemo(() => {
+    switch (operationType) {
+      case 'RECEIPT':
+        return '/inventory/operations/receipts'
+      case 'DELIVERY':
+        return '/inventory/operations/deliveries'
+      case 'INTERNAL_TRANSFER':
+        return '/inventory/operations/transfers'
+      default:
+        return '/inventory/operations/receipts'
+    }
+  }, [operationType])
 
   const [orders, setOrders] = useState<WarehouseOperationOrder[]>([])
   const [templates, setTemplates] = useState<ProductTemplate[]>([])
@@ -491,23 +504,9 @@ const WarehouseOperationsListView: React.FC<WarehouseOperationsListViewProps> = 
               <i className={`${cfg.icon} text-xl`} />
             </div>
             <div>
-              <div className='flex items-center gap-2.5 flex-wrap'>
-                <Typography variant='h4' className='font-bold text-[#1E1B2E]'>
-                  {cfg.title}
-                </Typography>
-                <Chip
-                  size='small'
-                  label={`Tasa BCV: ${bcvRate.toFixed(2)} Bs/USD`}
-                  sx={{
-                    borderRadius: '9999px',
-                    fontWeight: 700,
-                    fontSize: '0.72rem',
-                    backgroundColor: '#F0EEF9',
-                    color: '#6C5CE7',
-                    border: '1px solid #DCD8EC'
-                  }}
-                />
-              </div>
+              <Typography variant='h4' className='font-bold text-[#1E1B2E]'>
+                {cfg.title}
+              </Typography>
               <Typography variant='body2' className='text-[#6B7280] mt-0.5'>
                 {cfg.subtitle}
               </Typography>
@@ -557,37 +556,12 @@ const WarehouseOperationsListView: React.FC<WarehouseOperationsListViewProps> = 
 
           <Button
             component={Link}
-            href='/inventory/kardex'
-            variant='outlined'
-            sx={{
-              borderRadius: '9999px',
-              textTransform: 'none',
-              borderColor: '#DCD8EC',
-              color: '#1E1B2E',
-              backgroundColor: '#FFFFFF',
-              fontWeight: 600
-            }}
-            startIcon={<i className='tabler-arrows-exchange text-base text-[#6C5CE7]' />}
-          >
-            Ver Kárdex
-          </Button>
-
-          <Button
+            href={`${currentBaseRoute}/create`}
             variant='contained'
-            onClick={handleOpenCreateDrawer}
-            sx={{
-              borderRadius: '9999px',
-              textTransform: 'none',
-              backgroundColor: '#6C5CE7',
-              color: '#FFFFFF',
-              fontWeight: 600,
-              px: 3,
-              boxShadow: '0 4px 14px rgba(108, 92, 231, 0.3)',
-              '&:hover': { backgroundColor: '#5B4CDB' }
-            }}
+            color='primary'
             startIcon={<i className='tabler-plus text-base' />}
           >
-            {cfg.newBtnLabel}
+            Nuevo
           </Button>
         </div>
       </div>
@@ -683,17 +657,14 @@ const WarehouseOperationsListView: React.FC<WarehouseOperationsListViewProps> = 
             </span>
           </div>
 
-          <div className='flex items-center gap-3'>
-            <Typography variant='caption' className='text-[#6B7280] hidden md:inline'>
-              Haz clic en cualquier fila para inspeccionar o procesar
-            </Typography>
+          <div className='flex items-center gap-2 flex-wrap'>
             <Button
               size='small'
               variant='outlined'
               startIcon={<i className='tabler-layout-columns text-base' />}
               onClick={e => setColumnAnchorEl(e.currentTarget)}
               sx={{
-                borderRadius: '9999px',
+                borderRadius: '8px',
                 borderColor: '#E6E4F0',
                 color: '#6C5CE7',
                 textTransform: 'none',
@@ -765,7 +736,7 @@ const WarehouseOperationsListView: React.FC<WarehouseOperationsListViewProps> = 
                     return (
                       <tr
                         key={order.id}
-                        onClick={() => openOrderDetail(order)}
+                        onClick={() => router.push(`${currentBaseRoute}/${order.id}`)}
                         className={`transition-colors cursor-pointer group ${
                           isSelected ? 'bg-[#F3F0FF] hover:bg-[#EBE5FF]' : 'hover:bg-[#F9F8FF]'
                         }`}
@@ -1102,58 +1073,6 @@ const WarehouseOperationsListView: React.FC<WarehouseOperationsListViewProps> = 
           </Button>
         </DialogActions>
       </Dialog>
-
-      {/* Subcomponente: Drawer de Detalle y Validación */}
-      <OperationDetailDrawer
-        order={selectedOrder}
-        cfg={cfg}
-        bcvRate={bcvRate}
-        editedQtys={editedQtys}
-        onQtyChange={(lineId, val) =>
-          setEditedQtys(prev => ({
-            ...prev,
-            [lineId]: val
-          }))
-        }
-        validating={validating}
-        onClose={() => setSelectedOrder(null)}
-        onValidate={handleValidateOrder}
-        onCancelOrder={handleCancelOrder}
-      />
-
-      {/* Subcomponente: Drawer de Creación de Nueva Orden */}
-      <OperationCreateDrawer
-        open={createOpen}
-        operationType={operationType}
-        cfg={cfg}
-        warehouses={warehouses}
-        variantOptions={variantOptions}
-        creating={creating}
-        newPartner={newPartner}
-        setNewPartner={setNewPartner}
-        newDocOrigin={newDocOrigin}
-        setNewDocOrigin={setNewDocOrigin}
-        newDate={newDate}
-        setNewDate={setNewDate}
-        newResponsable={newResponsable}
-        setNewResponsable={setNewResponsable}
-        newNotes={newNotes}
-        setNewNotes={setNewNotes}
-        originWhId={originWhId}
-        setOriginWhId={setOriginWhId}
-        originLocCode={originLocCode}
-        setOriginLocCode={setOriginLocCode}
-        destWhId={destWhId}
-        setDestWhId={setDestWhId}
-        destLocCode={destLocCode}
-        setDestLocCode={setDestLocCode}
-        newLines={newLines}
-        setNewLines={setNewLines}
-        onAddDraftLine={handleAddDraftLine}
-        onRemoveDraftLine={handleRemoveDraftLine}
-        onClose={() => setCreateOpen(false)}
-        onSubmit={handleCreateOrder}
-      />
 
       <Snackbar
         open={toast.open}

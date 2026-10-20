@@ -17,6 +17,7 @@ interface GraphQLResponse<T> {
 export interface RequestOptions {
   token?: string | null
   tenantId?: string | null
+  timeoutMs?: number
 }
 
 export class GraphQLClientError extends Error {
@@ -52,11 +53,16 @@ export const executeGraphQL = async <T, V = Record<string, unknown>>(
     headers['x-tenant-id'] = options.tenantId
   }
 
+  const timeoutMs = options?.timeoutMs ?? 7000
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), timeoutMs)
+
   try {
     const res = await fetch(GRAPHQL_ENDPOINT, {
       method: 'POST',
       headers,
-      body: JSON.stringify({ query, variables })
+      body: JSON.stringify({ query, variables }),
+      signal: controller.signal
     })
 
     if (!res.ok) {
@@ -85,9 +91,18 @@ export const executeGraphQL = async <T, V = Record<string, unknown>>(
       throw err
     }
 
+    if (err instanceof Error && err.name === 'AbortError') {
+      throw new GraphQLClientError(
+        `La petición excedió el tiempo límite de espera (${timeoutMs / 1000}s). El servidor tardó demasiado en responder.`,
+        'TIMEOUT_ERROR'
+      )
+    }
+
     const message = err instanceof Error ? err.message : 'Error desconocido al comunicar con el backend'
 
     throw new GraphQLClientError(`No fue posible conectar con el servidor: ${message}`, 'NETWORK_ERROR')
+  } finally {
+    clearTimeout(timer)
   }
 }
 

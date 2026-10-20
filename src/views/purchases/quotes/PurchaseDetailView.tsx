@@ -252,7 +252,7 @@ export const PurchaseDetailView: React.FC<Props> = ({ id }) => {
     .reduce((acc, it) => acc + it.cantidad, 0)
 
   return (
-    <div className='flex flex-col gap-5 max-w-7xl mx-auto pb-12 p-1'>
+    <div className='flex flex-col gap-5 w-full pb-12 p-1'>
       {/* Barra Superior con Navegador Secuencial y Acciones Contextuales (HU3, HU4, HU5) */}
       <div className='flex items-center justify-between gap-4 flex-wrap'>
         {/* Izquierda: Volver + Correlativo + Estado + Tasa BCV */}

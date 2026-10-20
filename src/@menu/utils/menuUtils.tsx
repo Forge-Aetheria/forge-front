@@ -55,16 +55,17 @@ export const confirmUrlInChildren = (children: ChildrenType['children'], url: st
   if (isValidElement<MenuItemElementProps>(children)) {
     const { component, href, exactMatch, activeUrl, children: subChildren } = children.props
 
+    const matchUrl = (targetHref?: string): boolean => {
+      if (!targetHref) return false
+      return targetHref === url || (targetHref !== '/' && (url.startsWith(targetHref + '/') || url.startsWith(targetHref + '?')))
+    }
+
     if (component && typeof component !== 'string' && component.props.href) {
-      return exactMatch === true || exactMatch === undefined
-        ? component.props.href === url
-        : activeUrl !== undefined && url.includes(activeUrl)
+      return matchUrl(component.props.href)
     }
 
     if (href) {
-      return exactMatch === true || exactMatch === undefined
-        ? href === url
-        : activeUrl !== undefined && url.includes(activeUrl)
+      return matchUrl(href)
     }
 
     if (subChildren) {

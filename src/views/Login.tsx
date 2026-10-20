@@ -73,7 +73,7 @@ const AuthIllustrationWrapper = styled('div')(({ theme }) => ({
 const Login = ({ mode }: { mode?: SystemMode }) => {
   // Hooks
   const router = useRouter()
-  const { signIn, isAuthenticated, isLoading: authLoading } = useAuth()
+  const { signIn, isAuthenticated } = useAuth()
 
   // Form States
   const [email, setEmail] = useState('')
@@ -148,7 +148,7 @@ const Login = ({ mode }: { mode?: SystemMode }) => {
                 type='email'
                 value={email}
                 onChange={e => setEmail(e.target.value)}
-                disabled={isSubmitting || authLoading}
+                disabled={isSubmitting}
               />
               <CustomTextField
                 fullWidth
@@ -158,7 +158,7 @@ const Login = ({ mode }: { mode?: SystemMode }) => {
                 type={isPasswordShown ? 'text' : 'password'}
                 value={password}
                 onChange={e => setPassword(e.target.value)}
-                disabled={isSubmitting || authLoading}
+                disabled={isSubmitting}
                 slotProps={{
                   input: {
                     endAdornment: (
@@ -186,7 +186,7 @@ const Login = ({ mode }: { mode?: SystemMode }) => {
                 variant='contained'
                 type='submit'
                 size='large'
-                disabled={isSubmitting || authLoading}
+                disabled={isSubmitting}
                 startIcon={isSubmitting ? <CircularProgress size={20} color='inherit' /> : null}
               >
                 {isSubmitting ? 'Iniciando sesión...' : 'Iniciar Sesión'}

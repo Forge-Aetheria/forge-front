@@ -99,35 +99,21 @@ const InventoryDashboard = () => {
       {/* Top Header & Quick Actions */}
       <div className='flex items-center justify-between flex-wrap gap-4'>
         <div>
-          <div className='flex items-center gap-2.5 flex-wrap'>
-            <Typography variant='h4' className='font-bold text-[#1E1B2E]'>
-              Centro de Control de Inventario
-            </Typography>
-            <Chip
-              size='small'
-              icon={<i className='tabler-Building-bank text-xs text-[#6C5CE7]' />}
-              label={`Tasa BCV: ${ops.tasa_bcv.toFixed(2)} Bs/USD`}
-              sx={{
-                borderRadius: '9999px',
-                fontWeight: 600,
-                fontSize: '0.72rem',
-                backgroundColor: '#F0EEF9',
-                color: '#6C5CE7',
-                border: '1px solid #DCD8EC'
-              }}
-            />
-          </div>
+          <Typography variant='h4' className='font-bold text-[#1E1B2E]'>
+            Inventario & Almacén
+          </Typography>
           <Typography variant='body2' className='text-[#6B7280] mt-0.5'>
-            Resumen operativo y valoración de almacén
+            Flujo operativo, transferencias y control de almacén
           </Typography>
         </div>
 
         {/* Action Pills */}
-        <div className='flex items-center gap-2.5 flex-wrap'>
+        <div className='flex items-center gap-2 flex-wrap'>
           <Button
             component={Link}
             href='/inventory/products'
             variant='outlined'
+            size='small'
             sx={{
               borderRadius: '9999px',
               textTransform: 'none',
@@ -135,17 +121,19 @@ const InventoryDashboard = () => {
               color: '#1E1B2E',
               backgroundColor: '#FFFFFF',
               fontWeight: 600,
+              fontSize: '0.8rem',
               '&:hover': { backgroundColor: '#F4F3F8' }
             }}
-            startIcon={<i className='tabler-box text-base text-[#6C5CE7]' />}
+            startIcon={<i className='tabler-box text-sm text-[#6C5CE7]' />}
           >
             Catálogo ({ops.total_articulos_catalogo})
           </Button>
 
           <Button
             component={Link}
-            href='/inventory/kardex'
+            href='/inventory/settings/locations'
             variant='outlined'
+            size='small'
             sx={{
               borderRadius: '9999px',
               textTransform: 'none',
@@ -153,15 +141,57 @@ const InventoryDashboard = () => {
               color: '#1E1B2E',
               backgroundColor: '#FFFFFF',
               fontWeight: 600,
+              fontSize: '0.8rem',
               '&:hover': { backgroundColor: '#F4F3F8' }
             }}
-            startIcon={<i className='tabler-arrows-exchange text-base text-[#6C5CE7]' />}
+            startIcon={<i className='tabler-map-pin text-sm text-[#6C5CE7]' />}
+          >
+            Ubicaciones
+          </Button>
+
+          <Button
+            component={Link}
+            href='/inventory/settings/warehouses'
+            variant='outlined'
+            size='small'
+            sx={{
+              borderRadius: '9999px',
+              textTransform: 'none',
+              borderColor: '#DCD8EC',
+              color: '#1E1B2E',
+              backgroundColor: '#FFFFFF',
+              fontWeight: 600,
+              fontSize: '0.8rem',
+              '&:hover': { backgroundColor: '#F4F3F8' }
+            }}
+            startIcon={<i className='tabler-building-warehouse text-sm text-[#6C5CE7]' />}
+          >
+            Almacenes
+          </Button>
+
+          <Button
+            component={Link}
+            href='/inventory/kardex'
+            variant='outlined'
+            size='small'
+            sx={{
+              borderRadius: '9999px',
+              textTransform: 'none',
+              borderColor: '#DCD8EC',
+              color: '#1E1B2E',
+              backgroundColor: '#FFFFFF',
+              fontWeight: 600,
+              fontSize: '0.8rem',
+              '&:hover': { backgroundColor: '#F4F3F8' }
+            }}
+            startIcon={<i className='tabler-arrows-exchange text-sm text-[#6C5CE7]' />}
           >
             Kárdex
           </Button>
 
           <Button
             variant='outlined'
+            size='small'
             onClick={() => {
               setPreselectedProduct(null)
               setAdjustModalOpen(true)
@@ -173,15 +203,17 @@ const InventoryDashboard = () => {
               color: '#6C5CE7',
               backgroundColor: '#FFFFFF',
               fontWeight: 600,
+              fontSize: '0.8rem',
               '&:hover': { backgroundColor: '#F0EEF9' }
             }}
-            startIcon={<i className='tabler-adjustments-horizontal text-base' />}
+            startIcon={<i className='tabler-adjustments-horizontal text-sm' />}
           >
             Ajuste Rápido
           </Button>
 
           <Button
             variant='contained'
+            size='small'
             onClick={() => setProductDrawerOpen(true)}
             sx={{
               borderRadius: '9999px',
@@ -189,11 +221,12 @@ const InventoryDashboard = () => {
               backgroundColor: '#6C5CE7',
               color: '#FFFFFF',
               fontWeight: 600,
-              px: 3,
+              fontSize: '0.8rem',
+              px: 2.5,
               boxShadow: '0 4px 14px rgba(108, 92, 231, 0.3)',
               '&:hover': { backgroundColor: '#5B4CDB' }
             }}
-            startIcon={<i className='tabler-plus text-base' />}
+            startIcon={<i className='tabler-plus text-sm' />}
           >
             Nuevo
           </Button>

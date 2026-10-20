@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
+import Link from 'next/link';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import Button from '@mui/material/Button';
@@ -103,9 +104,11 @@ export const EntityContactsTab: React.FC<ContactsTabProps> = ({ readOnly = false
 
   // Lista ordenada dinámicamente
   const sortedTerceros = useMemo(() => {
-    if (!sortKey) return terceros;
+    let result = [...terceros];
 
-    return [...terceros].sort((a, b) => {
+    if (!sortKey) return result;
+
+    return result.sort((a, b) => {
       let comparison = 0;
       if (sortKey === 'nombre') {
         comparison = (a.nombre_razon_social || '').localeCompare(b.nombre_razon_social || '', 'es', { sensitivity: 'base' });
@@ -268,7 +271,8 @@ export const EntityContactsTab: React.FC<ContactsTabProps> = ({ readOnly = false
 
             <Button
               variant="contained"
-              onClick={handleOpenCreate}
+              component={Link}
+              href="/contacts/create"
               startIcon={<i className="tabler-user-plus" />}
               sx={{
                 borderRadius: '9999px',
@@ -310,17 +314,14 @@ export const EntityContactsTab: React.FC<ContactsTabProps> = ({ readOnly = false
               </span>
             </div>
 
-            <div className="flex items-center gap-3">
-              <Typography variant="caption" className="text-[#6B7280] hidden md:inline">
-                Haz clic en cualquier fila para consultar el contacto
-              </Typography>
+            <div className="flex items-center gap-2 flex-wrap">
               <Button
                 size="small"
                 variant="outlined"
                 startIcon={<i className="tabler-layout-columns text-base" />}
                 onClick={e => setColumnAnchorEl(e.currentTarget)}
                 sx={{
-                  borderRadius: '9999px',
+                  borderRadius: '8px',
                   borderColor: '#E6E4F0',
                   color: '#6C5CE7',
                   textTransform: 'none',

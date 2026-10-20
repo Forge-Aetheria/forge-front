@@ -18,7 +18,7 @@ import useVerticalNav from '@menu/hooks/useVerticalNav'
 
 // Component Imports
 import VerticalMenuList from './VerticalMenuList'
-import VerticalMenuGrid from './VerticalMenuGrid'
+import TouchMenuGrid from './TouchMenuGrid'
 
 // Data Imports
 import verticalMenuData from '@/data/navigation/verticalMenuData'
@@ -110,7 +110,7 @@ const VerticalMenu = ({ scrollMenu }: Props) => {
 
       {/* View Rendering based on active mode */}
       {viewMode === 'grid' && !isMini ? (
-        <VerticalMenuGrid items={menuItems} />
+        <TouchMenuGrid items={menuItems} />
       ) : (
         <VerticalMenuList items={menuItems} />
       )}

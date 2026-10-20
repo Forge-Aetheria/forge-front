@@ -312,23 +312,12 @@ const InventoryAdjustmentsView = () => {
         </div>
 
         <div className='flex items-center gap-2.5 flex-wrap'>
-          <Button
-            component={Link}
-            href='/inventory/kardex'
-            variant='tonal'
-            color='secondary'
-            className='rounded-full font-medium'
-            startIcon={<i className='tabler-arrows-transfer-down' />}
-          >
-            Ver Kárdex
-          </Button>
-
           {draftRows.length > 0 && (
             <>
               <Button
                 variant='tonal'
                 color='error'
-                className='rounded-full font-semibold'
+                className='font-semibold'
                 onClick={() => setDraftRows([])}
               >
                 Descartar ({draftRows.length})
@@ -337,7 +326,7 @@ const InventoryAdjustmentsView = () => {
                 variant='contained'
                 color='success'
                 disabled={applyingAll}
-                className='rounded-full font-semibold shadow-sm'
+                className='font-semibold shadow-sm'
                 startIcon={<i className='tabler-checks' />}
                 onClick={handleApplyAllDrafts}
               >
@@ -349,7 +338,7 @@ const InventoryAdjustmentsView = () => {
           <Button
             variant='contained'
             color='primary'
-            className='rounded-full font-semibold shadow-sm'
+            className='font-semibold shadow-sm'
             startIcon={<i className='tabler-plus' />}
             onClick={handleAddDraftRow}
           >
@@ -401,39 +390,51 @@ const InventoryAdjustmentsView = () => {
           </div>
         </CardContent>
 
+        {/* Toolbar Strip unificado con estándar Foundly */}
+        <div className='flex items-center justify-between flex-wrap gap-3 px-5 py-3 border-b border-[#E6E4F0] bg-[#FAF9FF]'>
+          <div className='flex items-center gap-2.5'>
+            <Typography variant='h6' className='font-semibold text-[#1E1B2E] text-sm'>
+              Actas de Ajuste Aplicadas
+            </Typography>
+            <span className='text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#F3F0FF] text-[#6C5CE7] border border-[#E9D5FF]'>
+              {filteredAdjustments.length} {filteredAdjustments.length === 1 ? 'registro' : 'registros'}
+            </span>
+          </div>
+        </div>
+
         {loading ? (
           <div className='p-8 text-center text-textSecondary'>Cargando actas de ajuste...</div>
         ) : (
           <div className='overflow-x-auto'>
             <Table size='small'>
-              <TableHead className='bg-[#F8F7FA] border-b border-[#E6E4F0]'>
+              <TableHead className='bg-[#F4F3F8] border-b border-[#E6E4F0]'>
                 <TableRow>
                   <TableCell
-                    className='font-semibold text-xs uppercase text-textSecondary text-center'
-                    style={{ width: 28, maxWidth: 28, padding: '8px 4px' }}
+                    className='text-[11px] uppercase tracking-wider text-[#6B7280] font-bold text-center'
+                    style={{ width: 36, maxWidth: 36, padding: '10px 4px' }}
                   >
                     #
                   </TableCell>
-                  <TableCell className='font-semibold text-xs uppercase text-textSecondary'>
+                  <TableCell className='text-[11px] uppercase tracking-wider text-[#6B7280] font-bold py-2.5'>
                     Correlativo / Fecha
                   </TableCell>
-                  <TableCell className='font-semibold text-xs uppercase text-textSecondary'>
+                  <TableCell className='text-[11px] uppercase tracking-wider text-[#6B7280] font-bold py-2.5'>
                     Artículo / SKU
                   </TableCell>
-                  <TableCell className='font-semibold text-xs uppercase text-textSecondary'>
+                  <TableCell className='text-[11px] uppercase tracking-wider text-[#6B7280] font-bold py-2.5'>
                     Motivo de Auditoría
                   </TableCell>
-                  <TableCell className='font-semibold text-xs uppercase text-textSecondary text-center'>
+                  <TableCell className='text-[11px] uppercase tracking-wider text-[#6B7280] font-bold text-center py-2.5'>
                     Stock Sistema
                   </TableCell>
-                  <TableCell className='font-semibold text-xs uppercase text-textSecondary text-center'>
+                  <TableCell className='text-[11px] uppercase tracking-wider text-[#6B7280] font-bold text-center py-2.5'>
                     Conteo Real
                   </TableCell>
-                  <TableCell className='font-semibold text-xs uppercase text-textSecondary text-center'>
+                  <TableCell className='text-[11px] uppercase tracking-wider text-[#6B7280] font-bold text-center py-2.5'>
                     Diferencia
                   </TableCell>
                   {draftRows.length > 0 && (
-                    <TableCell className='font-semibold text-xs uppercase text-textSecondary text-right'>
+                    <TableCell className='text-[11px] uppercase tracking-wider text-[#6B7280] font-bold text-right py-2.5'>
                       Acciones
                     </TableCell>
                   )}
@@ -658,7 +659,7 @@ const InventoryAdjustmentsView = () => {
                         key={adj.id}
                         hover
                         onClick={() => setSelectedAdjustment(adj)}
-                        className='border-b border-[#E6E4F0] last:border-none cursor-pointer transition-colors hover:bg-[#F8F7FA]'
+                        className='border-b border-[#E6E4F0] last:border-none cursor-pointer transition-colors hover:bg-[#FAF9FF]'
                       >
                         <TableCell
                           className='text-center text-xs font-mono text-textSecondary'

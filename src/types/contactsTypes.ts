@@ -34,6 +34,21 @@ export interface ContactPerson {
   cedula_identidad?: string;
 }
 
+export type BankAccountType = 'CORRIENTE' | 'AHORRO' | 'PAGO_MOVIL' | 'CUSTODIA_USD' | 'ZELLE' | 'OTRO';
+export type BankCurrency = 'VES' | 'USD' | 'EUR';
+
+export interface BankAccount {
+  id: string;
+  banco: string;
+  tipo_cuenta: BankAccountType;
+  moneda: BankCurrency;
+  numero_cuenta: string; // 20 dígitos o identificador / teléfono / correo
+  titular: string;
+  identificacion_titular: string; // Cédula o RIF
+  is_predeterminada: boolean;
+  telefono_pago_movil?: string;
+}
+
 export type EntityOrigin = 'NACIONAL' | 'EXTRANJERO';
 
 export interface TerceroEntity {
@@ -64,6 +79,9 @@ export interface TerceroEntity {
   contactos_referentes: ContactPerson[];
   direcciones_adicionales: EntityAddress[];
 
+  // Cuentas Bancarias
+  cuentas_bancarias?: BankAccount[];
+
   status: 'ACTIVO' | 'INACTIVO';
   created_at: string;
   updated_at: string;
@@ -93,6 +111,7 @@ export interface TerceroFormData {
   codigo_postal?: string;
   contactos_referentes: ContactPerson[];
   direcciones_adicionales: EntityAddress[];
+  cuentas_bancarias?: BankAccount[];
 }
 
 export interface ContactsTabProps {

@@ -14,6 +14,14 @@ import {
   saveStoredMovements
 } from './inventoryStorage'
 
+export const getWarehouseOperationOrderById = async (
+  id: string
+): Promise<WarehouseOperationOrder | null> => {
+  const orders = loadStoredOperationOrders()
+  const order = orders.find(o => o.id === id || o.codigo === id) || null
+  return Promise.resolve(order)
+}
+
 export const getWarehouseOperationOrders = async (
   tipo?: WarehouseOperationType
 ): Promise<WarehouseOperationOrder[]> => {

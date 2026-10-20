@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
@@ -280,17 +280,14 @@ export const QuotesListView: React.FC = () => {
               </span>
             </div>
 
-            <div className="flex items-center gap-3">
-              <Typography variant="caption" className="text-[#6B7280] hidden md:inline">
-                Haz clic en cualquier fila para consultar el detalle
-              </Typography>
+            <div className="flex items-center gap-2 flex-wrap">
               <Button
                 size="small"
                 variant="outlined"
                 startIcon={<i className="tabler-layout-columns text-base" />}
                 onClick={e => setColumnAnchorEl(e.currentTarget)}
                 sx={{
-                  borderRadius: '9999px',
+                  borderRadius: '8px',
                   borderColor: '#E6E4F0',
                   color: '#6C5CE7',
                   textTransform: 'none',

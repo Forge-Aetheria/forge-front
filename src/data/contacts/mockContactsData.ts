@@ -53,6 +53,28 @@ export const initialMockTerceros: TerceroEntity[] = [
         is_predeterminada: true
       }
     ],
+    cuentas_bancarias: [
+      {
+        id: 'bank-001',
+        banco: 'Banesco Banco Universal',
+        tipo_cuenta: 'CORRIENTE',
+        moneda: 'VES',
+        numero_cuenta: '0134-0034-21-0341029481',
+        titular: 'Inversiones Polar C.A.',
+        identificacion_titular: 'J-00041372-8',
+        is_predeterminada: true
+      },
+      {
+        id: 'bank-002',
+        banco: 'Banco Mercantil',
+        tipo_cuenta: 'CUSTODIA_USD',
+        moneda: 'USD',
+        numero_cuenta: '0105-0012-44-1012948271',
+        titular: 'Inversiones Polar C.A.',
+        identificacion_titular: 'J-00041372-8',
+        is_predeterminada: false
+      }
+    ],
     status: 'ACTIVO',
     created_at: new Date(Date.now() - 60 * 86400000).toISOString(),
     updated_at: new Date().toISOString()

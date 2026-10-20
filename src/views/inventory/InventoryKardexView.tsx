@@ -161,19 +161,8 @@ const InventoryKardexView = () => {
 
         <div className='flex items-center gap-2.5 flex-wrap'>
           <Button
-            component={Link}
-            href='/inventory/products'
-            variant='tonal'
-            color='secondary'
-            className='rounded-full font-medium'
-            startIcon={<i className='tabler-box' />}
-          >
-            Ir al Catálogo
-          </Button>
-          <Button
             variant='contained'
             color='primary'
-            className='rounded-full font-semibold shadow-sm'
             startIcon={<i className='tabler-adjustments-horizontal' />}
             onClick={() => setAdjustModalOpen(true)}
           >
@@ -299,28 +288,58 @@ const InventoryKardexView = () => {
           </div>
         </CardContent>
 
+        {/* Toolbar Strip unificado con estándar Foundly */}
+        <div className='flex items-center justify-between flex-wrap gap-3 px-5 py-3 border-b border-[#E6E4F0] bg-[#FAF9FF]'>
+          <div className='flex items-center gap-2.5'>
+            <Typography variant='h6' className='font-semibold text-[#1E1B2E] text-sm'>
+              Movimientos Registrados
+            </Typography>
+            <span className='text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#F3F0FF] text-[#6C5CE7] border border-[#E9D5FF]'>
+              {filteredMovements.length} {filteredMovements.length === 1 ? 'movimiento' : 'movimientos'}
+            </span>
+          </div>
+        </div>
+
         {loading ? (
           <div className='p-8 text-center text-textSecondary'>Cargando historial de Kárdex...</div>
         ) : (
           <div className='overflow-x-auto'>
             <Table size='small'>
-              <TableHead className='bg-[#F8F7FA] border-b border-[#E6E4F0]'>
+              <TableHead className='bg-[#F4F3F8] border-b border-[#E6E4F0]'>
                 <TableRow>
                   <TableCell
-                    className='font-semibold text-xs uppercase text-textSecondary text-center'
-                    style={{ width: 28, maxWidth: 28, padding: '8px 4px' }}
+                    className='text-[11px] uppercase tracking-wider text-[#6B7280] font-bold text-center'
+                    style={{ width: 36, maxWidth: 36, padding: '10px 4px' }}
                   >
                     #
                   </TableCell>
-                  <TableCell className='font-semibold text-xs uppercase text-textSecondary'>Fecha / Hora</TableCell>
-                  <TableCell className='font-semibold text-xs uppercase text-textSecondary'>Documento Ref.</TableCell>
-                  <TableCell className='font-semibold text-xs uppercase text-textSecondary'>Artículo / Variante SKU</TableCell>
-                  <TableCell className='font-semibold text-xs uppercase text-textSecondary'>Operación</TableCell>
-                  <TableCell className='font-semibold text-xs uppercase text-textSecondary text-right'>Entrada (+)</TableCell>
-                  <TableCell className='font-semibold text-xs uppercase text-textSecondary text-right'>Salida (-)</TableCell>
-                  <TableCell className='font-semibold text-xs uppercase text-textSecondary text-right'>Saldo Físico</TableCell>
-                  <TableCell className='font-semibold text-xs uppercase text-textSecondary text-right'>Costo Unit.</TableCell>
-                  <TableCell className='font-semibold text-xs uppercase text-textSecondary'>Responsable / Motivo</TableCell>
+                  <TableCell className='text-[11px] uppercase tracking-wider text-[#6B7280] font-bold py-2.5'>
+                    Fecha / Hora
+                  </TableCell>
+                  <TableCell className='text-[11px] uppercase tracking-wider text-[#6B7280] font-bold py-2.5'>
+                    Documento Ref.
+                  </TableCell>
+                  <TableCell className='text-[11px] uppercase tracking-wider text-[#6B7280] font-bold py-2.5'>
+                    Artículo / Variante SKU
+                  </TableCell>
+                  <TableCell className='text-[11px] uppercase tracking-wider text-[#6B7280] font-bold py-2.5'>
+                    Operación
+                  </TableCell>
+                  <TableCell className='text-[11px] uppercase tracking-wider text-[#6B7280] font-bold text-right py-2.5'>
+                    Entrada (+)
+                  </TableCell>
+                  <TableCell className='text-[11px] uppercase tracking-wider text-[#6B7280] font-bold text-right py-2.5'>
+                    Salida (-)
+                  </TableCell>
+                  <TableCell className='text-[11px] uppercase tracking-wider text-[#6B7280] font-bold text-right py-2.5'>
+                    Saldo Físico
+                  </TableCell>
+                  <TableCell className='text-[11px] uppercase tracking-wider text-[#6B7280] font-bold text-right py-2.5'>
+                    Costo Unit.
+                  </TableCell>
+                  <TableCell className='text-[11px] uppercase tracking-wider text-[#6B7280] font-bold py-2.5'>
+                    Responsable / Motivo
+                  </TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -339,7 +358,7 @@ const InventoryKardexView = () => {
                     }
 
                     return (
-                      <TableRow key={mov.id} hover className='border-b border-[#E6E4F0] last:border-none'>
+                      <TableRow key={mov.id} hover className='border-b border-[#E6E4F0] last:border-none hover:bg-[#FAF9FF] transition-colors'>
                         <TableCell
                           className='text-center text-xs font-mono text-textSecondary'
                           style={{ width: 28, maxWidth: 28, padding: '6px 4px' }}

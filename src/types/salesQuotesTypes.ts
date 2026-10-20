@@ -93,6 +93,7 @@ export interface Quote {
   orden_venta_id?: string;
   correlativo_orden?: string;
   version: number;
+  creado_por?: string;
   created_at: string;
   updated_at: string;
 }

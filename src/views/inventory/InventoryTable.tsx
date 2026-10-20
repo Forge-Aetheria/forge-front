@@ -335,36 +335,37 @@ const InventoryTable = ({
                   px: 0.5,
                   py: 1.5,
                   fontWeight: 700,
-                  color: '#1E1B2E',
+                  color: '#6B7280',
                   textAlign: 'center',
-                  fontSize: '0.75rem'
+                  fontSize: '0.75rem',
+                  letterSpacing: '0.05em'
                 }}
               >
                 #
               </TableCell>
-              <TableCell sx={{ py: 1.5, fontWeight: 700, color: '#1E1B2E', fontSize: '0.75rem' }}>
+              <TableCell sx={{ py: 1.5, fontWeight: 700, color: '#6B7280', fontSize: '0.75rem', letterSpacing: '0.05em' }}>
                 ARTÍCULO / SKU
               </TableCell>
               {visibleColumns.tipo && (
-                <TableCell sx={{ py: 1.5, fontWeight: 700, color: '#1E1B2E', fontSize: '0.75rem' }}>
+                <TableCell sx={{ py: 1.5, fontWeight: 700, color: '#6B7280', fontSize: '0.75rem', letterSpacing: '0.05em' }}>
                   TIPO
                 </TableCell>
               )}
               {visibleColumns.variantes && (
-                <TableCell sx={{ py: 1.5, fontWeight: 700, color: '#1E1B2E', fontSize: '0.75rem' }}>
+                <TableCell sx={{ py: 1.5, fontWeight: 700, color: '#6B7280', fontSize: '0.75rem', letterSpacing: '0.05em' }}>
                   VARIANTES
                 </TableCell>
               )}
               {visibleColumns.stock && (
                 <TableCell
                   align='center'
-                  sx={{ py: 1.5, fontWeight: 700, color: '#1E1B2E', fontSize: '0.75rem' }}
+                  sx={{ py: 1.5, fontWeight: 700, color: '#6B7280', fontSize: '0.75rem', letterSpacing: '0.05em' }}
                 >
                   STOCK DISP.
                 </TableCell>
               )}
               {visibleColumns.precios && (
-                <TableCell sx={{ py: 1.5, fontWeight: 700, color: '#1E1B2E', fontSize: '0.75rem' }}>
+                <TableCell sx={{ py: 1.5, fontWeight: 700, color: '#6B7280', fontSize: '0.75rem', letterSpacing: '0.05em' }}>
                   COSTO / PRECIO VENTA
                 </TableCell>
               )}
@@ -377,8 +378,9 @@ const InventoryTable = ({
                     px: 0.5,
                     py: 1.5,
                     fontWeight: 700,
-                    color: '#1E1B2E',
-                    fontSize: '0.75rem'
+                    color: '#6B7280',
+                    fontSize: '0.75rem',
+                    letterSpacing: '0.05em'
                   }}
                 >
                   IVA
@@ -387,14 +389,14 @@ const InventoryTable = ({
               {visibleColumns.estado && (
                 <TableCell
                   align='center'
-                  sx={{ py: 1.5, fontWeight: 700, color: '#1E1B2E', fontSize: '0.75rem' }}
+                  sx={{ py: 1.5, fontWeight: 700, color: '#6B7280', fontSize: '0.75rem', letterSpacing: '0.05em' }}
                 >
                   ESTADO
                 </TableCell>
               )}
               <TableCell
                 align='right'
-                sx={{ py: 1.5, fontWeight: 700, color: '#1E1B2E', fontSize: '0.75rem', pr: 2 }}
+                sx={{ py: 1.5, fontWeight: 700, color: '#6B7280', fontSize: '0.75rem', pr: 2, letterSpacing: '0.05em' }}
               >
                 ACCIONES
               </TableCell>

@@ -40,7 +40,10 @@ import {
   EntityAddress,
   ContactPersonRole,
   AddressType,
-  TerceroFormData
+  TerceroFormData,
+  BankAccount,
+  BankAccountType,
+  BankCurrency
 } from '@/types/contactsTypes';
 import { contactsService } from '@/services/contactsService';
 import { ContactRoleChip } from './components/ContactRoleChip';
@@ -56,6 +59,39 @@ const roleOptions: { value: ContactPersonRole; label: string }[] = [
   { value: 'VENTAS', label: 'Ventas' },
   { value: 'OPERATIVO', label: 'Operativo' },
   { value: 'ADMINISTRATIVO', label: 'Administrativo' }
+];
+
+const venezuelaBanks = [
+  'Banesco Banco Universal',
+  'Banco Mercantil',
+  'Banco de Venezuela',
+  'BBVA Provincial',
+  'Bancamiga Banco Universal',
+  'Banco Nacional de Crédito (BNC)',
+  'Banco Exterior',
+  'Banco Fondo Común (BFC)',
+  'Banplus',
+  '100% Banco',
+  'Bancaribe',
+  'Banco del Tesoro',
+  'Banco Bicentenario',
+  'Zelle (Internacional USD)',
+  'Otro Banco'
+];
+
+const bankAccountTypes: { value: BankAccountType; label: string }[] = [
+  { value: 'CORRIENTE', label: 'Cuenta Corriente' },
+  { value: 'AHORRO', label: 'Cuenta de Ahorros' },
+  { value: 'PAGO_MOVIL', label: 'Pago Móvil (C.I. / Teléfono)' },
+  { value: 'CUSTODIA_USD', label: 'Cuenta Custodia en Dólares (Nacional)' },
+  { value: 'ZELLE', label: 'Zelle (Internacional USD)' },
+  { value: 'OTRO', label: 'Otro Instrumento Bancario' }
+];
+
+const bankCurrencies: { value: BankCurrency; label: string }[] = [
+  { value: 'VES', label: 'VES (Bolívares)' },
+  { value: 'USD', label: 'USD (Dólares)' },
+  { value: 'EUR', label: 'EUR (Euros)' }
 ];
 
 export const ContactDetailView: React.FC<Props> = ({ id }) => {
@@ -86,8 +122,11 @@ export const ContactDetailView: React.FC<Props> = ({ id }) => {
   const [codigoPostal, setCodigoPostal] = useState('');
   const [contactosReferentes, setContactosReferentes] = useState<ContactPerson[]>([]);
   const [direccionesAdicionales, setDireccionesAdicionales] = useState<EntityAddress[]>([]);
+  const [cuentasBancarias, setCuentasBancarias] = useState<BankAccount[]>([]);
 
-  // Modales anidados
+  const isCreate = id === 'create' || id === 'new';
+
+  // Modales anidados: Referentes
   const [personModalOpen, setPersonModalOpen] = useState(false);
   const [editingPersonId, setEditingPersonId] = useState<string | null>(null);
   const [personNombre, setPersonNombre] = useState('');
@@ -98,6 +137,7 @@ export const ContactDetailView: React.FC<Props> = ({ id }) => {
   const [personRol, setPersonRol] = useState<ContactPersonRole>('ADMINISTRATIVO');
   const [personPrincipal, setPersonPrincipal] = useState(false);
 
+  // Modales anidados: Direcciones
   const [addressModalOpen, setAddressModalOpen] = useState(false);
   const [editingAddressId, setEditingAddressId] = useState<string | null>(null);
   const [addressTipo, setAddressTipo] = useState<AddressType>('ENTREGA');
@@ -107,6 +147,18 @@ export const ContactDetailView: React.FC<Props> = ({ id }) => {
   const [addressPais, setAddressPais] = useState('Venezuela');
   const [addressCP, setAddressCP] = useState('');
   const [addressPredeterminada, setAddressPredeterminada] = useState(false);
+
+  // Modales anidados: Cuentas Bancarias
+  const [bankModalOpen, setBankModalOpen] = useState(false);
+  const [editingBankId, setEditingBankId] = useState<string | null>(null);
+  const [bankBanco, setBankBanco] = useState('Banesco Banco Universal');
+  const [bankTipo, setBankTipo] = useState<BankAccountType>('CORRIENTE');
+  const [bankMoneda, setBankMoneda] = useState<BankCurrency>('VES');
+  const [bankNumero, setBankNumero] = useState('');
+  const [bankTitular, setBankTitular] = useState('');
+  const [bankIdentificacion, setBankIdentificacion] = useState('');
+  const [bankTelefonoPagoMovil, setBankTelefonoPagoMovil] = useState('');
+  const [bankPredeterminada, setBankPredeterminada] = useState(false);
 
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
@@ -118,6 +170,13 @@ export const ContactDetailView: React.FC<Props> = ({ id }) => {
   });
 
   const loadData = async () => {
+    if (isCreate) {
+      setLoading(false);
+      setIsCliente(true);
+      setCuentasBancarias([]);
+      return;
+    }
+
     try {
       setLoading(true);
       const [current, list] = await Promise.all([
@@ -145,6 +204,7 @@ export const ContactDetailView: React.FC<Props> = ({ id }) => {
         setCodigoPostal(current.codigo_postal || '');
         setContactosReferentes(current.contactos_referentes || []);
         setDireccionesAdicionales(current.direcciones_adicionales || []);
+        setCuentasBancarias(current.cuentas_bancarias || []);
       }
       setAllContacts(list);
     } catch (err: any) {
@@ -171,7 +231,7 @@ export const ContactDetailView: React.FC<Props> = ({ id }) => {
     setToast({ open: true, message: '¡Identificación copiada al portapapeles!', severity: 'info' });
   };
 
-  // Guardar Cambios
+  // Guardar Cambios o Crear Contacto
   const handleSaveChanges = async () => {
     if (!nombreRazonSocial.trim()) {
       setToast({ open: true, message: 'La razón social o nombre es obligatorio', severity: 'error' });
@@ -188,7 +248,7 @@ export const ContactDetailView: React.FC<Props> = ({ id }) => {
 
     setSaving(true);
     try {
-      const payload: Partial<TerceroFormData> = {
+      const payload: TerceroFormData = {
         codigo: codigo.trim() || undefined,
         origen,
         tipo,
@@ -206,14 +266,23 @@ export const ContactDetailView: React.FC<Props> = ({ id }) => {
         pais: pais.trim(),
         codigo_postal: codigoPostal.trim() || undefined,
         contactos_referentes: tipo === 'EMPRESA' ? contactosReferentes : [],
-        direcciones_adicionales: tipo === 'EMPRESA' ? direccionesAdicionales : []
+        direcciones_adicionales: tipo === 'EMPRESA' ? direccionesAdicionales : [],
+        cuentas_bancarias: cuentasBancarias
       };
 
-      const updated = await contactsService.updateTercero(id, payload);
-      setContact(updated);
-      setToast({ open: true, message: 'Contacto actualizado exitosamente', severity: 'success' });
+      if (isCreate) {
+        const created = await contactsService.createTercero(payload);
+        setToast({ open: true, message: '¡Contacto registrado exitosamente!', severity: 'success' });
+        setTimeout(() => {
+          router.push(`/contacts/${created.id}`);
+        }, 500);
+      } else {
+        const updated = await contactsService.updateTercero(id, payload);
+        setContact(updated);
+        setToast({ open: true, message: 'Contacto actualizado exitosamente', severity: 'success' });
+      }
     } catch (err: any) {
-      setToast({ open: true, message: err?.message || 'Error al actualizar el contacto', severity: 'error' });
+      setToast({ open: true, message: err?.message || 'Error al guardar el contacto', severity: 'error' });
     } finally {
       setSaving(false);
     }
@@ -375,6 +444,95 @@ export const ContactDetailView: React.FC<Props> = ({ id }) => {
     setDireccionesAdicionales(prev => prev.filter(a => a.id !== addrId));
   };
 
+  // Gestión de cuentas bancarias
+  const handleOpenAddBank = () => {
+    setEditingBankId(null);
+    setBankBanco('Banesco Banco Universal');
+    setBankTipo('CORRIENTE');
+    setBankMoneda('VES');
+    setBankNumero('');
+    setBankTitular(nombreRazonSocial || '');
+    setBankIdentificacion(identificacion || '');
+    setBankTelefonoPagoMovil(telefonoPrincipal || '');
+    setBankPredeterminada(cuentasBancarias.length === 0);
+    setBankModalOpen(true);
+  };
+
+  const handleOpenEditBank = (acc: BankAccount) => {
+    setEditingBankId(acc.id);
+    setBankBanco(acc.banco);
+    setBankTipo(acc.tipo_cuenta);
+    setBankMoneda(acc.moneda);
+    setBankNumero(acc.numero_cuenta);
+    setBankTitular(acc.titular);
+    setBankIdentificacion(acc.identificacion_titular);
+    setBankTelefonoPagoMovil(acc.telefono_pago_movil || '');
+    setBankPredeterminada(acc.is_predeterminada);
+    setBankModalOpen(true);
+  };
+
+  const handleSaveBank = () => {
+    if (!bankBanco.trim()) {
+      alert('El nombre del banco es obligatorio');
+      return;
+    }
+    if (!bankNumero.trim() && !bankTelefonoPagoMovil.trim()) {
+      alert('Debe indicar el número de cuenta o teléfono para el instrumento');
+      return;
+    }
+    if (!bankTitular.trim()) {
+      alert('El titular de la cuenta es obligatorio');
+      return;
+    }
+
+    if (editingBankId) {
+      setCuentasBancarias(prev =>
+        prev.map(b =>
+          b.id === editingBankId
+            ? {
+                ...b,
+                banco: bankBanco.trim(),
+                tipo_cuenta: bankTipo,
+                moneda: bankMoneda,
+                numero_cuenta: bankNumero.trim(),
+                titular: bankTitular.trim(),
+                identificacion_titular: bankIdentificacion.trim(),
+                telefono_pago_movil: bankTelefonoPagoMovil.trim() || undefined,
+                is_predeterminada: bankPredeterminada
+              }
+            : bankPredeterminada
+            ? { ...b, is_predeterminada: false }
+            : b
+        )
+      );
+    } else {
+      const newAcc: BankAccount = {
+        id: `bank-${Date.now()}`,
+        banco: bankBanco.trim(),
+        tipo_cuenta: bankTipo,
+        moneda: bankMoneda,
+        numero_cuenta: bankNumero.trim(),
+        titular: bankTitular.trim(),
+        identificacion_titular: bankIdentificacion.trim(),
+        telefono_pago_movil: bankTelefonoPagoMovil.trim() || undefined,
+        is_predeterminada: bankPredeterminada
+      };
+      setCuentasBancarias(prev => {
+        let updated = [...prev, newAcc];
+        if (bankPredeterminada) {
+          updated = updated.map(b => (b.id !== newAcc.id ? { ...b, is_predeterminada: false } : b));
+        }
+        return updated;
+      });
+    }
+
+    setBankModalOpen(false);
+  };
+
+  const handleDeleteBank = (bankId: string) => {
+    setCuentasBancarias(prev => prev.filter(b => b.id !== bankId));
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[350px]">
@@ -386,7 +544,7 @@ export const ContactDetailView: React.FC<Props> = ({ id }) => {
     );
   }
 
-  if (!contact) {
+  if (!isCreate && !contact) {
     return (
       <Card className="p-8 flex flex-col items-center justify-center text-center max-w-xl mx-auto rounded-2xl border border-[#E6E4F0]">
         <i className="tabler-user-off text-5xl text-[#EF4444] mb-3" />
@@ -415,7 +573,7 @@ export const ContactDetailView: React.FC<Props> = ({ id }) => {
   }
 
   return (
-    <div className='flex flex-col gap-6 max-w-7xl mx-auto pb-12'>
+    <div className='flex flex-col gap-6 w-full pb-12'>
       {/* Top Navigation Bar (Coherencia visual exacta con Inventario) */}
       <div className='flex items-center justify-between gap-4 flex-wrap sm:flex-nowrap'>
         {/* Izquierda: Botón Volver + Título + Chip Tipo + Subtítulo */}
@@ -431,9 +589,9 @@ export const ContactDetailView: React.FC<Props> = ({ id }) => {
             Volver
           </Button>
           <div className='min-w-0 flex-1'>
-            <Tooltip title={nombreRazonSocial || 'Contacto'}>
+            <Tooltip title={isCreate ? 'Nuevo Contacto' : (nombreRazonSocial || 'Contacto')}>
               <Typography variant='h4' className='font-bold text-textPrimary truncate'>
-                {nombreRazonSocial || 'Contacto'}
+                {isCreate ? 'Nuevo Contacto' : (nombreRazonSocial || 'Contacto')}
               </Typography>
             </Tooltip>
           </div>
@@ -442,7 +600,7 @@ export const ContactDetailView: React.FC<Props> = ({ id }) => {
         {/* Derecha: Paginador secuencial + Badges comerciales + Cancelar + Guardar Cambios */}
         <div className='flex items-center gap-2.5 shrink-0'>
           {/* Navegador Secuencial entre Contactos (Limpio y Compacto) */}
-          {totalContacts > 0 && (
+          {!isCreate && totalContacts > 0 && (
             <div className='flex items-center gap-1 bg-[var(--mui-palette-action-hover)] px-2 py-0.5 rounded-lg border border-[var(--mui-palette-divider)] shrink-0'>
               <Tooltip title={prevContact ? `Anterior: ${prevContact.nombre_razon_social}` : 'Primer contacto'}>
                 <span>
@@ -476,8 +634,6 @@ export const ContactDetailView: React.FC<Props> = ({ id }) => {
             </div>
           )}
 
-
-
           {/* Cancelar */}
           <Button
             component={Link}
@@ -502,20 +658,28 @@ export const ContactDetailView: React.FC<Props> = ({ id }) => {
             onClick={handleSaveChanges}
             className='shrink-0'
           >
-            {saving ? 'Guardando...' : 'Guardar Cambios'}
+            {saving
+              ? isCreate
+                ? 'Creando...'
+                : 'Guardando...'
+              : isCreate
+              ? 'Crear Contacto'
+              : 'Guardar Cambios'}
           </Button>
 
           {/* Eliminar */}
-          <Tooltip title='Eliminar contacto'>
-            <IconButton
-              size='small'
-              color='error'
-              onClick={() => setDeleteConfirmOpen(true)}
-              className='shrink-0'
-            >
-              <i className='tabler-trash text-lg' />
-            </IconButton>
-          </Tooltip>
+          {!isCreate && (
+            <Tooltip title='Eliminar contacto'>
+              <IconButton
+                size='small'
+                color='error'
+                onClick={() => setDeleteConfirmOpen(true)}
+                className='shrink-0'
+              >
+                <i className='tabler-trash text-lg' />
+              </IconButton>
+            </Tooltip>
+          )}
         </div>
       </div>
 
@@ -705,6 +869,11 @@ export const ContactDetailView: React.FC<Props> = ({ id }) => {
               }}
             >
               <Tab icon={<i className="tabler-id text-lg mr-1.5" />} iconPosition="start" label="Información General" />
+              <Tab
+                icon={<i className="tabler-building-bank text-lg mr-1.5" />}
+                iconPosition="start"
+                label={`Cuentas Bancarias (${cuentasBancarias.length})`}
+              />
               {tipo === 'EMPRESA' && (
                 <Tab
                   icon={<i className="tabler-users text-lg mr-1.5" />}
@@ -953,8 +1122,148 @@ export const ContactDetailView: React.FC<Props> = ({ id }) => {
                 </div>
               )}
 
-              {/* PESTAÑA 1: PERSONAS REFERENTES (EMPRESAS) */}
-              {activeTab === 1 && tipo === 'EMPRESA' && (
+              {/* PESTAÑA 1: CUENTAS BANCARIAS */}
+              {activeTab === 1 && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <div>
+                      <Typography variant="h6" className="font-bold text-[#1E1B2E]">
+                        Cuentas e Instrumentos Bancarios
+                      </Typography>
+                      <Typography variant="caption" className="text-[#6B7280]">
+                        Cuentas corrientes, de ahorro, pago móvil y cuentas custodia para cobranzas y pagos
+                      </Typography>
+                    </div>
+                    <Button
+                      variant="contained"
+                      size="small"
+                      startIcon={<i className="tabler-plus" />}
+                      onClick={handleOpenAddBank}
+                      sx={{
+                        borderRadius: '9999px',
+                        backgroundColor: '#6C5CE7',
+                        fontWeight: 600,
+                        '&:hover': { backgroundColor: '#5A4AD1' }
+                      }}
+                    >
+                      Agregar Cuenta Bancaria
+                    </Button>
+                  </div>
+
+                  {cuentasBancarias.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center text-center py-12 px-4 border border-dashed border-[#E6E4F0] rounded-2xl bg-[#F8F7FC]">
+                      <i className="tabler-building-bank text-4xl text-[#9CA3AF] mb-2" />
+                      <Typography variant="body1" className="font-semibold text-[#1E1B2E]">
+                        Sin cuentas bancarias registradas
+                      </Typography>
+                      <Typography variant="caption" className="text-[#6B7280] mb-3">
+                        Registra los datos bancarios para facilitar pagos móviles, transferencias y conciliaciones.
+                      </Typography>
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        onClick={handleOpenAddBank}
+                        sx={{ borderRadius: '9999px', borderColor: '#6C5CE7', color: '#6C5CE7' }}
+                      >
+                        Registrar Primera Cuenta
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {cuentasBancarias.map(acc => (
+                        <Card
+                          key={acc.id}
+                          sx={{
+                            borderRadius: '16px',
+                            border: '1px solid #E6E4F0',
+                            p: 2.5,
+                            backgroundColor: '#FFFFFF',
+                            boxShadow: 'none',
+                            position: 'relative',
+                            transition: 'all 0.2s',
+                            '&:hover': {
+                              borderColor: '#6C5CE7',
+                              boxShadow: '0 4px 12px rgba(108, 92, 231, 0.08)'
+                            }
+                          }}
+                        >
+                          <div className="flex justify-between items-start mb-2">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span
+                                className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded border ${
+                                  acc.moneda === 'VES'
+                                    ? 'bg-[#EFF6FF] text-[#2563EB] border-[#BFDBFE]'
+                                    : acc.moneda === 'USD'
+                                    ? 'bg-[#ECFDF5] text-[#059669] border-[#A7F3D0]'
+                                    : 'bg-[#F3F0FF] text-[#6C5CE7] border-[#E9D5FF]'
+                                }`}
+                              >
+                                {acc.moneda}
+                              </span>
+                              <span className="text-[10px] bg-gray-100 text-gray-700 font-semibold px-2 py-0.5 rounded border border-gray-200">
+                                {acc.tipo_cuenta === 'CORRIENTE'
+                                  ? 'Cta. Corriente'
+                                  : acc.tipo_cuenta === 'AHORRO'
+                                  ? 'Cta. Ahorros'
+                                  : acc.tipo_cuenta === 'PAGO_MOVIL'
+                                  ? 'Pago Móvil'
+                                  : acc.tipo_cuenta === 'CUSTODIA_USD'
+                                  ? 'Custodia USD'
+                                  : acc.tipo_cuenta === 'ZELLE'
+                                  ? 'Zelle'
+                                  : 'Otro'}
+                              </span>
+                              {acc.is_predeterminada && (
+                                <span className="text-[10px] bg-[#FEF3C7] text-[#B45309] font-bold px-2 py-0.5 rounded border border-[#FDE68A] flex items-center gap-0.5">
+                                  <i className="tabler-star-filled text-[10px]" /> Predeterminada
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-0.5">
+                              <Tooltip title="Editar cuenta">
+                                <IconButton size="small" onClick={() => handleOpenEditBank(acc)} sx={{ color: '#6C5CE7' }}>
+                                  <i className="tabler-edit text-sm" />
+                                </IconButton>
+                              </Tooltip>
+                              <Tooltip title="Eliminar cuenta">
+                                <IconButton size="small" onClick={() => handleDeleteBank(acc.id)} sx={{ color: '#EF4444' }}>
+                                  <i className="tabler-trash text-sm" />
+                                </IconButton>
+                              </Tooltip>
+                            </div>
+                          </div>
+
+                          <Typography variant="subtitle1" className="font-bold text-[#1E1B2E] mb-1">
+                            {acc.banco}
+                          </Typography>
+
+                          <div className="space-y-1 text-xs text-[#6B7280]">
+                            <div className="flex items-center gap-1.5 font-mono text-[#1E1B2E] font-semibold text-sm">
+                              <i className="tabler-credit-card text-base text-[#6C5CE7]" />
+                              <span>{acc.numero_cuenta}</span>
+                            </div>
+                            {acc.telefono_pago_movil && (
+                              <div className="flex items-center gap-1.5">
+                                <i className="tabler-phone text-sm text-[#9CA3AF]" />
+                                <span>Pago Móvil: {acc.telefono_pago_movil}</span>
+                              </div>
+                            )}
+                            <div className="flex items-center gap-1.5 pt-1 border-t border-[#F4F3F8]">
+                              <i className="tabler-user text-sm text-[#9CA3AF]" />
+                              <span>
+                                {acc.titular} {acc.identificacion_titular ? `(${acc.identificacion_titular})` : ''}
+                              </span>
+                            </div>
+                          </div>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* PESTAÑA 2: PERSONAS REFERENTES (EMPRESAS) */}
+              {activeTab === 2 && tipo === 'EMPRESA' && (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between flex-wrap gap-2">
                     <div>
@@ -1062,8 +1371,8 @@ export const ContactDetailView: React.FC<Props> = ({ id }) => {
                 </div>
               )}
 
-              {/* PESTAÑA 2: DIRECCIONES ADICIONALES (EMPRESAS) */}
-              {activeTab === 2 && tipo === 'EMPRESA' && (
+              {/* PESTAÑA 3: DIRECCIONES ADICIONALES (EMPRESAS) */}
+              {activeTab === 3 && tipo === 'EMPRESA' && (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between flex-wrap gap-2">
                     <div>
@@ -1164,6 +1473,133 @@ export const ContactDetailView: React.FC<Props> = ({ id }) => {
           </Card>
         </Grid>
       </Grid>
+
+      {/* Modal Agregar/Editar Cuenta Bancaria */}
+      <Dialog
+        open={bankModalOpen}
+        onClose={() => setBankModalOpen(false)}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{ sx: { borderRadius: '20px', p: 1 } }}
+      >
+        <DialogTitle className="font-bold text-[#1E1B2E] flex items-center gap-2">
+          <i className="tabler-building-bank text-xl text-[#6C5CE7]" />
+          {editingBankId ? 'Editar Cuenta Bancaria' : 'Agregar Cuenta Bancaria'}
+        </DialogTitle>
+        <DialogContent className="space-y-4 pt-2">
+          <CustomTextField
+            select
+            fullWidth
+            label="Banco *"
+            value={bankBanco}
+            onChange={e => setBankBanco(e.target.value)}
+          >
+            {venezuelaBanks.map(b => (
+              <MenuItem key={b} value={b}>
+                {b}
+              </MenuItem>
+            ))}
+          </CustomTextField>
+
+          <Grid container spacing={2}>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <CustomTextField
+                select
+                fullWidth
+                label="Tipo de Instrumento *"
+                value={bankTipo}
+                onChange={e => setBankTipo(e.target.value as BankAccountType)}
+              >
+                {bankAccountTypes.map(t => (
+                  <MenuItem key={t.value} value={t.value}>
+                    {t.label}
+                  </MenuItem>
+                ))}
+              </CustomTextField>
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <CustomTextField
+                select
+                fullWidth
+                label="Moneda *"
+                value={bankMoneda}
+                onChange={e => setBankMoneda(e.target.value as BankCurrency)}
+              >
+                {bankCurrencies.map(c => (
+                  <MenuItem key={c.value} value={c.value}>
+                    {c.label}
+                  </MenuItem>
+                ))}
+              </CustomTextField>
+            </Grid>
+          </Grid>
+
+          <CustomTextField
+            fullWidth
+            label="Número de Cuenta (20 Dígitos) / Identificador *"
+            placeholder="0134-XXXX-XX-XXXXXXXXXX o correo Zelle"
+            value={bankNumero}
+            onChange={e => setBankNumero(e.target.value)}
+          />
+
+          <CustomTextField
+            fullWidth
+            label="Teléfono Pago Móvil (Opcional)"
+            placeholder="04141234567"
+            value={bankTelefonoPagoMovil}
+            onChange={e => setBankTelefonoPagoMovil(e.target.value)}
+          />
+
+          <Grid container spacing={2}>
+            <Grid size={{ xs: 12, sm: 7 }}>
+              <CustomTextField
+                fullWidth
+                label="Titular de la Cuenta *"
+                placeholder="Nombre o Razón Social"
+                value={bankTitular}
+                onChange={e => setBankTitular(e.target.value)}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 5 }}>
+              <CustomTextField
+                fullWidth
+                label="Cédula / RIF Titular"
+                placeholder="J-12345678-0 o V-12345678"
+                value={bankIdentificacion}
+                onChange={e => setBankIdentificacion(e.target.value)}
+              />
+            </Grid>
+          </Grid>
+
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={bankPredeterminada}
+                onChange={e => setBankPredeterminada(e.target.checked)}
+                sx={{ color: '#6C5CE7', '&.Mui-checked': { color: '#6C5CE7' } }}
+              />
+            }
+            label={<span className="text-sm font-medium text-[#1E1B2E]">Establecer como cuenta principal predeterminada</span>}
+          />
+        </DialogContent>
+        <DialogActions className="p-4">
+          <Button onClick={() => setBankModalOpen(false)} sx={{ color: '#6B7280' }}>
+            Cancelar
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleSaveBank}
+            sx={{
+              borderRadius: '9999px',
+              backgroundColor: '#6C5CE7',
+              px: 3,
+              '&:hover': { backgroundColor: '#5A4AD1' }
+            }}
+          >
+            Guardar Cuenta
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Modal Agregar / Editar Persona Referente */}
       <Dialog

@@ -28,56 +28,85 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // Cargar sesión existente al montar
   useEffect(() => {
+    let isMounted = true
+
     const initializeAuth = async () => {
-      const storedSession = authService.getStoredSession()
-      const storedUser = authService.getStoredUser()
+      try {
+        const storedSession = authService.getStoredSession()
+        const storedUser = authService.getStoredUser()
 
-      if (!storedSession) {
-        setState({
-          user: null,
-          session: null,
-          isLoading: false,
-          isAuthenticated: false
-        })
+        if (!storedSession) {
+          if (isMounted) {
+            setState({
+              user: null,
+              session: null,
+              isLoading: false,
+              isAuthenticated: false
+            })
+          }
 
-        return
-      }
+          return
+        }
 
-      // Verificar si la sesión expiró
-      const nowEpoch = Math.floor(Date.now() / 1000)
+        // Verificar si la sesión expiró
+        const nowEpoch = Math.floor(Date.now() / 1000)
 
-      if (storedSession.expiresAt && storedSession.expiresAt < nowEpoch) {
-        // Intentar refrescar
-        const refreshed = await authService.refreshSession()
+        if (storedSession.expiresAt && storedSession.expiresAt < nowEpoch) {
+          // Intentar refrescar
+          const refreshed = await authService.refreshSession()
 
-        if (!refreshed) {
+          if (!refreshed) {
+            if (isMounted) {
+              setState({
+                user: null,
+                session: null,
+                isLoading: false,
+                isAuthenticated: false
+              })
+            }
+
+            return
+          }
+        }
+
+        if (isMounted) {
+          setState({
+            user: storedUser,
+            session: storedSession,
+            isLoading: false,
+            isAuthenticated: true
+          })
+        }
+
+        // Refrescar usuario en segundo plano sólo si no se tiene en cache y el token es del backend real
+        if (!storedUser && storedSession && !storedSession.accessToken.startsWith('demo_dev_token')) {
+          authService
+            .me()
+            .then(freshUser => {
+              if (freshUser && isMounted) {
+                setState(prev => ({ ...prev, user: freshUser }))
+              }
+            })
+            .catch(() => {})
+        }
+      } catch (err) {
+        console.error('Error al inicializar sesión:', err)
+        if (isMounted) {
           setState({
             user: null,
             session: null,
             isLoading: false,
             isAuthenticated: false
           })
-
-          return
         }
       }
-
-      setState({
-        user: storedUser,
-        session: storedSession,
-        isLoading: false,
-        isAuthenticated: true
-      })
-
-      // Refrescar usuario en segundo plano
-      authService.me().then(freshUser => {
-        if (freshUser) {
-          setState(prev => ({ ...prev, user: freshUser }))
-        }
-      })
     }
 
     initializeAuth()
+
+    return () => {
+      isMounted = false
+    }
   }, [])
 
   const signIn = async (input: IniciarSesionInput) => {

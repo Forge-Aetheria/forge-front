@@ -23,6 +23,37 @@ import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
+import { styled } from '@mui/material/styles';
+import MuiTimeline from '@mui/lab/Timeline';
+import TimelineItem from '@mui/lab/TimelineItem';
+import TimelineSeparator from '@mui/lab/TimelineSeparator';
+import TimelineConnector from '@mui/lab/TimelineConnector';
+import TimelineContent from '@mui/lab/TimelineContent';
+import TimelineDot from '@mui/lab/TimelineDot';
+import type { TimelineProps } from '@mui/lab/Timeline';
+
+// Timeline estilizada según estándar de plantilla
+const Timeline = styled(MuiTimeline)<TimelineProps>({
+  paddingLeft: 0,
+  paddingRight: 0,
+  margin: 0,
+  '& .MuiTimelineItem-root': {
+    width: '100%',
+    minHeight: 56,
+    '&:before': {
+      display: 'none'
+    },
+    '& .MuiTimelineContent-root': {
+      paddingLeft: 12,
+      paddingRight: 0,
+      paddingTop: 0,
+      paddingBottom: 16
+    },
+    '&:last-child .MuiTimelineConnector-root': {
+      display: 'none'
+    }
+  }
+});
 
 import { BcvRate, Quote, SalesFeatureFlags } from '@/types/salesQuotesTypes';
 import { salesQuotesService } from '@/services/salesQuotesService';
@@ -232,7 +263,7 @@ export const QuoteDetailView: React.FC<Props> = ({ id }) => {
   }
 
   return (
-    <div className="flex flex-col gap-6 max-w-7xl mx-auto pb-12">
+    <div className="flex flex-col gap-6 w-full pb-12">
       {/* Top Navigation Bar con Desplazador Secuencial y Botones Estándar */}
       <div className="flex items-center justify-between gap-4 flex-wrap sm:flex-nowrap">
         {/* Izquierda: Volver + Correlativo + Estado + Tasa */}
@@ -546,8 +577,8 @@ export const QuoteDetailView: React.FC<Props> = ({ id }) => {
       )}
 
       <Grid container spacing={4}>
-        {/* Columna Izquierda: Tarjetas Resumen (Cliente y Totales) */}
-        <Grid size={{ xs: 12, md: 4 }} className="flex flex-col gap-4">
+        {/* Columna Lateral (4 cols): Cliente y Trazabilidad Permanente */}
+        <Grid size={{ xs: 12, lg: 4 }} order={{ xs: 2, lg: 2 }} className="flex flex-col gap-4">
           {/* Card Cliente */}
           <Card
             sx={{
@@ -600,35 +631,172 @@ export const QuoteDetailView: React.FC<Props> = ({ id }) => {
             </CardContent>
           </Card>
 
-          {/* Totales Bimonetarios */}
-          <QuoteTotalsCard
-            totals={{
-              subtotal_usd: quote.subtotal_usd,
-              descuento_usd: quote.descuento_total_usd,
-              base_imponible_usd: quote.base_imponible_usd ?? (quote.aplica_iva ? quote.subtotal_usd - quote.descuento_total_usd : 0),
-              monto_exento_usd: quote.monto_exento_usd ?? (quote.aplica_iva ? 0 : quote.subtotal_usd - quote.descuento_total_usd),
-              neto_imponible_usd: quote.subtotal_usd - quote.descuento_total_usd,
-              iva_usd: quote.iva_total_usd,
-              igtf_usd: quote.igtf_total_usd || 0,
-              total_usd: quote.total_usd,
-
-              subtotal_ves: quote.subtotal_ves,
-              descuento_ves: quote.descuento_total_ves,
-              base_imponible_ves: quote.base_imponible_ves ?? ((quote.subtotal_usd - quote.descuento_total_usd) * quote.tasa_bcv.tasa),
-              monto_exento_ves: quote.monto_exento_ves ?? 0,
-              neto_imponible_ves: quote.subtotal_ves - quote.descuento_total_ves,
-              iva_ves: quote.iva_total_ves,
-              igtf_ves: quote.igtf_total_ves || 0,
-              total_ves: quote.total_ves
+          {/* Card Historial de Auditoría ("Quién hizo qué") */}
+          <Card
+            sx={{
+              backgroundColor: '#FFFFFF',
+              borderRadius: '20px',
+              border: '1px solid #E6E4F0',
+              boxShadow: '0 4px 18px 0 rgba(108, 92, 231, 0.05)',
+              overflow: 'hidden'
             }}
-            tasaBcv={quote.tasa_bcv.tasa}
-            flags={flags}
-            aplicaIva={quote.aplica_iva}
-          />
+          >
+            <div className="p-4 bg-[#FAFAFC] border-b border-[#E6E4F0] flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <i className="tabler-history text-lg text-[#6C5CE7]" />
+                <Typography variant="subtitle2" className="font-bold text-[#1E1B2E]">
+                  Historial de Auditoría
+                </Typography>
+              </div>
+              <span className="text-[11px] font-semibold text-[#6C5CE7] bg-[#F0EEF9] px-2 py-0.5 rounded-full border border-[#DCD8EC]">
+                v{quote.version}
+              </span>
+            </div>
+
+            <CardContent className="p-5">
+              <Timeline>
+                {/* Evento 1: Creación / Emisión */}
+                <TimelineItem>
+                  <TimelineSeparator>
+                    <TimelineDot color="primary" sx={{ my: 0.5, p: 0.75 }}>
+                      <i className="tabler-file-invoice text-xs" />
+                    </TimelineDot>
+                    {(quote.updated_at !== quote.created_at || quote.estado === 'APPROVED' || Boolean(quote.orden_venta_id) || quote.estado === 'CANCELED') && (
+                      <TimelineConnector sx={{ backgroundColor: '#6C5CE7' }} />
+                    )}
+                  </TimelineSeparator>
+                  <TimelineContent>
+                    <div className="flex items-baseline justify-between gap-1 mb-0.5">
+                      <span className="font-bold text-xs text-[#1E1B2E]">Cotización Emitida</span>
+                      <span className="text-[10px] text-[#9CA3AF]">{quote.fecha_emision}</span>
+                    </div>
+                    <span className="text-[11px] text-[#6B7280] block">
+                      Por: <strong className="text-[#1E1B2E]">{quote.creado_por || 'Asesor Comercial'}</strong>
+                    </span>
+                    <span className="text-[11px] text-[#6C5CE7] font-mono mt-0.5 block">
+                      Tasa BCV: Bs. {quote.tasa_bcv.tasa.toFixed(2)}
+                    </span>
+                  </TimelineContent>
+                </TimelineItem>
+
+                {/* Evento 2: Recálculo de Tasa BCV (si aplica) */}
+                {quote.updated_at !== quote.created_at && (
+                  <TimelineItem>
+                    <TimelineSeparator>
+                      <TimelineDot color="info" sx={{ my: 0.5, p: 0.75 }}>
+                        <i className="tabler-refresh text-xs" />
+                      </TimelineDot>
+                      {(quote.estado === 'APPROVED' || Boolean(quote.orden_venta_id) || quote.estado === 'CANCELED') && (
+                        <TimelineConnector sx={{ backgroundColor: '#0284C7' }} />
+                      )}
+                    </TimelineSeparator>
+                    <TimelineContent>
+                      <div className="flex items-baseline justify-between gap-1 mb-0.5">
+                        <span className="font-bold text-xs text-[#1E1B2E]">Tasa Actualizada</span>
+                        <span className="text-[10px] text-[#9CA3AF]">
+                          {new Date(quote.updated_at).toLocaleDateString()}
+                        </span>
+                      </div>
+                      <span className="text-[11px] text-[#6B7280] block">
+                        Por: <strong className="text-[#1E1B2E]">Operador Comercial</strong>
+                      </span>
+                      <span className="text-[11px] text-[#0284C7] font-mono mt-0.5 block">
+                        Nueva Tasa: Bs. {quote.tasa_bcv.tasa.toFixed(2)}
+                      </span>
+                    </TimelineContent>
+                  </TimelineItem>
+                )}
+
+                {/* Evento 3: Aprobación Comercial (si aplica) */}
+                {quote.estado === 'APPROVED' && (
+                  <TimelineItem>
+                    <TimelineSeparator>
+                      <TimelineDot color="success" sx={{ my: 0.5, p: 0.75 }}>
+                        <i className="tabler-circle-check text-xs" />
+                      </TimelineDot>
+                      {Boolean(quote.orden_venta_id) && (
+                        <TimelineConnector sx={{ backgroundColor: '#10B981' }} />
+                      )}
+                    </TimelineSeparator>
+                    <TimelineContent>
+                      <div className="flex items-baseline justify-between gap-1 mb-0.5">
+                        <span className="font-bold text-xs text-[#10B981]">Aprobada</span>
+                        <span className="text-[10px] text-[#9CA3AF]">Comercial</span>
+                      </div>
+                      <span className="text-[11px] text-[#6B7280] block">
+                        Por: <strong className="text-[#1E1B2E]">Gerencia de Ventas</strong>
+                      </span>
+                      <span className="text-[11px] text-[#10B981] mt-0.5 block">
+                        Condiciones y precios ratificados
+                      </span>
+                    </TimelineContent>
+                  </TimelineItem>
+                )}
+
+                {/* Evento 4: Orden de Venta Generada (si aplica) */}
+                {Boolean(quote.orden_venta_id) && (
+                  <TimelineItem>
+                    <TimelineSeparator>
+                      <TimelineDot sx={{ my: 0.5, p: 0.75, bgcolor: '#6C5CE7', color: '#FFFFFF' }}>
+                        <i className="tabler-truck-delivery text-xs" />
+                      </TimelineDot>
+                    </TimelineSeparator>
+                    <TimelineContent>
+                      <div className="flex items-baseline justify-between gap-1 mb-0.5">
+                        <span className="font-bold text-xs text-[#6C5CE7]">Orden Generada</span>
+                        <span className="text-[10px] font-mono font-bold text-[#6C5CE7]">
+                          {quote.correlativo_orden}
+                        </span>
+                      </div>
+                      <span className="text-[11px] text-[#6B7280] block">
+                        Por: <strong className="text-[#1E1B2E]">Sistema de Despacho</strong>
+                      </span>
+                      <span className="text-[11px] text-[#6B7280] mt-0.5 block">
+                        Stock reservado para facturación
+                      </span>
+                    </TimelineContent>
+                  </TimelineItem>
+                )}
+
+                {/* Evento 5: Anulación (si aplica) */}
+                {quote.estado === 'CANCELED' && (
+                  <TimelineItem>
+                    <TimelineSeparator>
+                      <TimelineDot color="error" sx={{ my: 0.5, p: 0.75 }}>
+                        <i className="tabler-ban text-xs" />
+                      </TimelineDot>
+                    </TimelineSeparator>
+                    <TimelineContent>
+                      <div className="flex items-baseline justify-between gap-1 mb-0.5">
+                        <span className="font-bold text-xs text-[#EF4444]">Cotización Anulada</span>
+                      </div>
+                      <span className="text-[11px] text-[#6B7280] block">
+                        Motivo: <strong className="text-[#EF4444]">{quote.motivo_anulacion || 'Sin motivo'}</strong>
+                      </span>
+                    </TimelineContent>
+                  </TimelineItem>
+                )}
+              </Timeline>
+
+              {/* Metadatos adicionales de vigencia */}
+              <div className="mt-4 pt-3 border-t border-[#F4F3F8] flex flex-col gap-2 text-xs text-[#6B7280]">
+                <div className="flex items-center justify-between">
+                  <span>Vigencia:</span>
+                  <strong className={isExpired ? 'text-[#EF4444]' : 'text-[#1E1B2E]'}>
+                    {quote.fecha_vencimiento} ({quote.vigencia_dias} días)
+                  </strong>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span>Estado:</span>
+                  <QuoteStatusChip status={quote.estado} />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </Grid>
 
-        {/* Columna Derecha: Desplazador de Pestañas (Tabs) como en la Ficha de Contactos */}
-        <Grid size={{ xs: 12, md: 8 }}>
+        {/* Columna Principal (8 cols): Ítems, Totales y Términos */}
+        <Grid size={{ xs: 12, lg: 8 }} order={{ xs: 1, lg: 1 }}>
           <Card
             sx={{
               borderRadius: '20px',
@@ -671,11 +839,6 @@ export const QuoteDetailView: React.FC<Props> = ({ id }) => {
                 icon={<i className="tabler-file-text text-base mr-1.5" />}
                 iconPosition="start"
                 label="Condiciones Comerciales"
-              />
-              <Tab
-                icon={<i className="tabler-history text-base mr-1.5" />}
-                iconPosition="start"
-                label="Trazabilidad y Auditoría"
               />
             </Tabs>
 
@@ -797,60 +960,36 @@ export const QuoteDetailView: React.FC<Props> = ({ id }) => {
                   </div>
                 </div>
               )}
-
-              {/* Pestaña 2: Trazabilidad y Cronograma */}
-              {activeTab === 2 && (
-                <div className="flex flex-col gap-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="bg-[#F8F7FC] p-4 rounded-xl border border-[#E6E4F0] flex items-center gap-3">
-                      <span className="flex items-center justify-center w-10 h-10 rounded-full bg-[#E8F5E9] text-[#2E7D32]">
-                        <i className="tabler-calendar text-xl" />
-                      </span>
-                      <div>
-                        <span className="text-xs text-[#6B7280] block">Fecha de Emisión</span>
-                        <strong className="text-sm text-[#1E1B2E]">{quote.fecha_emision}</strong>
-                      </div>
-                    </div>
-
-                    <div className="bg-[#F8F7FC] p-4 rounded-xl border border-[#E6E4F0] flex items-center gap-3">
-                      <span className={`flex items-center justify-center w-10 h-10 rounded-full ${
-                        isExpired ? 'bg-[#FEE2E2] text-[#EF4444]' : 'bg-[#F0EEF9] text-[#6C5CE7]'
-                      }`}>
-                        <i className="tabler-clock text-xl" />
-                      </span>
-                      <div>
-                        <span className="text-xs text-[#6B7280] block">Fecha de Vencimiento</span>
-                        <strong className={`text-sm ${isExpired ? 'text-[#EF4444]' : 'text-[#1E1B2E]'}`}>
-                          {quote.fecha_vencimiento} ({quote.vigencia_dias} días)
-                        </strong>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="bg-[#FFFFFF] p-4 rounded-xl border border-[#E6E4F0] text-xs text-[#6B7280] flex flex-col gap-2">
-                    <div className="flex justify-between py-1 border-b border-[#F4F3F8]">
-                      <span>Versión del Registro:</span>
-                      <strong className="text-[#1E1B2E]">v{quote.version}</strong>
-                    </div>
-                    <div className="flex justify-between py-1 border-b border-[#F4F3F8]">
-                      <span>Creado el:</span>
-                      <strong className="text-[#1E1B2E]">{new Date(quote.created_at).toLocaleString()}</strong>
-                    </div>
-                    <div className="flex justify-between py-1 border-b border-[#F4F3F8]">
-                      <span>Última Actualización:</span>
-                      <strong className="text-[#1E1B2E]">{new Date(quote.updated_at).toLocaleString()}</strong>
-                    </div>
-                    {quote.orden_venta_id && (
-                      <div className="flex justify-between py-1 text-[#10B981] font-semibold">
-                        <span>Orden de Venta Asociada:</span>
-                        <span>{quote.correlativo_orden} (ID: {quote.orden_venta_id})</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
             </CardContent>
           </Card>
+
+          {/* Totales Bimonetarios en Columna Principal */}
+          <div className="mt-4">
+            <QuoteTotalsCard
+              totals={{
+                subtotal_usd: quote.subtotal_usd,
+                descuento_usd: quote.descuento_total_usd,
+                base_imponible_usd: quote.base_imponible_usd ?? (quote.aplica_iva ? quote.subtotal_usd - quote.descuento_total_usd : 0),
+                monto_exento_usd: quote.monto_exento_usd ?? (quote.aplica_iva ? 0 : quote.subtotal_usd - quote.descuento_total_usd),
+                neto_imponible_usd: quote.subtotal_usd - quote.descuento_total_usd,
+                iva_usd: quote.iva_total_usd,
+                igtf_usd: quote.igtf_total_usd || 0,
+                total_usd: quote.total_usd,
+
+                subtotal_ves: quote.subtotal_ves,
+                descuento_ves: quote.descuento_total_ves,
+                base_imponible_ves: quote.base_imponible_ves ?? ((quote.subtotal_usd - quote.descuento_total_usd) * quote.tasa_bcv.tasa),
+                monto_exento_ves: quote.monto_exento_ves ?? 0,
+                neto_imponible_ves: quote.subtotal_ves - quote.descuento_total_ves,
+                iva_ves: quote.iva_total_ves,
+                igtf_ves: quote.igtf_total_ves || 0,
+                total_ves: quote.total_ves
+              }}
+              tasaBcv={quote.tasa_bcv.tasa}
+              flags={flags}
+              aplicaIva={quote.aplica_iva}
+            />
+          </div>
         </Grid>
       </Grid>
 

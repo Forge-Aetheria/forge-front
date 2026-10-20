@@ -202,42 +202,31 @@ const InventoryWarehousesView = () => {
 
   return (
     <div className='flex flex-col gap-6'>
-      {/* Header exclusivo de Almacenes y Ubicaciones */}
+      {/* Header exclusivo de Almacenes Físicos */}
       <div className='flex flex-col sm:flex-row sm:items-center justify-between gap-4'>
         <div>
           <div className='flex items-center gap-2 mb-1'>
-            <Typography variant='h4' className='font-bold text-[#1E1B4B]'>
-              Almacenes y Ubicaciones
+            <Typography variant='h4' className='font-bold text-[#1E1B2E]'>
+              Almacenes Físicos
             </Typography>
             <Chip
               size='small'
               label={`${warehouses.length} almacenes`}
               color='primary'
-              variant='tonal'
-              className='rounded-full font-bold'
+              variant='outlined'
+              className='rounded-full text-xs font-semibold'
             />
           </div>
-          <Typography variant='body2' className='text-textSecondary'>
-            Almacenes físicos y ubicaciones internas
+          <Typography variant='body2' className='text-[#6B7280]'>
+            Gestión de almacenes principales, secundarios y sucursales
           </Typography>
         </div>
 
-        <div className='flex items-center gap-2.5'>
-          <Button
-            component={Link}
-            href='/inventory'
-            variant='tonal'
-            color='secondary'
-            className='rounded-full font-medium'
-            startIcon={<i className='tabler-layout-dashboard' />}
-          >
-            Panel Operativo
-          </Button>
+        <div className='flex items-center gap-2.5 flex-wrap'>
           <Button
             variant='contained'
             color='primary'
-            className='rounded-full font-semibold shadow-sm'
-            startIcon={<i className='tabler-plus' />}
+            startIcon={<i className='tabler-plus text-sm' />}
             onClick={handleOpenNewWarehouse}
           >
             Nuevo
