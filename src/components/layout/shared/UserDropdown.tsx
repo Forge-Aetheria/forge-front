@@ -1,7 +1,7 @@
 'use client'
 
 // React Imports
-import { useRef, useState } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import type { MouseEvent } from 'react'
 
 // Next Imports
@@ -20,9 +20,12 @@ import Typography from '@mui/material/Typography'
 import Divider from '@mui/material/Divider'
 import MenuItem from '@mui/material/MenuItem'
 import Button from '@mui/material/Button'
+import Chip from '@mui/material/Chip'
 
-// Context Imports
+// Context & Service Imports
 import { useAuth } from '@/contexts/AuthContext'
+import { settingsService } from '@/services/settingsService'
+import type { UserProfile } from '@/types/settingsTypes'
 
 // Hook Imports
 import { useSettings } from '@core/hooks/useSettings'
@@ -37,9 +40,18 @@ const BadgeContentSpan = styled('span')({
   boxShadow: '0 0 0 2px var(--mui-palette-background-paper)'
 })
 
+const ROLE_LABELS: Record<string, string> = {
+  ADMIN: 'Administrador',
+  VENTAS: 'Ventas',
+  COMPRAS: 'Compras',
+  ALMACEN: 'Almacén',
+  CAJERO_POS: 'Cajero POS'
+}
+
 const UserDropdown = () => {
   // States
   const [open, setOpen] = useState(false)
+  const [profile, setProfile] = useState<UserProfile | null>(null)
 
   // Refs
   const anchorRef = useRef<HTMLDivElement>(null)
@@ -49,8 +61,21 @@ const UserDropdown = () => {
   const { settings } = useSettings()
   const { user, signOut } = useAuth()
 
+  // Load User Profile on mount or open
+  useEffect(() => {
+    let isMounted = true
+
+    settingsService.getUserProfile().then(p => {
+      if (isMounted) setProfile(p)
+    })
+
+    return () => {
+      isMounted = false
+    }
+  }, [open])
+
   const handleDropdownOpen = () => {
-    !open ? setOpen(true) : setOpen(false)
+    setOpen(prev => !prev)
   }
 
   const handleDropdownClose = (event?: MouseEvent<HTMLLIElement> | (MouseEvent | TouchEvent), url?: string) => {
@@ -70,8 +95,16 @@ const UserDropdown = () => {
     await signOut()
   }
 
-  const userInitial = user?.email ? user.email.charAt(0).toUpperCase() : 'U'
-  const userDisplayName = user?.email?.split('@')[0] || 'Usuario'
+  const userInitial = profile?.nombre
+    ? profile.nombre.charAt(0).toUpperCase()
+    : user?.email
+    ? user.email.charAt(0).toUpperCase()
+    : 'U'
+
+  const userDisplayName = profile?.nombre || user?.email?.split('@')[0] || 'Usuario'
+  const userRole = profile?.rol || (user?.email?.toLowerCase().includes('admin') ? 'ADMIN' : 'VENTAS')
+  const roleLabel = ROLE_LABELS[userRole] || 'Usuario'
+  const isAdmin = userRole === 'ADMIN'
 
   return (
     <>
@@ -84,7 +117,8 @@ const UserDropdown = () => {
       >
         <Avatar
           ref={anchorRef}
-          alt={user?.email || 'Usuario'}
+          alt={userDisplayName}
+          src={profile?.avatarUrl}
           onClick={handleDropdownOpen}
           className='cursor-pointer bs-[38px] is-[38px] bg-primary text-white font-bold'
         >
@@ -97,7 +131,7 @@ const UserDropdown = () => {
         disablePortal
         placement='bottom-end'
         anchorEl={anchorRef.current}
-        className='min-is-[240px] !mbs-3 z-[1]'
+        className='min-is-[250px] !mbs-3 z-[1]'
       >
         {({ TransitionProps, placement }) => (
           <Fade
@@ -106,50 +140,91 @@ const UserDropdown = () => {
               transformOrigin: placement === 'bottom-end' ? 'right top' : 'left top'
             }}
           >
-            <Paper className={settings.skin === 'bordered' ? 'border shadow-none' : 'shadow-lg'}>
+            <Paper className={settings.skin === 'bordered' ? 'border shadow-none' : 'shadow-lg'} sx={{ borderRadius: '18px' }}>
               <ClickAwayListener onClickAway={e => handleDropdownClose(e as MouseEvent | TouchEvent)}>
-                <MenuList>
-                  <div className='flex items-center plb-2 pli-6 gap-3' tabIndex={-1}>
-                    <Avatar alt={userDisplayName} className='bg-primary text-white font-bold'>
+                <MenuList sx={{ py: 1.5 }}>
+                  {/* Cabecera de Identidad Autenticada */}
+                  <div className='flex items-center plb-2 pli-5 gap-3' tabIndex={-1}>
+                    <Avatar
+                      alt={userDisplayName}
+                      src={profile?.avatarUrl}
+                      className='bg-primary text-white font-bold bs-11 is-11 shadow-xs'
+                    >
                       {userInitial}
                     </Avatar>
-                    <div className='flex items-start flex-col'>
-                      <Typography className='font-semibold capitalize text-sm' color='text.primary'>
+                    <div className='flex items-start flex-col overflow-hidden'>
+                      <Typography className='font-bold text-sm text-[#1E1B2E] truncate w-full' title={userDisplayName}>
                         {userDisplayName}
                       </Typography>
-                      <Typography variant='caption' className='text-xs text-textSecondary'>
-                        {user?.email || 'Invitado'}
+                      <Typography variant='caption' className='text-xs text-[#6B7280] truncate w-full' title={profile?.email || user?.email}>
+                        {profile?.email || user?.email || 'admin@vuexy.com'}
                       </Typography>
-                      {user?.tenantName && (
-                        <Typography variant='caption' className='text-xs font-semibold text-primary'>
-                          🏢 {user.tenantName}
-                        </Typography>
-                      )}
+                      <div className='flex items-center gap-1.5 mt-1'>
+                        <Chip
+                          size='small'
+                          label={roleLabel}
+                          sx={{
+                            height: 20,
+                            fontSize: '0.68rem',
+                            fontWeight: 700,
+                            borderRadius: '9999px',
+                            backgroundColor: isAdmin ? '#F0EEF9' : '#E0F2FE',
+                            color: isAdmin ? '#6C5CE7' : '#0284C7',
+                            border: '1px solid',
+                            borderColor: isAdmin ? '#DCD8EC' : '#BAE6FD'
+                          }}
+                        />
+                      </div>
                     </div>
                   </div>
-                  <Divider className='mlb-1' />
-                  <MenuItem className='mli-2 gap-3' onClick={e => handleDropdownClose(e, '/home')}>
-                    <i className='tabler-smart-home' />
-                    <Typography color='text.primary'>Inicio</Typography>
+
+                  <Divider sx={{ my: 1, borderColor: '#E6E4F0' }} />
+
+                  {/* Mi Perfil */}
+                  <MenuItem
+                    className='mli-2 gap-3 py-2 rounded-xl transition-colors'
+                    onClick={e => handleDropdownClose(e, '/profile')}
+                  >
+                    <i className='tabler-user text-lg text-[#6C5CE7]' />
+                    <Typography color='text.primary' className='font-semibold text-sm'>
+                      Mi Perfil
+                    </Typography>
                   </MenuItem>
-                  <MenuItem className='mli-2 gap-3' onClick={e => handleDropdownClose(e, '/inventory')}>
-                    <i className='tabler-box' />
-                    <Typography color='text.primary'>Inventario</Typography>
-                  </MenuItem>
-                  <MenuItem className='mli-2 gap-3' onClick={e => handleDropdownClose(e, '/pos/terminal')}>
-                    <i className='tabler-device-laptop' />
-                    <Typography color='text.primary'>Terminal POS</Typography>
-                  </MenuItem>
-                  <Divider className='mlb-1' />
-                  <div className='flex items-center plb-2 pli-3'>
+
+                  {/* Ajustes del Sistema - Solo Rol ADMIN */}
+                  {isAdmin && (
+                    <MenuItem
+                      className='mli-2 gap-3 py-2 rounded-xl transition-colors'
+                      onClick={e => handleDropdownClose(e, '/settings')}
+                    >
+                      <i className='tabler-settings text-lg text-[#6C5CE7]' />
+                      <Typography color='text.primary' className='font-semibold text-sm'>
+                        Ajustes del Sistema
+                      </Typography>
+                    </MenuItem>
+                  )}
+
+                  <Divider sx={{ my: 1, borderColor: '#E6E4F0' }} />
+
+                  {/* Cerrar Sesión */}
+                  <div className='flex items-center plb-1 pli-3'>
                     <Button
                       fullWidth
                       variant='contained'
-                      color='error'
                       size='small'
                       endIcon={<i className='tabler-logout' />}
                       onClick={handleUserLogout}
-                      sx={{ '& .MuiButton-endIcon': { marginInlineStart: 1.5 } }}
+                      sx={{
+                        borderRadius: '9999px',
+                        backgroundColor: '#EF4444',
+                        color: '#FFFFFF',
+                        fontWeight: 600,
+                        textTransform: 'none',
+                        py: 1,
+                        boxShadow: '0 4px 14px rgba(239, 68, 68, 0.3)',
+                        '&:hover': { backgroundColor: '#DC2626' },
+                        '& .MuiButton-endIcon': { marginInlineStart: 1.5 }
+                      }}
                     >
                       Cerrar Sesión
                     </Button>

@@ -66,16 +66,27 @@ const input: Theme['components'] = {
   MuiOutlinedInput: {
     styleOverrides: {
       root: {
-        borderRadius: 16,
-        backgroundColor: '#F4F3F8',
+        borderRadius: 10,
+        backgroundColor: '#FFFFFF',
+        boxShadow: 'none !important',
         '&:not(.Mui-focused):not(.Mui-error):not(.Mui-disabled):hover .MuiOutlinedInput-notchedOutline': {
           borderColor: '#6C5CE7'
         },
+        '&.Mui-disabled': {
+          backgroundColor: '#F8FAFC'
+        },
         '&.Mui-disabled .MuiOutlinedInput-notchedOutline': {
-          borderColor: '#E6E4F0'
+          borderColor: '#E2E8F0'
+        },
+        '&.Mui-focused': {
+          boxShadow: 'none !important'
         },
         '&:not(.Mui-error).MuiInputBase-colorPrimary.Mui-focused': {
-          boxShadow: '0px 0px 0px 3px rgba(108, 92, 231, 0.2)'
+          boxShadow: 'none !important'
+        },
+        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+          borderColor: '#6C5CE7',
+          borderWidth: '1.5px'
         }
       },
       input: ({ theme, ownerState }) => ({
@@ -86,13 +97,14 @@ const input: Theme['components'] = {
           height: '1.5em'
         }),
         '& ~ .MuiOutlinedInput-notchedOutline': {
-          borderColor: '#DCD8EC',
+          borderColor: '#CBD5E1',
           borderWidth: '1px'
         }
       }),
       notchedOutline: {
-        borderColor: '#DCD8EC',
-        borderRadius: 16,
+        borderColor: '#CBD5E1',
+        borderRadius: 10,
+        boxShadow: 'none !important',
         '& legend': {
           fontSize: '0.867em'
         }

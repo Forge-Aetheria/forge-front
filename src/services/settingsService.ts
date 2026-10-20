@@ -1,0 +1,577 @@
+// Servicio desacoplado de Ajustes Generales y Perfil de Usuario con persistencia localStorage (SPEC-007)
+
+import type {
+  UserProfile,
+  UpdateProfileInput,
+  ChangePasswordInput,
+  CompanySettings,
+  BcvRateConfig,
+  BcvRateAuditEntry,
+  ErpUser,
+  UserAccountStatus,
+  CreateUserInput,
+  UpdateUserInput,
+  FiscalRulesConfig,
+  ModuleHubTile,
+  CommercialPoliciesSettings
+} from '@/types/settingsTypes'
+
+const STORAGE_KEYS = {
+  USER_PROFILE: 'foundly_user_profile',
+  COMPANY_SETTINGS: 'foundly_company_settings',
+  BCV_SETTINGS: 'foundly_bcv_settings',
+  ERP_USERS: 'foundly_erp_users',
+  FISCAL_RULES: 'foundly_fiscal_rules',
+  COMMERCIAL_POLICIES: 'foundly_commercial_policies'
+}
+
+export const DEFAULT_COMMERCIAL_POLICIES: CommercialPoliciesSettings = {
+  salesInvoicingPolicyDefault: 'ORDERED',
+  purchaseControlPolicyDefault: 'ORDERED',
+  deliveryPolicyDefault: 'PARTIAL'
+}
+
+// Initial Seeds
+const DEFAULT_PROFILE: UserProfile = {
+  id: 'usr-admin-01',
+  nombre: 'John Doe',
+  email: 'admin@vuexy.com',
+  telefono: '+58 412-1234567',
+  avatarUrl: '/images/avatars/1.png',
+  rol: 'ADMIN',
+  tenantId: 'ten-forge-01',
+  tenantName: 'Distribuidora Global C.A.',
+  ultimoIngreso: '19/10/2026, 04:30 PM',
+  creadoEn: '2026-01-15'
+}
+
+const DEFAULT_COMPANY: CompanySettings = {
+  razonSocial: 'Distribuidora Global de Suministros C.A.',
+  nombreComercial: 'Forge Global Suministros',
+  rif: 'J-40192834-5',
+  direccionFiscal: 'Av. Las Américas, Torre Empresarial piso 7, Ofic. 7-A, Puerto Ordaz, Bolívar',
+  telefonoCorporativo: '+58 286-9614420',
+  emailFacturacion: 'administracion@forgeglobal.com.ve',
+  logoUrl: '/images/foundly-icon.png',
+  monedaBase: 'USD',
+  salesInvoicingPolicyDefault: 'ORDERED',
+  purchaseControlPolicyDefault: 'ORDERED',
+  deliveryPolicyDefault: 'PARTIAL'
+}
+
+const DEFAULT_BCV: BcvRateConfig = {
+  tasaActiva: 54.20,
+  ultimaSincronizacion: 'Hoy a las 07:00 AM - BCV Oficial',
+  modoActualizacion: 'AUTOMATICO_7AM',
+  fuenteOficial: 'Banco Central de Venezuela (BCV)',
+  historial: [
+    {
+      id: 'bcv-hist-01',
+      fechaHora: '19/10/2026 07:00 AM',
+      tasaVes: 54.20,
+      origen: 'AUTOMATICO_7AM',
+      responsableNombre: 'Sistema (CRON BCV)',
+      motivo: 'Sincronización matutina automática'
+    },
+    {
+      id: 'bcv-hist-02',
+      fechaHora: '18/10/2026 07:00 AM',
+      tasaVes: 53.95,
+      origen: 'AUTOMATICO_7AM',
+      responsableNombre: 'Sistema (CRON BCV)',
+      motivo: 'Sincronización matutina automática'
+    },
+    {
+      id: 'bcv-hist-03',
+      fechaHora: '17/10/2026 02:45 PM',
+      tasaVes: 53.80,
+      origen: 'MANUAL',
+      responsableNombre: 'John Doe (Administrador)',
+      motivo: 'Ajuste extraordinario vespertino de cierre semanal'
+    }
+  ]
+}
+
+const DEFAULT_USERS: ErpUser[] = [
+  {
+    id: 'usr-admin-01',
+    nombre: 'John Doe',
+    email: 'admin@vuexy.com',
+    telefono: '+58 412-1234567',
+    avatarUrl: '/images/avatars/1.png',
+    rol: 'ADMIN',
+    estado: 'ACTIVO',
+    ultimoIngreso: '19/10/2026 04:30 PM',
+    creadoEn: '15/01/2026'
+  },
+  {
+    id: 'usr-02',
+    nombre: 'Elena Rivas',
+    email: 'elena.rivas@forgeglobal.com',
+    telefono: '+58 414-9876543',
+    avatarUrl: '/images/avatars/2.png',
+    rol: 'ALMACEN',
+    estado: 'ACTIVO',
+    ultimoIngreso: '19/10/2026 03:15 PM',
+    creadoEn: '20/01/2026'
+  },
+  {
+    id: 'usr-03',
+    nombre: 'Carlos Mendoza',
+    email: 'carlos.m@forgeglobal.com',
+    telefono: '+58 424-5551234',
+    avatarUrl: '/images/avatars/3.png',
+    rol: 'VENTAS',
+    estado: 'ACTIVO',
+    ultimoIngreso: '19/10/2026 01:20 PM',
+    creadoEn: '01/02/2026'
+  },
+  {
+    id: 'usr-04',
+    nombre: 'Mariana Salazar',
+    email: 'mariana.s@forgeglobal.com',
+    telefono: '+58 416-8889900',
+    avatarUrl: '/images/avatars/4.png',
+    rol: 'COMPRAS',
+    estado: 'ACTIVO',
+    ultimoIngreso: '18/10/2026 05:40 PM',
+    creadoEn: '10/02/2026'
+  },
+  {
+    id: 'usr-05',
+    nombre: 'Roberto Padrón',
+    email: 'cajero.puerto@forgeglobal.com',
+    telefono: '+58 412-3334455',
+    avatarUrl: '/images/avatars/5.png',
+    rol: 'CAJERO_POS',
+    estado: 'ACTIVO',
+    ultimoIngreso: '19/10/2026 11:10 AM',
+    creadoEn: '05/03/2026'
+  }
+]
+
+const DEFAULT_FISCAL_RULES: FiscalRulesConfig = {
+  localizacionVeActiva: true,
+  ivaGeneralPct: 16,
+  ivaReducidoPct: 8,
+  exentoPct: 0,
+  igtfPct: 3,
+  retencionIvaPorDefecto: 75,
+  diasVigenciaCotizacion: 15,
+  salesInvoicingPolicyDefault: 'ORDERED',
+  purchaseControlPolicyDefault: 'ORDERED',
+  deliveryPolicyDefault: 'PARTIAL'
+}
+
+// Helpers for localStorage
+const getStoredItem = <T>(key: string, defaultVal: T): T => {
+  if (typeof window === 'undefined') return defaultVal
+
+  try {
+    const item = localStorage.getItem(key)
+
+    return item ? JSON.parse(item) : defaultVal
+  } catch {
+    return defaultVal
+  }
+}
+
+const setStoredItem = <T>(key: string, val: T): void => {
+  if (typeof window === 'undefined') return
+
+  try {
+    localStorage.setItem(key, JSON.stringify(val))
+  } catch (e) {
+    console.error(`Error saving to localStorage key "${key}":`, e)
+  }
+}
+
+export const settingsService = {
+  // 1. User Profile
+  getUserProfile: async (): Promise<UserProfile> => {
+    const stored = getStoredItem<UserProfile>(STORAGE_KEYS.USER_PROFILE, DEFAULT_PROFILE)
+
+    if (typeof window !== 'undefined') {
+      try {
+        const rawAuthUser = localStorage.getItem('foundly_auth_user')
+
+        if (rawAuthUser) {
+          const authUser = JSON.parse(rawAuthUser)
+
+          if (authUser?.email) {
+            const users = getStoredItem<ErpUser[]>(STORAGE_KEYS.ERP_USERS, DEFAULT_USERS)
+            const matched = users.find(u => u.email.toLowerCase() === authUser.email.toLowerCase())
+
+            if (matched) {
+              return {
+                ...stored,
+                id: matched.id,
+                nombre: matched.nombre,
+                email: matched.email,
+                telefono: matched.telefono,
+                avatarUrl: matched.avatarUrl || stored.avatarUrl,
+                rol: matched.rol
+              }
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Error resolving user profile from auth:', err)
+      }
+    }
+
+    return stored
+  },
+
+  updateUserProfile: async (input: UpdateProfileInput): Promise<UserProfile> => {
+    const current = getStoredItem<UserProfile>(STORAGE_KEYS.USER_PROFILE, DEFAULT_PROFILE)
+    const updated: UserProfile = {
+      ...current,
+      nombre: input.nombre.trim(),
+      telefono: input.telefono?.trim(),
+      avatarUrl: input.avatarUrl || current.avatarUrl
+    }
+
+    setStoredItem(STORAGE_KEYS.USER_PROFILE, updated)
+
+    // Synchronize also in ERP users directory
+    const users = getStoredItem<ErpUser[]>(STORAGE_KEYS.ERP_USERS, DEFAULT_USERS)
+    const syncUsers = users.map(u =>
+      u.id === updated.id
+        ? { ...u, nombre: updated.nombre, telefono: updated.telefono, avatarUrl: updated.avatarUrl }
+        : u
+    )
+
+    setStoredItem(STORAGE_KEYS.ERP_USERS, syncUsers)
+
+    return updated
+  },
+
+  changePassword: async (input: ChangePasswordInput): Promise<{ success: boolean; message: string }> => {
+    if (input.newPassword.length < 6) {
+      return { success: false, message: 'La nueva contraseña debe tener al menos 6 caracteres.' }
+    }
+
+    if (input.newPassword !== input.confirmPassword) {
+      return { success: false, message: 'La confirmación de la contraseña no coincide.' }
+    }
+
+    // In a mock environment, we simulate a successful change
+    return { success: true, message: 'Contraseña actualizada exitosamente.' }
+  },
+
+  // 2. Company Settings
+  getCompanySettings: async (): Promise<CompanySettings> => {
+    return getStoredItem<CompanySettings>(STORAGE_KEYS.COMPANY_SETTINGS, DEFAULT_COMPANY)
+  },
+
+  updateCompanySettings: async (input: Partial<CompanySettings>): Promise<CompanySettings> => {
+    const current = getStoredItem<CompanySettings>(STORAGE_KEYS.COMPANY_SETTINGS, DEFAULT_COMPANY)
+    const updated: CompanySettings = { ...current, ...input }
+
+    setStoredItem(STORAGE_KEYS.COMPANY_SETTINGS, updated)
+
+    return updated
+  },
+
+  // 3. BCV & Currency Settings
+  getBcvSettings: async (): Promise<BcvRateConfig> => {
+    return getStoredItem<BcvRateConfig>(STORAGE_KEYS.BCV_SETTINGS, DEFAULT_BCV)
+  },
+
+  updateBcvRate: async (
+    tasa: number,
+    modo: 'AUTOMATICO_7AM' | 'MANUAL',
+    motivo: string,
+    responsable: string
+  ): Promise<BcvRateConfig> => {
+    const current = getStoredItem<BcvRateConfig>(STORAGE_KEYS.BCV_SETTINGS, DEFAULT_BCV)
+    const now = new Date()
+    const fechaHora = now.toLocaleString('es-VE', { dateStyle: 'short', timeStyle: 'short' })
+
+    const newAuditEntry: BcvRateAuditEntry = {
+      id: `bcv-hist-${Date.now()}`,
+      fechaHora,
+      tasaVes: Number(tasa),
+      origen: modo,
+      responsableNombre: responsable,
+      motivo: motivo.trim() || undefined
+    }
+
+    const updated: BcvRateConfig = {
+      ...current,
+      tasaActiva: Number(tasa),
+      ultimaSincronizacion:
+        modo === 'AUTOMATICO_7AM'
+          ? `Hoy a las 07:00 AM - BCV Oficial`
+          : `Fijada manualmente el ${fechaHora}`,
+      modoActualizacion: modo,
+      historial: [newAuditEntry, ...current.historial]
+    }
+
+    setStoredItem(STORAGE_KEYS.BCV_SETTINGS, updated)
+
+    return updated
+  },
+
+  toggleBcvAutoMode: async (auto: boolean, responsable: string): Promise<BcvRateConfig> => {
+    const current = getStoredItem<BcvRateConfig>(STORAGE_KEYS.BCV_SETTINGS, DEFAULT_BCV)
+    const modo = auto ? 'AUTOMATICO_7AM' : 'MANUAL'
+
+    return settingsService.updateBcvRate(
+      current.tasaActiva,
+      modo,
+      auto ? 'Reanudada sincronización automática BCV' : 'Pausada sincronización para control manual',
+      responsable
+    )
+  },
+
+  // 4. ERP Users & Roles (RBAC)
+  getErpUsers: async (): Promise<ErpUser[]> => {
+    return getStoredItem<ErpUser[]>(STORAGE_KEYS.ERP_USERS, DEFAULT_USERS)
+  },
+
+  createErpUser: async (input: CreateUserInput): Promise<ErpUser> => {
+    const users = getStoredItem<ErpUser[]>(STORAGE_KEYS.ERP_USERS, DEFAULT_USERS)
+
+    if (users.some(u => u.email.toLowerCase() === input.email.toLowerCase())) {
+      throw new Error(`Ya existe un usuario registrado con el correo ${input.email}`)
+    }
+
+    const now = new Date()
+    const creadoEn = now.toLocaleDateString('es-VE')
+
+    const newUser: ErpUser = {
+      id: `usr-${Date.now()}`,
+      nombre: input.nombre.trim(),
+      email: input.email.trim().toLowerCase(),
+      telefono: input.telefono?.trim(),
+      avatarUrl: `/images/avatars/${(users.length % 8) + 1}.png`,
+      rol: input.rol,
+      estado: input.estado || 'ACTIVO',
+      creadoEn
+    }
+
+    const updated = [newUser, ...users]
+
+    setStoredItem(STORAGE_KEYS.ERP_USERS, updated)
+
+    return newUser
+  },
+
+  updateErpUser: async (id: string, input: UpdateUserInput): Promise<ErpUser> => {
+    const users = getStoredItem<ErpUser[]>(STORAGE_KEYS.ERP_USERS, DEFAULT_USERS)
+    const target = users.find(u => u.id === id)
+
+    if (!target) {
+      throw new Error('Usuario no encontrado.')
+    }
+
+    // Protection of last active admin
+    if (target.rol === 'ADMIN' && input.rol !== 'ADMIN') {
+      const activeAdmins = users.filter(u => u.rol === 'ADMIN' && u.estado === 'ACTIVO')
+
+      if (activeAdmins.length <= 1) {
+        throw new Error('No es posible revocar el rol al único Administrador activo del sistema.')
+      }
+    }
+
+    if (target.rol === 'ADMIN' && input.estado === 'INACTIVO') {
+      const activeAdmins = users.filter(u => u.rol === 'ADMIN' && u.estado === 'ACTIVO' && u.id !== id)
+
+      if (activeAdmins.length === 0) {
+        throw new Error('No es posible desactivar al único Administrador activo del sistema.')
+      }
+    }
+
+    if (input.password && input.password.trim().length < 6) {
+      throw new Error('La nueva contraseña debe tener al menos 6 caracteres.')
+    }
+
+    const updatedUsers = users.map(u =>
+      u.id === id
+        ? {
+            ...u,
+            nombre: input.nombre.trim(),
+            telefono: input.telefono?.trim(),
+            rol: input.rol,
+            estado: input.estado
+          }
+        : u
+    )
+
+    setStoredItem(STORAGE_KEYS.ERP_USERS, updatedUsers)
+
+    return updatedUsers.find(u => u.id === id)!
+  },
+
+  toggleErpUserStatus: async (id: string): Promise<ErpUser> => {
+    const users = getStoredItem<ErpUser[]>(STORAGE_KEYS.ERP_USERS, DEFAULT_USERS)
+    const target = users.find(u => u.id === id)
+
+    if (!target) throw new Error('Usuario no encontrado.')
+
+    const newStatus: UserAccountStatus = target.estado === 'ACTIVO' ? 'INACTIVO' : 'ACTIVO'
+
+    if (target.rol === 'ADMIN' && newStatus === 'INACTIVO') {
+      const otherActiveAdmins = users.filter(u => u.rol === 'ADMIN' && u.estado === 'ACTIVO' && u.id !== id)
+
+      if (otherActiveAdmins.length === 0) {
+        throw new Error('No es posible desactivar al único Administrador activo del sistema.')
+      }
+    }
+
+    const updatedUsers = users.map(u => (u.id === id ? { ...u, estado: newStatus } : u))
+
+    setStoredItem(STORAGE_KEYS.ERP_USERS, updatedUsers)
+
+    return updatedUsers.find(u => u.id === id)!
+  },
+
+  deleteErpUser: async (id: string): Promise<void> => {
+    const users = getStoredItem<ErpUser[]>(STORAGE_KEYS.ERP_USERS, DEFAULT_USERS)
+    const target = users.find(u => u.id === id)
+
+    if (!target) throw new Error('Usuario no encontrado.')
+
+    if (target.rol === 'ADMIN') {
+      const otherActiveAdmins = users.filter(u => u.rol === 'ADMIN' && u.estado === 'ACTIVO' && u.id !== id)
+
+      if (otherActiveAdmins.length === 0) {
+        throw new Error('No es posible eliminar al único Administrador del sistema.')
+      }
+    }
+
+    const filtered = users.filter(u => u.id !== id)
+
+    setStoredItem(STORAGE_KEYS.ERP_USERS, filtered)
+  },
+
+  // 5. Fiscal Rules
+  getFiscalRules: async (): Promise<FiscalRulesConfig> => {
+    return getStoredItem<FiscalRulesConfig>(STORAGE_KEYS.FISCAL_RULES, DEFAULT_FISCAL_RULES)
+  },
+
+  updateFiscalRules: async (input: Partial<FiscalRulesConfig>): Promise<FiscalRulesConfig> => {
+    const current = getStoredItem<FiscalRulesConfig>(STORAGE_KEYS.FISCAL_RULES, DEFAULT_FISCAL_RULES)
+    const updated: FiscalRulesConfig = { ...current, ...input }
+
+    setStoredItem(STORAGE_KEYS.FISCAL_RULES, updated)
+
+    return updated
+  },
+
+  // 5.1 Commercial Policies (Regla R6)
+  getCommercialPolicies: async (): Promise<CommercialPoliciesSettings> => {
+    return getStoredItem<CommercialPoliciesSettings>(
+      STORAGE_KEYS.COMMERCIAL_POLICIES,
+      DEFAULT_COMMERCIAL_POLICIES
+    )
+  },
+
+  updateCommercialPolicies: async (
+    input: Partial<CommercialPoliciesSettings>
+  ): Promise<CommercialPoliciesSettings> => {
+    const current = getStoredItem<CommercialPoliciesSettings>(
+      STORAGE_KEYS.COMMERCIAL_POLICIES,
+      DEFAULT_COMMERCIAL_POLICIES
+    )
+    const updated: CommercialPoliciesSettings = { ...current, ...input }
+
+    setStoredItem(STORAGE_KEYS.COMMERCIAL_POLICIES, updated)
+
+    return updated
+  },
+
+  // 6. Odoo Hub Tiles (Summary tiles linking to existing modules)
+  getModuleHubTiles: async (): Promise<ModuleHubTile[]> => {
+    return [
+      {
+        id: 'hub-wh',
+        modulo: 'INVENTARIO',
+        titulo: 'Almacenes y Ubicaciones',
+        descripcionCorta: 'Gestión de almacenes físicos, estantes, pasillos y centros de distribución.',
+        icono: 'tabler-building-warehouse',
+        colorAccent: '#6C5CE7',
+        bgAccent: '#F0EEF9',
+        rutaDestino: '/inventory/settings/warehouses',
+        metricasResumen: [
+          { label: 'Almacenes Físicos', valor: '2 activos' },
+          { label: 'Ubicaciones', valor: '6 zonas' }
+        ]
+      },
+      {
+        id: 'hub-cat',
+        modulo: 'INVENTARIO',
+        titulo: 'Categorías de Productos',
+        descripcionCorta: 'Estructura taxonómica, familias comerciales y cuentas contables por defecto.',
+        icono: 'tabler-category',
+        colorAccent: '#6C5CE7',
+        bgAccent: '#F0EEF9',
+        rutaDestino: '/inventory/settings/categories',
+        metricasResumen: [{ label: 'Categorías', valor: '5 registradas' }]
+      },
+      {
+        id: 'hub-pos-terminal',
+        modulo: 'POS',
+        titulo: 'Terminales y Cajas POS',
+        descripcionCorta: 'Puntos de venta habilitados para emisión de tickets rápidos y cobro presencial.',
+        icono: 'tabler-device-tablet',
+        colorAccent: '#0284C7',
+        bgAccent: '#E0F2FE',
+        rutaDestino: '/pos/terminal',
+        metricasResumen: [
+          { label: 'Caja Principal', valor: 'Operativa' },
+          { label: 'Moneda de Cobro', valor: 'Bimonetaria' }
+        ]
+      },
+      {
+        id: 'hub-pos-shifts',
+        modulo: 'POS',
+        titulo: 'Turnos y Arqueos de Caja',
+        descripcionCorta: 'Historial de aperturas, cierres ciegos y diferencias de caja en USD y VES.',
+        icono: 'tabler-clock-dollar',
+        colorAccent: '#0284C7',
+        bgAccent: '#E0F2FE',
+        rutaDestino: '/pos/shifts',
+        metricasResumen: [{ label: 'Turno Activo', valor: '#TUR-0024' }]
+      },
+      {
+        id: 'hub-contacts',
+        modulo: 'CONTACTOS',
+        titulo: 'Directorio de Terceros',
+        descripcionCorta: 'Clientes, Proveedores y Empresas con RIF, condición fiscal y términos comerciales.',
+        icono: 'tabler-address-book',
+        colorAccent: '#10B981',
+        bgAccent: '#E8F5E9',
+        rutaDestino: '/contacts',
+        metricasResumen: [
+          { label: 'Clientes', valor: '12 registrados' },
+          { label: 'Proveedores', valor: '5 calificados' }
+        ]
+      },
+      {
+        id: 'hub-sales',
+        modulo: 'VENTAS',
+        titulo: 'Ventas y Cotizaciones',
+        descripcionCorta: 'Presupuestos bimonetarios con tasa BCV congelada y emisión de órdenes de venta.',
+        icono: 'tabler-file-invoice',
+        colorAccent: '#F59E0B',
+        bgAccent: '#FEF3C7',
+        rutaDestino: '/sales/quotes',
+        metricasResumen: [{ label: 'Vigencia Cotización', valor: '15 días' }]
+      },
+      {
+        id: 'hub-purchases',
+        modulo: 'COMPRAS',
+        titulo: 'Compras y Abastecimiento',
+        descripcionCorta: 'Solicitudes de cotización a proveedores, aprobación de costos y órdenes de compra.',
+        icono: 'tabler-shopping-bag',
+        colorAccent: '#8B5CF6',
+        bgAccent: '#EDE9FE',
+        rutaDestino: '/purchases/quotes',
+        metricasResumen: [{ label: 'Moneda Base', valor: 'USD' }]
+      }
+    ]
+  }
+}

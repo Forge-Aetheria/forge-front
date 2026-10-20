@@ -2,6 +2,14 @@
 
 export type ProductType = 'storable' | 'consumable' | 'service'
 
+export type SalesInvoicingPolicy = 'ORDERED' | 'DELIVERED'
+export type PurchaseControlPolicy = 'ORDERED' | 'RECEIVED'
+export type DeliveryPolicy = 'ALL_AT_ONCE' | 'PARTIAL'
+
+export type ProductInvoicingPolicyOption = 'DEFAULT' | SalesInvoicingPolicy
+export type ProductPurchaseControlOption = 'DEFAULT' | PurchaseControlPolicy
+export type ProductDeliveryPolicyOption = 'DEFAULT' | DeliveryPolicy
+
 export type SENIAT_VATRate = '16' | '8' | '0' | 'EXEMPT'
 
 export type StockMovementType =
@@ -61,9 +69,18 @@ export interface ProductTemplate {
   imageUrl?: string
   minStock?: number
 
+  // Logística (Informativo)
+  weight?: number // Peso en kg
+  volume?: number // Volumen en m³
+
   // Fiscal Localization (SENIAT) - Optional / Feature flagged
   vatRate?: SENIAT_VATRate
   applyISLR?: boolean
+
+  // Commercial Policies (Regla R6: Hierarchy Product Override > System Default)
+  invoicingPolicy?: ProductInvoicingPolicyOption
+  purchaseControlPolicy?: ProductPurchaseControlOption
+  deliveryPolicy?: ProductDeliveryPolicyOption
 
   // Variants
   attributes: ProductAttribute[]

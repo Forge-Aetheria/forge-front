@@ -35,9 +35,14 @@ export const productFormSchema = z.object({
     .optional(),
   basePrice: z.number().min(0, 'El precio base de venta no puede ser negativo'),
   minStock: z.number().min(0, 'El stock mínimo no puede ser negativo').optional(),
+  weight: z.number().min(0, 'El peso no puede ser negativo').optional(),
+  volume: z.number().min(0, 'El volumen no puede ser negativo').optional(),
   notes: z.string().optional(),
   vatRate: z.enum(['16', '8', '0', 'EXEMPT']).default('16'),
   applyISLR: z.boolean().default(false),
+  invoicingPolicy: z.enum(['DEFAULT', 'ORDERED', 'DELIVERED']).default('DEFAULT'),
+  purchaseControlPolicy: z.enum(['DEFAULT', 'ORDERED', 'RECEIVED']).default('DEFAULT'),
+  deliveryPolicy: z.enum(['DEFAULT', 'PARTIAL', 'ALL_AT_ONCE']).default('DEFAULT'),
   variants: z.array(productVariantSchema).min(1, 'Debe registrar al menos una variante')
 })
 

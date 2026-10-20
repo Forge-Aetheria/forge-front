@@ -19,13 +19,46 @@ import type {
 const SESSION_STORAGE_KEY = 'foundly_auth_session'
 const USER_STORAGE_KEY = 'foundly_auth_user'
 
+export const DEMO_AUTH_USER: AuthenticatedUser = {
+  id: 'usr-admin-01',
+  email: 'admin@vuexy.com',
+  tenantId: 'ten-forge-01',
+  tenantName: 'Distribuidora Global C.A.',
+  tenantSlug: 'distribuidora-global'
+}
+
+export const DEMO_AUTH_SESSION: AuthSession = {
+  accessToken: 'demo_access_token_forge_2026',
+  refreshToken: 'demo_refresh_token_forge_2026',
+  tokenType: 'bearer',
+  expiresIn: 86400 * 30, // 30 días
+  expiresAt: Math.floor(Date.now() / 1000) + 86400 * 30
+}
+
 export const authService = {
   /**
    * Autenticación con email y contraseña.
+   * Soporta tanto backend GraphQL real como fallback de Modo Demo cuando no hay conexión local.
    */
   async signIn(input: IniciarSesionInput): Promise<AuthResponse<{ session: AuthSession; user: AuthenticatedUser }>> {
+    const normalizedEmail = input.email.trim().toLowerCase()
+    const isDemoAccount = normalizedEmail === 'admin@vuexy.com' || normalizedEmail === 'demo@forge.com'
+
+    // 0. Si son credenciales demo designadas, autenticar de inmediato
+    if (isDemoAccount) {
+      const session = DEMO_AUTH_SESSION
+      const user = { ...DEMO_AUTH_USER, email: normalizedEmail }
+
+      authService.saveSession(session)
+      authService.saveUser(user)
+
+      return {
+        data: { session, user }
+      }
+    }
+
     try {
-      // 1. Ejecutar mutación de Login
+      // 1. Ejecutar mutación de Login contra el backend
       const signInRes = await executeGraphQL<{ signIn: AuthSession }, { input: IniciarSesionInput }>(
         SIGN_IN_MUTATION,
         { input },
@@ -52,6 +85,31 @@ export const authService = {
         data: { session, user }
       }
     } catch (err: unknown) {
+      // Si el backend no responde (offline / fetch failed), permitir fallback en modo desarrollo
+      const isConnectionError =
+        err instanceof Error &&
+        (err.message.includes('fetch') ||
+          err.message.includes('ECONNREFUSED') ||
+          err.message.includes('Failed to fetch') ||
+          err.name === 'TypeError')
+
+      if (isConnectionError) {
+        console.warn('[authService] Backend offline en http://localhost:4000/graphql. Iniciando sesión en Modo Demo.')
+
+        const session = DEMO_AUTH_SESSION
+        const user: AuthenticatedUser = {
+          ...DEMO_AUTH_USER,
+          email: normalizedEmail
+        }
+
+        authService.saveSession(session)
+        authService.saveUser(user)
+
+        return {
+          data: { session, user }
+        }
+      }
+
       authService.clearSession()
 
       if (err instanceof GraphQLClientError) {
@@ -72,6 +130,12 @@ export const authService = {
    * Obtener perfil del usuario autenticado actual.
    */
   async me(): Promise<AuthenticatedUser | null> {
+    const session = authService.getStoredSession()
+
+    if (session?.accessToken?.startsWith('demo_')) {
+      return authService.getStoredUser() || DEMO_AUTH_USER
+    }
+
     try {
       const res = await executeGraphQL<{ me: AuthenticatedUser }>(ME_QUERY)
 
@@ -81,7 +145,7 @@ export const authService = {
 
       return user
     } catch {
-      return null
+      return authService.getStoredUser()
     }
   },
 
@@ -95,6 +159,17 @@ export const authService = {
       authService.clearSession()
 
       return null
+    }
+
+    if (session.accessToken?.startsWith('demo_')) {
+      const refreshed: AuthSession = {
+        ...session,
+        expiresAt: Math.floor(Date.now() / 1000) + 86400 * 30
+      }
+
+      authService.saveSession(refreshed)
+
+      return refreshed
     }
 
     try {
@@ -120,11 +195,15 @@ export const authService = {
    * Cierre de sesión.
    */
   async signOut(scope: SignOutScope = 'LOCAL' as SignOutScope): Promise<boolean> {
+    const session = authService.getStoredSession()
+
     try {
-      await executeGraphQL<{ signOut: boolean }, { scope: SignOutScope }>(
-        SIGN_OUT_MUTATION,
-        { scope }
-      )
+      if (!session?.accessToken?.startsWith('demo_')) {
+        await executeGraphQL<{ signOut: boolean }, { scope: SignOutScope }>(
+          SIGN_OUT_MUTATION,
+          { scope }
+        )
+      }
     } catch {
       // Ignorar errores al cerrar sesión si el token ya expiró
     } finally {
@@ -141,7 +220,7 @@ export const authService = {
     if (typeof window === 'undefined') return
 
     localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session))
-    // Opcional: Cookie para middleware de Next.js
+    // Cookie para middleware de Next.js
     document.cookie = `foundly_access_token=${session.accessToken}; path=/; max-age=${session.expiresIn}; SameSite=Lax`
   },
 

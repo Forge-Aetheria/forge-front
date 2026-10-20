@@ -24,7 +24,10 @@ import type {
   ProductType,
   SENIAT_VATRate,
   ProductVariant,
-  ProductAttribute
+  ProductAttribute,
+  ProductInvoicingPolicyOption,
+  ProductPurchaseControlOption,
+  ProductDeliveryPolicyOption
 } from '@/types/inventoryTypes'
 import {
   createProductTemplate,
@@ -100,6 +103,15 @@ const ProductFormDrawer: React.FC<Props> = ({
   const [vatRate, setVatRate] = useState<SENIAT_VATRate>('16')
   const [applyISLR, setApplyISLR] = useState(false)
 
+  // Commercial Policies
+  const [invoicingPolicy, setInvoicingPolicy] = useState<ProductInvoicingPolicyOption>('DEFAULT')
+  const [purchaseControlPolicy, setPurchaseControlPolicy] = useState<ProductPurchaseControlOption>('DEFAULT')
+  const [deliveryPolicy, setDeliveryPolicy] = useState<ProductDeliveryPolicyOption>('DEFAULT')
+
+  // Logística (Informativo)
+  const [weight, setWeight] = useState<number>(0)
+  const [volume, setVolume] = useState<number>(0)
+
   // Variants & Attributes Generator States
   const [attrName1, setAttrName1] = useState('')
   const [attrValues1, setAttrValues1] = useState('')
@@ -140,6 +152,11 @@ const ProductFormDrawer: React.FC<Props> = ({
       )
       setVatRate(initialProduct.vatRate || '16')
       setApplyISLR(Boolean(initialProduct.applyISLR))
+      setInvoicingPolicy(initialProduct.invoicingPolicy || 'DEFAULT')
+      setPurchaseControlPolicy(initialProduct.purchaseControlPolicy || 'DEFAULT')
+      setDeliveryPolicy(initialProduct.deliveryPolicy || 'DEFAULT')
+      setWeight(initialProduct.weight ?? 0)
+      setVolume(initialProduct.volume ?? 0)
       setVariants(initialProduct.variants.map(v => ({ ...v })))
 
       if (initialProduct.attributes[0]) {
@@ -180,6 +197,11 @@ const ProductFormDrawer: React.FC<Props> = ({
       setShowMarginHelper(false)
       setVatRate('16')
       setApplyISLR(false)
+      setInvoicingPolicy('DEFAULT')
+      setPurchaseControlPolicy('DEFAULT')
+      setDeliveryPolicy('DEFAULT')
+      setWeight(0)
+      setVolume(0)
       setAttrName1('')
       setAttrValues1('')
       setAttrName2('')
@@ -394,6 +416,11 @@ const ProductFormDrawer: React.FC<Props> = ({
       minStock: productType === 'service' ? 0 : minStock,
       vatRate,
       applyISLR,
+      invoicingPolicy,
+      purchaseControlPolicy,
+      deliveryPolicy,
+      weight: weight > 0 ? weight : undefined,
+      volume: volume > 0 ? volume : undefined,
       variants: finalVariants
     })
 
@@ -1011,6 +1038,112 @@ const ProductFormDrawer: React.FC<Props> = ({
                 </TableBody>
               </Table>
             </div>
+          </div>
+
+          {/* 5. Logística */}
+          <div className='bg-[#FAFAFC] p-4 rounded-2xl border border-[#E6E4F0] flex flex-col gap-3'>
+            <div>
+              <span className='text-xs font-bold uppercase tracking-wider text-[#1E1B2E] flex items-center gap-1.5'>
+                <i className='tabler-truck text-[#6C5CE7]' /> 5. Logística (Informativo)
+              </span>
+              <span className='text-[11px] text-[#6B7280] block mt-0.5'>
+                Información dimensional y peso para control de envíos y fletes.
+              </span>
+            </div>
+
+            <Grid container spacing={3}>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <CustomTextField
+                  fullWidth
+                  size='small'
+                  type='number'
+                  label='Peso (kg)'
+                  placeholder='0.00'
+                  value={weight === 0 ? '' : weight}
+                  onChange={e => setWeight(Math.max(0, parseFloat(e.target.value) || 0))}
+                  InputProps={{
+                    endAdornment: <span className='text-xs text-[#6B7280] font-medium'>kg</span>
+                  }}
+                />
+              </Grid>
+
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <CustomTextField
+                  fullWidth
+                  size='small'
+                  type='number'
+                  label='Volumen (m³)'
+                  placeholder='0.000'
+                  value={volume === 0 ? '' : volume}
+                  onChange={e => setVolume(Math.max(0, parseFloat(e.target.value) || 0))}
+                  InputProps={{
+                    endAdornment: <span className='text-xs text-[#6B7280] font-medium'>m³</span>
+                  }}
+                />
+              </Grid>
+            </Grid>
+          </div>
+
+          {/* 6. Políticas de Facturación y Entrega */}
+          <div className='bg-[#FAFAFC] p-4 rounded-2xl border border-[#E6E4F0] flex flex-col gap-3'>
+            <div>
+              <span className='text-xs font-bold uppercase tracking-wider text-[#1E1B2E] flex items-center gap-1.5'>
+                <i className='tabler-clipboard-check text-[#6C5CE7]' /> 6. Políticas de Facturación y Entrega
+              </span>
+              <span className='text-[11px] text-[#6B7280] block mt-0.5'>
+                Si no se especifica un valor, tomará la política configurada en el sistema.
+              </span>
+            </div>
+
+            <Grid container spacing={3}>
+              <Grid size={{ xs: 12, sm: 4 }}>
+                <CustomTextField
+                  select
+                  fullWidth
+                  size='small'
+                  label='Política de Entrega / Despacho'
+                  value={deliveryPolicy}
+                  onChange={e => setDeliveryPolicy(e.target.value as ProductDeliveryPolicyOption)}
+                  helperText='Si no tiene valor, toma la del sistema'
+                >
+                  <MenuItem value='DEFAULT'><em>Sin especificar</em></MenuItem>
+                  <MenuItem value='PARTIAL'>Permitir Entregas Parciales</MenuItem>
+                  <MenuItem value='ALL_AT_ONCE'>Entregar Todos a la Vez</MenuItem>
+                </CustomTextField>
+              </Grid>
+
+              <Grid size={{ xs: 12, sm: 4 }}>
+                <CustomTextField
+                  select
+                  fullWidth
+                  size='small'
+                  label='Política de Facturación (Ventas)'
+                  value={invoicingPolicy}
+                  onChange={e => setInvoicingPolicy(e.target.value as ProductInvoicingPolicyOption)}
+                  helperText='Si no tiene valor, toma la del sistema'
+                >
+                  <MenuItem value='DEFAULT'><em>Sin especificar</em></MenuItem>
+                  <MenuItem value='ORDERED'>Cantidades Pedidas</MenuItem>
+                  <MenuItem value='DELIVERED'>Cantidades Entregadas</MenuItem>
+                </CustomTextField>
+              </Grid>
+
+              <Grid size={{ xs: 12, sm: 4 }}>
+                <CustomTextField
+                  select
+                  fullWidth
+                  size='small'
+                  label='Política de Control (Compras)'
+                  value={purchaseControlPolicy}
+                  onChange={e => setPurchaseControlPolicy(e.target.value as ProductPurchaseControlOption)}
+                  helperText='Si no tiene valor, toma la del sistema'
+                >
+                  <MenuItem value='DEFAULT'><em>Sin especificar</em></MenuItem>
+                  <MenuItem value='ORDERED'>Cantidades Pedidas</MenuItem>
+                  <MenuItem value='RECEIVED'>Cantidades Recibidas</MenuItem>
+                </CustomTextField>
+              </Grid>
+            </Grid>
           </div>
         </div>
 

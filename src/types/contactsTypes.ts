@@ -64,6 +64,18 @@ export interface TerceroEntity {
   contactos_referentes: ContactPerson[];
   direcciones_adicionales: EntityAddress[];
 
+  // Contabilidad y Cuentas Contables (SPEC-008)
+  cuenta_cxc_id?: string;
+  cuenta_cxc_nombre?: string;
+  cuenta_cxp_id?: string;
+  cuenta_cxp_nombre?: string;
+  plazo_pago_dias?: number;
+  limite_credito_usd?: number;
+  es_contribuyente_especial?: boolean;
+  porcentaje_retencion_iva?: number;
+  cuenta_bancaria_predeterminada_id?: string;
+  cuenta_bancaria_predeterminada_info?: string;
+
   status: 'ACTIVO' | 'INACTIVO';
   created_at: string;
   updated_at: string;
@@ -93,6 +105,18 @@ export interface TerceroFormData {
   codigo_postal?: string;
   contactos_referentes: ContactPerson[];
   direcciones_adicionales: EntityAddress[];
+
+  // Contabilidad y Cuentas Contables (SPEC-008)
+  cuenta_cxc_id?: string;
+  cuenta_cxc_nombre?: string;
+  cuenta_cxp_id?: string;
+  cuenta_cxp_nombre?: string;
+  plazo_pago_dias?: number;
+  limite_credito_usd?: number;
+  es_contribuyente_especial?: boolean;
+  porcentaje_retencion_iva?: number;
+  cuenta_bancaria_predeterminada_id?: string;
+  cuenta_bancaria_predeterminada_info?: string;
 }
 
 export interface ContactsTabProps {

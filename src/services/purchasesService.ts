@@ -18,6 +18,7 @@ import {
   mockSuppliersLookup
 } from '@/data/purchases/mockPurchasesData'
 import { venezuelanRifRegex } from '@/views/purchases/quotes/schemas/purchaseFormSchema'
+import { createWarehouseOperationOrder } from '@/services/inventory/operationOrdersService'
 
 const STORAGE_KEY_QUOTES = 'forge_purchases_quotes_v1'
 const STORAGE_KEY_FLAGS = 'forge_purchases_feature_flags_v1'
@@ -703,6 +704,121 @@ class PurchasesService {
       message: msg,
       created_at: nowIso
     }
+  }
+
+  // Crear Orden de Recepción vinculada en Almacén (SPEC-009)
+  public async createReceptionForPurchase(purchaseId: string): Promise<{ success: boolean; codigo: string; operationId: string; message: string }> {
+    await new Promise(r => setTimeout(r, 300))
+    const idx = this.quotes.findIndex(q => q.id === purchaseId)
+    if (idx === -1) throw new Error('Orden de compra no encontrada.')
+
+    const q = this.quotes[idx]
+    if (q.estado !== 'PURCHASE_ORDER') {
+      throw new Error('Solo se pueden generar recepciones para órdenes de compra confirmadas (OC-2026-XXXX).')
+    }
+
+    const physicalLines = q.items.filter(it => it.is_physical_stock)
+    if (physicalLines.length === 0) {
+      throw new Error('Esta orden de compra solo contiene servicios o gastos no inventariables; no requiere recepción física.')
+    }
+
+    const docOrigen = q.correlativo_orden_compra || q.correlativo
+
+    const opLines = physicalLines.map(line => ({
+      producto_id: line.producto_id,
+      producto_nombre: line.producto_nombre,
+      variante_id: `var-${line.producto_id}`,
+      variante_sku: line.producto_sku,
+      uom_code: line.uom_code || 'un',
+      cantidad_demanda: line.cantidad,
+      cantidad_procesada: line.cantidad,
+      costo_unitario_usd: line.costo_unitario
+    }))
+
+    const opOrder = await createWarehouseOperationOrder({
+      tipo: 'RECEIPT',
+      tercero_nombre: q.proveedor.razon_social,
+      documento_origen: docOrigen,
+      almacen_origen_nombre: `Proveedor: ${q.proveedor.razon_social}`,
+      almacen_destino_nombre: 'Almacén Central',
+      fecha_programada: new Date().toISOString().slice(0, 10),
+      notas: `Recepción generada desde orden de compra ${docOrigen}`,
+      estado: 'READY',
+      lineas: opLines
+    })
+
+    this.quotes[idx] = {
+      ...q,
+      almacen_operacion_id: opOrder.id,
+      almacen_operacion_codigo: opOrder.codigo,
+      updated_at: new Date().toISOString()
+    }
+    this.persistToStorage()
+
+    return {
+      success: true,
+      codigo: opOrder.codigo,
+      operationId: opOrder.id,
+      message: `Orden de Recepción ${opOrder.codigo} generada exitosamente en Almacén.`
+    }
+  }
+
+  // Registrar recepción efectiva ejecutada por almacén (actualiza cantidad_recibida)
+  public recordReceptionOperation(originRef: string, operationCode: string, lines: { producto_id: string; cantidad: number }[]): void {
+    this.hydrateFromStorage()
+    const idx = this.quotes.findIndex(q => q.correlativo_orden_compra === originRef || q.correlativo === originRef || q.id === originRef)
+    if (idx === -1) return
+
+    const q = this.quotes[idx]
+    const updatedItems = q.items.map(item => {
+      const match = lines.find(l => l.producto_id === item.producto_id)
+      if (match) {
+        return {
+          ...item,
+          cantidad_recibida: (item.cantidad_recibida || 0) + match.cantidad
+        }
+      }
+      return item
+    })
+
+    this.quotes[idx] = {
+      ...q,
+      almacen_operacion_codigo: operationCode,
+      items: updatedItems,
+      updated_at: new Date().toISOString()
+    }
+    this.persistToStorage()
+  }
+
+  // Registrar factura de proveedor registrada en CxP (actualiza cantidad_facturada y enlace)
+  public recordSupplierInvoiceLink(originRef: string, invoiceId: string, invoiceNumber: string, billedLines?: { producto_id: string; cantidad: number }[]): void {
+    this.hydrateFromStorage()
+    const idx = this.quotes.findIndex(q => q.correlativo_orden_compra === originRef || q.correlativo === originRef || q.id === originRef)
+    if (idx === -1) return
+
+    const q = this.quotes[idx]
+    let updatedItems = q.items
+    if (billedLines && billedLines.length > 0) {
+      updatedItems = q.items.map(item => {
+        const match = billedLines.find(l => l.producto_id === item.producto_id)
+        if (match) {
+          return {
+            ...item,
+            cantidad_facturada: (item.cantidad_facturada || 0) + match.cantidad
+          }
+        }
+        return item
+      })
+    }
+
+    this.quotes[idx] = {
+      ...q,
+      factura_id: invoiceId,
+      factura_numero: invoiceNumber,
+      items: updatedItems,
+      updated_at: new Date().toISOString()
+    }
+    this.persistToStorage()
   }
 }
 

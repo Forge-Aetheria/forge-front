@@ -70,6 +70,13 @@ Toda especificación funcional previa a codificar debe redactarse formalmente en
 ### 4.5 Type Safety Estricto
 - Ningún cambio o commit se considera finalizado sin verificar compilación limpia al 100% mediante `npx tsc --noEmit`.
 
+
+### 4.6 Jerarquía de Políticas Comerciales y de Control (Regla R6)
+- **Regla:** Toda política operativa o comercial (política de facturación sobre cantidades pedidas vs. entregadas, control de compra sobre cantidades pedidas vs. recibidas, y política de entrega) debe implementarse bajo el patrón jerárquico estricto donde la configuración individual del producto prevalece sobre la configuración general del sistema (`Product Override > System Default`). Si el producto tiene configurada la opción `'DEFAULT'` o no está definida, el motor debe recurrir a la política general del sistema.
+
+
+
+
 ---
 
 ## 5. Estándar de Tablas y Listados Maestros (DataGrid Standard Contract)

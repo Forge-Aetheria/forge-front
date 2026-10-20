@@ -379,7 +379,7 @@ const InventoryWarehousesView = () => {
                           setShowNewLocRow(true)
                         }}
                       >
-                        Nueva Ubicación
+                        Nuevo
                       </Button>
                     </div>
 
