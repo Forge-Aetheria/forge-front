@@ -15,10 +15,20 @@
 - **Tarjetas Suspendidas (`Card`):** Contenedores en blanco purificado (`#FFFFFF`), bordes ultrafinos lavanda de 1px (`#E6E4F0`), radios redondeados generosos de `20px` a `24px` y sombras suspendidas sutiles (`opacity ≤ 0.05`).
 - **Superficies Secundarias & Inputs:** Fondo `#F4F3F8`, borde `#DCD8EC`, radio de `16px` y focus ring en morado de marca `#6C5CE7`.
 - **Geometría de Botones del Sistema (Convención Canónica Foundly Design System):** Todos los botones interactivos (`Button`) adoptan obligatoriamente la forma de **píldora totalmente redondeada (`rounded-full` / `borderRadius: 9999`)**, tanto para botones primarios (`Nuevo`, `Guardar`), secundarios (`Cancelar`, `Volver`), como botones de acción en tabla o modales. Esta regla se aplica centralizadamente a través del tema (`MuiButton.styleOverrides.root.borderRadius = 9999`), garantizando homogeneidad inmediata en todos los tamaños sin requerir clases manuales. Las pastillas, Badges y Chips (`CustomChip`) comparten armónicamente esta misma forma de píldora continua.
-- **Estandarización Estricta de Botones Recurrentes:**
-  - **Botón `Volver`:** Siempre se ubica en la cabecera superior izquierda al lado del título. Se implementa con `variant="tonal"` (o `IconButton` con tooltip), icono `tabler-arrow-left` y texto `"Volver"`.
-  - **Botón `Nuevo`:** Siempre `variant="contained" color="primary"`, icono `tabler-plus` y etiqueta concisa `"Nuevo"` (o `"+ Nuevo"`).
+- **Estandarización Estricta de Botones Recurrentes & Microcopy (Modelo Híbrido Contextual):**
+  - **Principio de Economía Espacial y Claridad:** Los botones en cabeceras y vistas deben usar etiquetas atómicas y directas cuando el contexto de la pantalla ya identifica el objeto sobre el que se opera, reservando las etiquetas explícitas (Verbo + Objeto) exclusivamente para modales y confirmaciones críticas.
+  - **Botón `Volver`:** Siempre en cabecera superior izquierda. `variant="tonal"` (o `IconButton` con tooltip), icono `tabler-arrow-left` y texto conciso `"Volver"` (nunca *"Volver al listado"* o *"Volver a Facturas"*).
+  - **Botón `Nuevo`:** Siempre `variant="contained" color="primary"`, icono `tabler-plus` y etiqueta concisa `"Nuevo"` (o `"+ Nuevo"`, nunca *"Crear Contacto"* o *"Nuevo Producto"*).
   - **Prohibición de Botones de Salto al lado de "Nuevo":** Queda estrictamente prohibido colocar botones secundarios de navegación rápida (ej. *"Ver Almacenes"*, *"Ver Kárdex"*, *"Panel Operativo"*) al lado del botón primario *"Nuevo"*. Toda navegación colateral se realiza a través de la barra lateral, breadcrumbs o la Command Palette (`Cmd + K`).
+  - **Cabeceras de Formulario / Vistas de Creación y Edición:** Se estandarizan en `Cancelar` (`variant="outlined"` neutro o tonal) y `Guardar` (`variant="contained" color="primary"`). Se prohíben etiquetas redundantes como *"Guardar Cambios"* o *"Descartar Edición"*.
+  - **Transacciones y Documentos Comerciales/Contables:**
+    - Cuentas por cobrar / Ventas: `Cobrar` (`variant="contained"` color primario o success).
+    - Cuentas por pagar / Compras: `Pagar` (`variant="contained"` color primario o success).
+    - Documentos derivados: `Nota de Crédito` o `Nota de Débito` (`variant="outlined"` neutro).
+    - Regreso a estado editable: `A Borrador` o `Reabrir` (estrictamente prohibido usar frases verbosas como *"Restablecer a Borrador"*).
+    - Anulación en cabecera de documento: `Anular` (`variant="outlined"` color error/danger, nunca *"Anular Factura"*).
+  - **Diálogos Modales de Confirmación Crítica o Destructiva:** En modales emergentes sí es obligatorio el patrón explícito para máxima seguridad operativa y prevención de errores (ej. `[ Cancelar ]` y `[ Sí, Anular Factura ]`, `[ Sí, Eliminar Contacto ]`, `[ Sí, Desincorporar ]`). Se prohíben botones ambiguos como *"Aceptar"* o *"Sí"*.
+  - **Jerarquía y Control de Saturación Cromática:** En cualquier cabecera o barra de herramientas debe existir **un único botón principal destacado (`contained`)**. Las demás acciones se presentan en `outlined` neutro o se agrupan en un menú desplegable de acciones (`Más opciones ▾`) para no superar el ancho disponible en pantallas compactas ni generar competencia visual de colores.
 - **Tokens Semánticos:**
   - `accent` / `primary`: `#6C5CE7` (Glow: `rgba(108, 92, 231, 0.35)`).
   - `income` / `success`: `#10B981` (Verde esmeralda para valores positivos e ingresos).
