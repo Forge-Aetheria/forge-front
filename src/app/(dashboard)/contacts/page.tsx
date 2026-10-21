@@ -7,11 +7,7 @@ export const metadata: Metadata = {
 };
 
 const ContactsPage = () => {
-  return (
-    <div className="p-4 sm:p-6 max-w-7xl mx-auto">
-      <EntityContactsTab terceroId="tercero-demo" />
-    </div>
-  );
+  return <EntityContactsTab terceroId="tercero-demo" />;
 };
 
 export default ContactsPage;

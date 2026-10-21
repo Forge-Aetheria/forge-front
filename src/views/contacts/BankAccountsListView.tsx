@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useMemo } from 'react'
+import Link from 'next/link'
 import Card from '@mui/material/Card'
 import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
@@ -23,7 +24,6 @@ import Skeleton from '@mui/material/Skeleton'
 
 import type { BankAccount, BankCurrency } from '@/types/bankAccountTypes'
 import { bankAccountsService } from '@/services/bankAccountsService'
-import { BankAccountModal } from './components/BankAccountModal'
 
 export const BankAccountsListView: React.FC = () => {
   const [accounts, setAccounts] = useState<BankAccount[]>([])
@@ -35,10 +35,6 @@ export const BankAccountsListView: React.FC = () => {
   const [currencyFilter, setCurrencyFilter] = useState<'ALL' | BankCurrency>('ALL')
   const [page, setPage] = useState(0)
   const [rowsPerPage, setRowsPerPage] = useState(10)
-
-  // Modal
-  const [modalOpen, setModalOpen] = useState(false)
-  const [editingAccount, setEditingAccount] = useState<BankAccount | null>(null)
 
   // Toast
   const [toastMessage, setToastMessage] = useState<string | null>(null)
@@ -83,16 +79,6 @@ export const BankAccountsListView: React.FC = () => {
     return filteredAccounts.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
   }, [filteredAccounts, page, rowsPerPage])
 
-  const handleOpenCreate = () => {
-    setEditingAccount(null)
-    setModalOpen(true)
-  }
-
-  const handleOpenEdit = (acc: BankAccount) => {
-    setEditingAccount(acc)
-    setModalOpen(true)
-  }
-
   const handleDelete = async (id: string, banco: string) => {
     if (!confirm(`¿Estás seguro de eliminar la cuenta bancaria de ${banco}?`)) return
     try {
@@ -117,19 +103,6 @@ export const BankAccountsListView: React.FC = () => {
   const handleCopy = (text: string, label: string) => {
     navigator.clipboard.writeText(text)
     setToastMessage(`${label} copiado al portapapeles.`)
-  }
-
-  const handleSaved = (saved: BankAccount) => {
-    setAccounts(prev => {
-      const idx = prev.findIndex(a => a.id === saved.id)
-      if (idx >= 0) {
-        const copy = [...prev]
-        copy[idx] = saved
-        return copy
-      }
-      return [saved, ...prev]
-    })
-    setToastMessage(`Cuenta bancaria ${saved.banco} guardada con éxito.`)
   }
 
   return (
@@ -158,9 +131,10 @@ export const BankAccountsListView: React.FC = () => {
         </Box>
 
         <Button
+          component={Link}
+          href='/contacts/bank-accounts/create'
           variant='contained'
           startIcon={<i className='tabler-plus' />}
-          onClick={handleOpenCreate}
           sx={{
             borderRadius: '9999px',
             backgroundColor: '#6C5CE7',
@@ -311,16 +285,28 @@ export const BankAccountsListView: React.FC = () => {
                           <i className='tabler-building-bank' />
                         </Box>
                         <Box>
-                          <Typography variant='body2' sx={{ fontWeight: 700, color: '#1E293B' }}>
+                          <Typography
+                            variant='body2'
+                            component={Link}
+                            href={`/contacts/bank-accounts/${acc.id}`}
+                            sx={{
+                              fontWeight: 700,
+                              color: '#1E293B',
+                              textDecoration: 'none',
+                              '&:hover': { color: '#6C5CE7', textDecoration: 'underline' }
+                            }}
+                          >
                             {acc.banco}
                           </Typography>
                           {acc.is_predeterminada && (
-                            <CustomChip
-                              label='Predeterminada'
-                              size='small'
-                              variant='tonal'
-                              color='success'
-                            />
+                            <Box sx={{ mt: 0.5 }}>
+                              <CustomChip
+                                label='Predeterminada'
+                                size='small'
+                                variant='tonal'
+                                color='success'
+                              />
+                            </Box>
                           )}
                         </Box>
                       </Box>
@@ -440,7 +426,12 @@ export const BankAccountsListView: React.FC = () => {
                           </Tooltip>
                         )}
                         <Tooltip title='Editar'>
-                          <IconButton size='small' onClick={() => handleOpenEdit(acc)} sx={{ color: '#6C5CE7' }}>
+                          <IconButton
+                            size='small'
+                            component={Link}
+                            href={`/contacts/bank-accounts/${acc.id}`}
+                            sx={{ color: '#6C5CE7' }}
+                          >
                             <i className='tabler-edit text-base' />
                           </IconButton>
                         </Tooltip>
@@ -475,14 +466,6 @@ export const BankAccountsListView: React.FC = () => {
           }
         />
       </Card>
-
-      {/* Modal */}
-      <BankAccountModal
-        open={modalOpen}
-        onClose={() => setModalOpen(false)}
-        onSuccess={handleSaved}
-        initialAccount={editingAccount}
-      />
 
       {/* Toast */}
       <Snackbar
