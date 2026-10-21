@@ -20,6 +20,7 @@ import Dialog from '@mui/material/Dialog'
 import DialogTitle from '@mui/material/DialogTitle'
 import DialogContent from '@mui/material/DialogContent'
 import DialogActions from '@mui/material/DialogActions'
+import CustomChip from '@core/components/mui/Chip'
 import { BcvRate, PurchaseQuote, PurchasesFilterState, PurchaseVisibleColumns, SupplierLookup } from '@/types/purchasesTypes'
 import { purchasesService } from '@/services/purchasesService'
 import { PurchasesListFilters } from './components/PurchasesListFilters'
@@ -216,27 +217,19 @@ export const PurchasesListView: React.FC = () => {
             </Typography>
             {bcvRate && <BcvRateBadge rate={bcvRate} onRefresh={loadData} />}
           </div>
-          <Typography variant='body2' className='text-[#6B7280] mt-1'>
-            Solicitudes de cotización y órdenes de compra
-          </Typography>
         </div>
 
         <div className='flex items-center gap-2.5 flex-wrap'>
           {/* Controles de Selección Múltiple en Cabecera */}
           {selectedIds.length > 0 && (
             <div className='flex items-center gap-2'>
-              <div className='flex items-center gap-1.5 bg-[#F3F0FF] text-[#6C5CE7] border border-[#E9D5FF] px-3 py-1.5 rounded-full text-xs font-semibold'>
-                <span>{selectedIds.length} seleccionados</span>
-                <Tooltip title='Deseleccionar'>
-                  <IconButton
-                    size='small'
-                    onClick={() => setSelectedIds([])}
-                    sx={{ p: 0.2, ml: 0.5, color: '#6C5CE7', '&:hover': { color: '#4B3AA6' } }}
-                  >
-                    <i className='tabler-x text-xs' />
-                  </IconButton>
-                </Tooltip>
-              </div>
+              <CustomChip
+                size='small'
+                variant='tonal'
+                color='primary'
+                label={`${selectedIds.length} seleccionados`}
+                onDelete={() => setSelectedIds([])}
+              />
 
               <Button
                 variant='outlined'
@@ -441,9 +434,12 @@ export const PurchasesListView: React.FC = () => {
               <Typography variant='h6' className='font-semibold text-[#1E1B2E] text-base'>
                 Listado de Compras
               </Typography>
-              <span className='text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#F3F0FF] text-[#6C5CE7] border border-[#E9D5FF]'>
-                {quotes.length} {quotes.length === 1 ? 'registro' : 'registros'}
-              </span>
+              <CustomChip
+                size='small'
+                variant='tonal'
+                color='primary'
+                label={`${quotes.length} ${quotes.length === 1 ? 'registro' : 'registros'}`}
+              />
             </div>
 
             <div className='flex items-center gap-2 flex-wrap'>
@@ -453,7 +449,6 @@ export const PurchasesListView: React.FC = () => {
                 startIcon={<i className='tabler-layout-columns text-base' />}
                 onClick={e => setColumnAnchorEl(e.currentTarget)}
                 sx={{
-                  borderRadius: '8px',
                   borderColor: '#E6E4F0',
                   color: '#6C5CE7',
                   textTransform: 'none',
@@ -681,7 +676,7 @@ export const PurchasesListView: React.FC = () => {
             onClick={() => setBatchCancelConfirmOpen(false)}
             sx={{ borderRadius: '9999px', color: '#6B7280' }}
           >
-            Volver
+            Cancelar
           </Button>
           <Button
             variant='contained'
@@ -696,7 +691,7 @@ export const PurchasesListView: React.FC = () => {
               '&:hover': { backgroundColor: '#DC2626' }
             }}
           >
-            Anular Compras
+            Sí, Anular Compras
           </Button>
         </DialogActions>
       </Dialog>

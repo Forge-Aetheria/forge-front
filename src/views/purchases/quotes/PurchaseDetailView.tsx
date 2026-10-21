@@ -12,7 +12,7 @@ import CardContent from '@mui/material/CardContent'
 import Typography from '@mui/material/Typography'
 import Button from '@mui/material/Button'
 import IconButton from '@mui/material/IconButton'
-import Chip from '@mui/material/Chip'
+import CustomChip from '@core/components/mui/Chip'
 import Grid from '@mui/material/Grid'
 import Tooltip from '@mui/material/Tooltip'
 import Snackbar from '@mui/material/Snackbar'
@@ -370,20 +370,13 @@ export const PurchaseDetailView: React.FC<Props> = ({ id }) => {
               {quote.almacen_operacion_codigo && (
                 <Tooltip title="Ver Orden de Recepción en Almacén" arrow>
                   <Link href="/inventory/operations/receipts">
-                    <Chip
+                    <CustomChip
                       label={`Recepción: ${quote.almacen_operacion_codigo}`}
                       size="small"
                       clickable
-                      icon={<i className="tabler-truck-delivery text-xs text-[#0284C7]" />}
-                      sx={{
-                        borderRadius: '9999px',
-                        fontWeight: 600,
-                        backgroundColor: '#E0F2FE',
-                        color: '#0284C7',
-                        border: '1px solid #BAE6FD',
-                        cursor: 'pointer',
-                        '&:hover': { backgroundColor: '#BAE6FD' }
-                      }}
+                      variant="tonal"
+                      color="info"
+                      icon={<i className="tabler-truck-delivery text-xs" />}
                     />
                   </Link>
                 </Tooltip>
@@ -391,20 +384,13 @@ export const PurchaseDetailView: React.FC<Props> = ({ id }) => {
               {quote.factura_numero && (
                 <Tooltip title="Ver Factura de Proveedor en Contabilidad" arrow>
                   <Link href="/accounting/invoices?type=SUPPLIER">
-                    <Chip
+                    <CustomChip
                       label={`Factura CxP: ${quote.factura_numero}`}
                       size="small"
                       clickable
-                      icon={<i className="tabler-receipt text-xs text-[#10B981]" />}
-                      sx={{
-                        borderRadius: '9999px',
-                        fontWeight: 600,
-                        backgroundColor: '#E8F5E9',
-                        color: '#10B981',
-                        border: '1px solid #A7F3D0',
-                        cursor: 'pointer',
-                        '&:hover': { backgroundColor: '#A7F3D0' }
-                      }}
+                      variant="tonal"
+                      color="success"
+                      icon={<i className="tabler-receipt text-xs" />}
                     />
                   </Link>
                 </Tooltip>
@@ -701,41 +687,25 @@ export const PurchaseDetailView: React.FC<Props> = ({ id }) => {
                 <Typography variant='subtitle1' className='font-bold text-[#1E1B2E]'>
                   Orden de Compra en Firme: {quote.correlativo_orden_compra}
                 </Typography>
-                <Chip
+                <CustomChip
                   size='small'
                   label='Habilitada para Factura de Proveedor (CxP)'
-                  sx={{
-                    borderRadius: '9999px',
-                    backgroundColor: '#E8F5E9',
-                    color: '#10B981',
-                    fontWeight: 600,
-                    fontSize: '0.7rem'
-                  }}
+                  color='success'
+                  variant='tonal'
                 />
                 {physicalLinesCount > 0 ? (
-                  <Chip
+                  <CustomChip
                     size='small'
                     label={`Stock en Tránsito Notificado (+${totalPhysicalUnits} un.)`}
-                    sx={{
-                      borderRadius: '9999px',
-                      backgroundColor: '#FFFFFF',
-                      color: '#6C5CE7',
-                      border: '1px solid #DCD8EC',
-                      fontWeight: 600,
-                      fontSize: '0.7rem'
-                    }}
+                    color='primary'
+                    variant='tonal'
                   />
                 ) : (
-                  <Chip
+                  <CustomChip
                     size='small'
                     label='Servicios / Gastos (Sin Recepción Física de Almacén)'
-                    sx={{
-                      borderRadius: '9999px',
-                      backgroundColor: '#E0F2FE',
-                      color: '#0284C7',
-                      fontWeight: 600,
-                      fontSize: '0.7rem'
-                    }}
+                    color='info'
+                    variant='tonal'
                   />
                 )}
               </div>
@@ -804,16 +774,11 @@ export const PurchaseDetailView: React.FC<Props> = ({ id }) => {
                 <Typography variant='caption' sx={{ fontWeight: 700, color: '#6C5CE7', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                   Proveedor Adjudicado
                 </Typography>
-                <Chip
+                <CustomChip
                   label={`RIF: ${quote.proveedor.identificacion}`}
                   size='small'
-                  sx={{
-                    borderRadius: '9999px',
-                    fontWeight: 700,
-                    backgroundColor: '#F0EEF9',
-                    color: '#6C5CE7',
-                    height: 22
-                  }}
+                  variant='tonal'
+                  color='primary'
                 />
               </Box>
               <Typography variant='h6' sx={{ fontWeight: 700, color: '#1E293B', mt: 0.5 }}>
@@ -994,17 +959,11 @@ export const PurchaseDetailView: React.FC<Props> = ({ id }) => {
                             }
                             arrow
                           >
-                            <Chip
+                            <CustomChip
                               size='small'
                               label={effPolicy === 'RECEIVED' ? 'Sobre Recepción' : 'Sobre Pedido'}
-                              sx={{
-                                borderRadius: '9999px',
-                                fontSize: '0.68rem',
-                                height: 20,
-                                backgroundColor: effPolicy === 'RECEIVED' ? '#E0F2FE' : '#F0EEF9',
-                                color: effPolicy === 'RECEIVED' ? '#0284C7' : '#6C5CE7',
-                                fontWeight: 600
-                              }}
+                              variant='tonal'
+                              color={effPolicy === 'RECEIVED' ? 'info' : 'primary'}
                             />
                           </Tooltip>
                         </TableCell>

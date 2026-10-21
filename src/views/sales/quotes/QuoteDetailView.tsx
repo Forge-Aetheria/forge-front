@@ -9,7 +9,7 @@ import CardContent from '@mui/material/CardContent';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
-import Chip from '@mui/material/Chip';
+import CustomChip from '@core/components/mui/Chip';
 import Divider from '@mui/material/Divider';
 import Grid from '@mui/material/Grid';
 import Tooltip from '@mui/material/Tooltip';
@@ -338,36 +338,24 @@ export const QuoteDetailView: React.FC<Props> = ({ id }) => {
             <QuoteStatusChip status={quote.estado} size="small" />
             <BcvRateBadge rate={quote.tasa_bcv} compact />
             {quote.orden_venta_id && (
-              <Chip
+              <CustomChip
                 label={`Orden: ${quote.correlativo_orden || quote.orden_venta_id}`}
                 size="small"
-                icon={<i className="tabler-check text-xs text-[#10B981]" />}
-                sx={{
-                  borderRadius: '9999px',
-                  fontWeight: 600,
-                  backgroundColor: 'rgba(16, 185, 129, 0.12)',
-                  color: '#10B981',
-                  border: '1px solid rgba(16, 185, 129, 0.3)'
-                }}
+                variant="tonal"
+                color="success"
+                icon={<i className="tabler-check text-xs" />}
               />
             )}
             {quote.almacen_operacion_codigo && (
               <Tooltip title="Ver Orden de Despacho en Almacén" arrow>
                 <Link href="/inventory/operations/deliveries">
-                  <Chip
+                  <CustomChip
                     label={`Despacho: ${quote.almacen_operacion_codigo}`}
                     size="small"
+                    variant="tonal"
+                    color="info"
                     clickable
-                    icon={<i className="tabler-truck-delivery text-xs text-[#0284C7]" />}
-                    sx={{
-                      borderRadius: '9999px',
-                      fontWeight: 600,
-                      backgroundColor: '#E0F2FE',
-                      color: '#0284C7',
-                      border: '1px solid #BAE6FD',
-                      cursor: 'pointer',
-                      '&:hover': { backgroundColor: '#BAE6FD' }
-                    }}
+                    icon={<i className="tabler-truck-delivery text-xs" />}
                   />
                 </Link>
               </Tooltip>
@@ -375,44 +363,31 @@ export const QuoteDetailView: React.FC<Props> = ({ id }) => {
             {quote.factura_numero && (
               <Tooltip title="Ver Factura de Cliente en Contabilidad" arrow>
                 <Link href="/accounting/invoices">
-                  <Chip
+                  <CustomChip
                     label={`Factura: ${quote.factura_numero}`}
                     size="small"
+                    variant="tonal"
+                    color="success"
                     clickable
-                    icon={<i className="tabler-receipt text-xs text-[#10B981]" />}
-                    sx={{
-                      borderRadius: '9999px',
-                      fontWeight: 600,
-                      backgroundColor: '#E8F5E9',
-                      color: '#10B981',
-                      border: '1px solid #A7F3D0',
-                      cursor: 'pointer',
-                      '&:hover': { backgroundColor: '#A7F3D0' }
-                    }}
+                    icon={<i className="tabler-receipt text-xs" />}
                   />
                 </Link>
               </Tooltip>
             )}
-            <Chip
+            <CustomChip
               label={quote.aplica_iva ? 'Con IVA (16%)' : 'Exenta de IVA'}
               size="small"
+              variant="tonal"
+              color={quote.aplica_iva ? 'primary' : 'secondary'}
               icon={
                 <i
                   className={
                     quote.aplica_iva
-                      ? 'tabler-receipt-tax text-xs text-[#6C5CE7]'
-                      : 'tabler-receipt-off text-xs text-[#6B7280]'
+                      ? 'tabler-receipt-tax text-xs'
+                      : 'tabler-receipt-off text-xs'
                   }
                 />
               }
-              sx={{
-                borderRadius: '9999px',
-                fontWeight: 600,
-                fontSize: '0.72rem',
-                backgroundColor: quote.aplica_iva ? '#F0EEF9' : '#F4F3F8',
-                color: quote.aplica_iva ? '#6C5CE7' : '#6B7280',
-                border: '1px solid #DCD8EC'
-              }}
             />
           </div>
         </div>
@@ -469,7 +444,7 @@ export const QuoteDetailView: React.FC<Props> = ({ id }) => {
               }}
               startIcon={<i className="tabler-edit text-base" />}
             >
-              Editar Borrador
+              Editar
             </Button>
           )}
 
@@ -756,16 +731,11 @@ export const QuoteDetailView: React.FC<Props> = ({ id }) => {
                 <Typography variant='caption' sx={{ fontWeight: 700, color: '#6C5CE7', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                   Cliente / Destinatario
                 </Typography>
-                <Chip
+                <CustomChip
                   label={quote.cliente.identificacion}
                   size='small'
-                  sx={{
-                    borderRadius: '9999px',
-                    fontWeight: 700,
-                    backgroundColor: '#F0EEF9',
-                    color: '#6C5CE7',
-                    height: 22
-                  }}
+                  variant='tonal'
+                  color='primary'
                 />
               </Box>
               <Typography variant='h6' sx={{ fontWeight: 700, color: '#1E293B', mt: 0.5 }}>
@@ -955,17 +925,11 @@ export const QuoteDetailView: React.FC<Props> = ({ id }) => {
                             }
                             arrow
                           >
-                            <Chip
+                            <CustomChip
                               size='small'
                               label={effPolicy === 'DELIVERED' ? 'Sobre Entrega' : 'Sobre Pedido'}
-                              sx={{
-                                borderRadius: '9999px',
-                                fontSize: '0.68rem',
-                                height: 20,
-                                backgroundColor: effPolicy === 'DELIVERED' ? '#E0F2FE' : '#F0EEF9',
-                                color: effPolicy === 'DELIVERED' ? '#0284C7' : '#6C5CE7',
-                                fontWeight: 600
-                              }}
+                              variant='tonal'
+                              color={effPolicy === 'DELIVERED' ? 'info' : 'primary'}
                             />
                           </Tooltip>
                         </TableCell>
@@ -991,17 +955,11 @@ export const QuoteDetailView: React.FC<Props> = ({ id }) => {
                           )}
                         </TableCell>
                         <TableCell align='center' sx={{ py: 1.2 }}>
-                          <Chip
+                          <CustomChip
                             size='small'
                             label={!quote.aplica_iva || it.alicuota_iva === 'EXEMPT' || it.alicuota_iva === '0' ? '0%' : '16%'}
-                            sx={{
-                              borderRadius: '9999px',
-                              fontSize: '0.68rem',
-                              height: 20,
-                              backgroundColor: !quote.aplica_iva || it.alicuota_iva === 'EXEMPT' || it.alicuota_iva === '0' ? '#F4F3F8' : '#F0EEF9',
-                              color: !quote.aplica_iva || it.alicuota_iva === 'EXEMPT' || it.alicuota_iva === '0' ? '#6B7280' : '#6C5CE7',
-                              border: '1px solid #DCD8EC'
-                            }}
+                            variant='tonal'
+                            color={!quote.aplica_iva || it.alicuota_iva === 'EXEMPT' || it.alicuota_iva === '0' ? 'secondary' : 'primary'}
                           />
                         </TableCell>
                         <TableCell align='right' sx={{ fontWeight: 700, color: '#1E1B2E', py: 1.2 }}>
