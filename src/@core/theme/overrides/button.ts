@@ -31,7 +31,7 @@ const button: Theme['components'] = {
   MuiButton: {
     styleOverrides: {
       root: ({ theme, ownerState }) => ({
-        borderRadius: 'var(--mui-shape-borderRadius)',
+        borderRadius: 9999, // Foundly Design System: Botones totalmente redondeados (píldora)
         textTransform: 'none',
         fontWeight: 600,
         '&.Mui-disabled': {
@@ -416,12 +416,12 @@ const button: Theme['components'] = {
       sizeSmall: ({ theme }) => ({
         lineHeight: 1.38462,
         fontSize: theme.typography.body2.fontSize,
-        borderRadius: 'var(--mui-shape-customBorderRadius-sm)'
+        borderRadius: 9999
       }),
       sizeLarge: {
         fontSize: '1.0625rem',
         lineHeight: 1.529412,
-        borderRadius: 'var(--mui-shape-customBorderRadius-lg)'
+        borderRadius: 9999
       },
       startIcon: ({ theme, ownerState }) => ({
         ...(ownerState.size === 'small'
