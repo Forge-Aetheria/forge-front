@@ -8,7 +8,7 @@ import CardContent from '@mui/material/CardContent';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
-import Chip from '@mui/material/Chip';
+import CustomChip from '@core/components/mui/Chip';
 import Avatar from '@mui/material/Avatar';
 import Divider from '@mui/material/Divider';
 import Grid from '@mui/material/Grid';
@@ -677,8 +677,8 @@ export const ContactDetailView: React.FC<Props> = ({ id }) => {
                 ? 'Creando...'
                 : 'Guardando...'
               : isCreate
-              ? 'Crear Contacto'
-              : 'Guardar Cambios'}
+              ? 'Crear'
+              : 'Guardar'}
           </Button>
 
           {/* Eliminar */}
@@ -1670,28 +1670,18 @@ export const ContactDetailView: React.FC<Props> = ({ id }) => {
                                 <div className="truncate">
                                   <div className="flex items-center gap-1.5">
                                     <span className="font-bold text-xs text-[#1E1B2E]">{acc.banco}</span>
-                                    <Chip
+                                    <CustomChip
                                       label={acc.moneda}
                                       size="small"
-                                      sx={{
-                                        height: 18,
-                                        fontSize: '0.6rem',
-                                        fontWeight: 800,
-                                        backgroundColor: acc.moneda === 'USD' ? 'rgba(108, 92, 231, 0.12)' : 'rgba(16, 185, 129, 0.12)',
-                                        color: acc.moneda === 'USD' ? '#6C5CE7' : '#10B981'
-                                      }}
+                                      variant="tonal"
+                                      color={acc.moneda === 'USD' ? 'primary' : acc.moneda === 'EUR' ? 'info' : 'success'}
                                     />
                                     {acc.is_predeterminada && (
-                                      <Chip
+                                      <CustomChip
                                         label="Predeterminada"
                                         size="small"
-                                        sx={{
-                                          height: 18,
-                                          fontSize: '0.6rem',
-                                          fontWeight: 700,
-                                          backgroundColor: 'rgba(16, 185, 129, 0.12)',
-                                          color: '#10B981'
-                                        }}
+                                        variant="tonal"
+                                        color="success"
                                       />
                                     )}
                                   </div>
@@ -1941,28 +1931,18 @@ export const ContactDetailView: React.FC<Props> = ({ id }) => {
                                 <Typography variant="subtitle2" className="font-bold text-[#1E1B2E]">
                                   {acc.banco}
                                 </Typography>
-                                <Chip
+                                <CustomChip
                                   label={acc.moneda}
                                   size="small"
-                                  sx={{
-                                    height: 20,
-                                    fontSize: '0.65rem',
-                                    fontWeight: 800,
-                                    backgroundColor: acc.moneda === 'USD' ? 'rgba(108, 92, 231, 0.12)' : 'rgba(16, 185, 129, 0.12)',
-                                    color: acc.moneda === 'USD' ? '#6C5CE7' : '#10B981'
-                                  }}
+                                  variant="tonal"
+                                  color={acc.moneda === 'USD' ? 'primary' : acc.moneda === 'EUR' ? 'info' : 'success'}
                                 />
                                 {acc.is_predeterminada && (
-                                  <Chip
+                                  <CustomChip
                                     label="Predeterminada"
                                     size="small"
-                                    sx={{
-                                      height: 20,
-                                      fontSize: '0.65rem',
-                                      fontWeight: 700,
-                                      backgroundColor: 'rgba(16, 185, 129, 0.12)',
-                                      color: '#10B981'
-                                    }}
+                                    variant="tonal"
+                                    color="success"
                                   />
                                 )}
                               </div>

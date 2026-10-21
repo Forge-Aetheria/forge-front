@@ -7,7 +7,8 @@ import Typography from '@mui/material/Typography'
 import Button from '@mui/material/Button'
 import TextField from '@mui/material/TextField'
 import MenuItem from '@mui/material/MenuItem'
-import Chip from '@mui/material/Chip'
+import CustomChip from '@core/components/mui/Chip'
+import TablePagination from '@mui/material/TablePagination'
 import Table from '@mui/material/Table'
 import TableBody from '@mui/material/TableBody'
 import TableCell from '@mui/material/TableCell'
@@ -32,6 +33,8 @@ export const BankAccountsListView: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('')
   const [ownerFilter, setOwnerFilter] = useState<'ALL' | 'COMPANY' | 'CLIENTE' | 'PROVEEDOR'>('ALL')
   const [currencyFilter, setCurrencyFilter] = useState<'ALL' | BankCurrency>('ALL')
+  const [page, setPage] = useState(0)
+  const [rowsPerPage, setRowsPerPage] = useState(10)
 
   // Modal
   const [modalOpen, setModalOpen] = useState(false)
@@ -75,6 +78,10 @@ export const BankAccountsListView: React.FC = () => {
       return matchSearch && matchOwner && matchCurrency
     })
   }, [accounts, searchTerm, ownerFilter, currencyFilter])
+
+  const paginatedAccounts = useMemo(() => {
+    return filteredAccounts.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+  }, [filteredAccounts, page, rowsPerPage])
 
   const handleOpenCreate = () => {
     setEditingAccount(null)
@@ -145,14 +152,9 @@ export const BankAccountsListView: React.FC = () => {
           >
             <i className='tabler-building-bank' />
           </Box>
-          <Box>
-            <Typography variant='h5' sx={{ fontWeight: 700, color: '#1E293B' }}>
-              Cuentas Bancarias
-            </Typography>
-            <Typography variant='body2' sx={{ color: '#64748B' }}>
-              Directorio de cuentas bancarias y pago móvil para cobros, pagos a proveedores y transferencias
-            </Typography>
-          </Box>
+          <Typography variant='h4' sx={{ fontWeight: 700, color: '#1E293B' }}>
+            Cuentas Bancarias
+          </Typography>
         </Box>
 
         <Button
@@ -224,10 +226,38 @@ export const BankAccountsListView: React.FC = () => {
           </TextField>
         </Box>
 
+        {/* Table Toolbar */}
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            px: 3,
+            py: 2,
+            backgroundColor: '#FAF9FF',
+            border: '1px solid #E6E4F0',
+            borderBottom: 'none',
+            borderTopLeftRadius: '16px',
+            borderTopRightRadius: '16px'
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Typography variant='subtitle2' sx={{ fontWeight: 700, color: '#1E293B' }}>
+              Cuentas Bancarias Registradas
+            </Typography>
+            <CustomChip
+              label={`${filteredAccounts.length} ${filteredAccounts.length === 1 ? 'cuenta' : 'cuentas'}`}
+              variant='tonal'
+              color='primary'
+              size='small'
+            />
+          </Box>
+        </Box>
+
         {/* Table */}
-        <TableContainer sx={{ border: '1px solid #F1F5F9', borderRadius: '16px' }}>
+        <TableContainer sx={{ border: '1px solid #E6E4F0', borderTop: 'none', borderRadius: '0 0 16px 16px' }}>
           <Table>
-            <TableHead sx={{ backgroundColor: '#F8FAFC' }}>
+            <TableHead sx={{ backgroundColor: '#F4F3F8' }}>
               <TableRow>
                 <TableCell sx={{ fontWeight: 700, color: '#475569' }}>Entidad Bancaria</TableCell>
                 <TableCell sx={{ fontWeight: 700, color: '#475569' }}>N° de Cuenta / Identificador</TableCell>
@@ -260,7 +290,7 @@ export const BankAccountsListView: React.FC = () => {
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredAccounts.map(acc => (
+                paginatedAccounts.map(acc => (
                   <TableRow key={acc.id} hover>
                     <TableCell>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
@@ -285,16 +315,11 @@ export const BankAccountsListView: React.FC = () => {
                             {acc.banco}
                           </Typography>
                           {acc.is_predeterminada && (
-                            <Chip
+                            <CustomChip
                               label='Predeterminada'
                               size='small'
-                              sx={{
-                                height: 18,
-                                fontSize: '0.65rem',
-                                fontWeight: 700,
-                                backgroundColor: 'rgba(16, 185, 129, 0.12)',
-                                color: '#10B981'
-                              }}
+                              variant='tonal'
+                              color='success'
                             />
                           )}
                         </Box>
@@ -328,25 +353,17 @@ export const BankAccountsListView: React.FC = () => {
 
                     <TableCell>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Chip
+                        <CustomChip
                           label={acc.moneda}
                           size='small'
-                          sx={{
-                            height: 22,
-                            fontWeight: 800,
-                            backgroundColor:
-                              acc.moneda === 'USD'
-                                ? 'rgba(108, 92, 231, 0.12)'
-                                : acc.moneda === 'EUR'
-                                ? 'rgba(59, 130, 246, 0.12)'
-                                : 'rgba(16, 185, 129, 0.12)',
-                            color:
-                              acc.moneda === 'USD'
-                                ? '#6C5CE7'
-                                : acc.moneda === 'EUR'
-                                ? '#3B82F6'
-                                : '#10B981'
-                          }}
+                          variant='tonal'
+                          color={
+                            acc.moneda === 'USD'
+                              ? 'primary'
+                              : acc.moneda === 'EUR'
+                              ? 'info'
+                              : 'success'
+                          }
                         />
                         <Typography variant='caption' sx={{ color: '#64748B', textTransform: 'capitalize' }}>
                           {acc.tipo_cuenta.toLowerCase()}
@@ -365,15 +382,11 @@ export const BankAccountsListView: React.FC = () => {
 
                     <TableCell>
                       {acc.is_empresa ? (
-                        <Chip
+                        <CustomChip
                           label='Empresa'
                           size='small'
-                          sx={{
-                            height: 22,
-                            fontWeight: 700,
-                            backgroundColor: 'rgba(108, 92, 231, 0.15)',
-                            color: '#6C5CE7'
-                          }}
+                          variant='tonal'
+                          color='primary'
                         />
                       ) : (
                         <Box>
@@ -390,17 +403,12 @@ export const BankAccountsListView: React.FC = () => {
                     <TableCell>
                       {acc.is_pago_movil && acc.telefono_pago_movil ? (
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                          <Chip
+                          <CustomChip
                             label='Activo'
                             size='small'
-                            sx={{
-                              height: 18,
-                              fontSize: '0.65rem',
-                              fontWeight: 700,
-                              backgroundColor: 'rgba(16, 185, 129, 0.12)',
-                              color: '#10B981',
-                              mr: 0.5
-                            }}
+                            variant='tonal'
+                            color='success'
+                            sx={{ mr: 0.5 }}
                           />
                           <Typography variant='body2' sx={{ fontFamily: 'monospace', color: '#1E293B', fontSize: '0.8rem' }}>
                             {acc.telefono_pago_movil}
@@ -449,6 +457,23 @@ export const BankAccountsListView: React.FC = () => {
             </TableBody>
           </Table>
         </TableContainer>
+
+        <TablePagination
+          rowsPerPageOptions={[5, 10, 25, 50]}
+          component='div'
+          count={filteredAccounts.length}
+          rowsPerPage={rowsPerPage}
+          page={page}
+          onPageChange={(_, newPage) => setPage(newPage)}
+          onRowsPerPageChange={e => {
+            setRowsPerPage(parseInt(e.target.value, 10))
+            setPage(0)
+          }}
+          labelRowsPerPage='Filas por página:'
+          labelDisplayedRows={({ from, to, count }) =>
+            `${from}-${to} de ${count !== -1 ? count : `más de ${to}`}`
+          }
+        />
       </Card>
 
       {/* Modal */}

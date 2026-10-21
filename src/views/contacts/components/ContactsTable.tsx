@@ -11,7 +11,7 @@ import TableRow from '@mui/material/TableRow';
 import IconButton from '@mui/material/IconButton';
 import Avatar from '@mui/material/Avatar';
 import Tooltip from '@mui/material/Tooltip';
-import Chip from '@mui/material/Chip';
+import CustomChip from '@core/components/mui/Chip';
 import Checkbox from '@mui/material/Checkbox';
 import Typography from '@mui/material/Typography';
 import {
@@ -66,7 +66,7 @@ export const ContactsTable: React.FC<Props> = ({
   return (
     <TableContainer>
       <Table sx={{ width: '100%', minWidth: 780 }}>
-        <TableHead>
+        <TableHead sx={{ backgroundColor: '#F4F3F8' }}>
           <TableRow sx={{ '& th': { color: '#6B7280', fontWeight: 600, fontSize: '0.78rem', py: 1.5, whiteSpace: 'nowrap' } }}>
             {!readOnly && (
               <TableCell padding="checkbox" sx={{ width: 44, p: 0.5 }}>
@@ -259,48 +259,27 @@ export const ContactsTable: React.FC<Props> = ({
                     ) : (
                       <div className="flex items-center gap-1 whitespace-nowrap">
                         {t.is_cliente && (
-                          <Chip
+                          <CustomChip
                             size="small"
+                            variant="tonal"
+                            color="success"
                             label="Cliente"
-                            sx={{
-                              height: 22,
-                              fontSize: '0.72rem',
-                              fontWeight: 600,
-                              borderRadius: '9999px',
-                              backgroundColor: '#ECFDF5',
-                              color: '#059669',
-                              border: '1px solid #A7F3D0'
-                            }}
                           />
                         )}
                         {t.is_proveedor && (
-                          <Chip
+                          <CustomChip
                             size="small"
+                            variant="tonal"
+                            color="info"
                             label="Proveedor"
-                            sx={{
-                              height: 22,
-                              fontSize: '0.72rem',
-                              fontWeight: 600,
-                              borderRadius: '9999px',
-                              backgroundColor: '#EFF6FF',
-                              color: '#2563EB',
-                              border: '1px solid #BFDBFE'
-                            }}
                           />
                         )}
                         {t.is_contacto && !t.is_cliente && !t.is_proveedor && (
-                          <Chip
+                          <CustomChip
                             size="small"
+                            variant="tonal"
+                            color="secondary"
                             label="Contacto"
-                            sx={{
-                              height: 22,
-                              fontSize: '0.72rem',
-                              fontWeight: 500,
-                              borderRadius: '9999px',
-                              backgroundColor: '#F3F4F6',
-                              color: '#4B5563',
-                              border: '1px solid #E5E7EB'
-                            }}
                           />
                         )}
                       </div>

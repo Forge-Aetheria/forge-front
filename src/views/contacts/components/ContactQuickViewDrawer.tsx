@@ -7,7 +7,7 @@ import Drawer from '@mui/material/Drawer';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
-import Chip from '@mui/material/Chip';
+import CustomChip from '@core/components/mui/Chip';
 import Avatar from '@mui/material/Avatar';
 import Divider from '@mui/material/Divider';
 import Tooltip from '@mui/material/Tooltip';
@@ -141,41 +141,27 @@ export const ContactQuickViewDrawer: React.FC<Props> = ({
         {/* 2. Badges de Clasificación Comercial */}
         <div className="flex flex-wrap items-center gap-1.5 -mt-2">
           {contact.is_cliente && (
-            <Chip
+            <CustomChip
               size="small"
               label="Cliente"
-              sx={{
-                fontWeight: 600,
-                borderRadius: '9999px',
-                backgroundColor: '#ECFDF5',
-                color: '#059669',
-                border: '1px solid #A7F3D0'
-              }}
+              variant="tonal"
+              color="success"
             />
           )}
           {contact.is_proveedor && (
-            <Chip
+            <CustomChip
               size="small"
               label="Proveedor"
-              sx={{
-                fontWeight: 600,
-                borderRadius: '9999px',
-                backgroundColor: '#EFF6FF',
-                color: '#2563EB',
-                border: '1px solid #BFDBFE'
-              }}
+              variant="tonal"
+              color="info"
             />
           )}
           {contact.is_contacto && !contact.is_cliente && !contact.is_proveedor && (
-            <Chip
+            <CustomChip
               size="small"
               label="Contacto"
-              sx={{
-                fontWeight: 500,
-                borderRadius: '9999px',
-                backgroundColor: '#F3F4F6',
-                color: '#4B5563'
-              }}
+              variant="tonal"
+              color="secondary"
             />
           )}
         </div>

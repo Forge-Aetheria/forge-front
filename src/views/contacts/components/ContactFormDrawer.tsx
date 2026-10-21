@@ -10,7 +10,7 @@ import MenuItem from '@mui/material/MenuItem';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Checkbox from '@mui/material/Checkbox';
 import CircularProgress from '@mui/material/CircularProgress';
-import Chip from '@mui/material/Chip';
+import CustomChip from '@core/components/mui/Chip';
 import Divider from '@mui/material/Divider';
 import Card from '@mui/material/Card';
 import Tooltip from '@mui/material/Tooltip';
@@ -344,29 +344,29 @@ export const ContactFormDrawer: React.FC<Props> = ({ open, onClose, onSubmit, in
               Relación Comercial (Marcar aplicables) *
             </Typography>
             <div className="flex gap-2 flex-wrap">
-              <Chip
+              <CustomChip
                 label="Cliente"
                 clickable
-                color={isCliente ? 'primary' : 'default'}
-                variant={isCliente ? 'filled' : 'outlined'}
+                color={isCliente ? 'success' : 'secondary'}
+                variant={isCliente ? 'tonal' : 'outlined'}
                 onClick={() => setIsCliente(!isCliente)}
                 icon={<i className="tabler-check text-xs" />}
                 sx={{ borderRadius: '9999px', fontWeight: 600 }}
               />
-              <Chip
+              <CustomChip
                 label="Proveedor"
                 clickable
-                color={isProveedor ? 'info' : 'default'}
-                variant={isProveedor ? 'filled' : 'outlined'}
+                color={isProveedor ? 'info' : 'secondary'}
+                variant={isProveedor ? 'tonal' : 'outlined'}
                 onClick={() => setIsProveedor(!isProveedor)}
                 icon={<i className="tabler-truck text-xs" />}
                 sx={{ borderRadius: '9999px', fontWeight: 600 }}
               />
-              <Chip
+              <CustomChip
                 label="Contacto General"
                 clickable
-                color={isContacto ? 'warning' : 'default'}
-                variant={isContacto ? 'filled' : 'outlined'}
+                color={isContacto ? 'warning' : 'secondary'}
+                variant={isContacto ? 'tonal' : 'outlined'}
                 onClick={() => setIsContacto(!isContacto)}
                 sx={{ borderRadius: '9999px', fontWeight: 600 }}
               />
@@ -578,7 +578,7 @@ export const ContactFormDrawer: React.FC<Props> = ({ open, onClose, onSubmit, in
                           <div className="flex items-center gap-1.5">
                             <span className="font-semibold text-xs text-[#1E1B2E]">{p.nombre}</span>
                             {p.is_principal && (
-                              <Chip size="small" label="Principal" sx={{ height: 18, fontSize: '0.65rem', bgcolor: '#F3F0FF', color: '#6C5CE7' }} />
+                              <CustomChip size="small" variant="tonal" color="primary" label="Principal" />
                             )}
                           </div>
                           <p className="text-xs text-[#6B7280]">
@@ -723,7 +723,7 @@ export const ContactFormDrawer: React.FC<Props> = ({ open, onClose, onSubmit, in
                         }}
                       >
                         <div>
-                          <Chip size="small" label={a.tipo} sx={{ height: 18, fontSize: '0.65rem', bgcolor: '#E6E4F0' }} />
+                          <CustomChip size="small" variant="tonal" color="secondary" label={a.tipo} />
                           <p className="text-xs font-medium text-[#1E1B2E] mt-1">{a.direccion}</p>
                           <p className="text-xs text-[#6B7280]">{a.ciudad}, {a.estado}</p>
                         </div>
@@ -838,7 +838,7 @@ export const ContactFormDrawer: React.FC<Props> = ({ open, onClose, onSubmit, in
                 <span>Guardando...</span>
               </div>
             ) : (
-              'Guardar Contacto'
+              'Guardar'
             )}
           </Button>
         </div>

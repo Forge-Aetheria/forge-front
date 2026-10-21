@@ -7,7 +7,7 @@ import IconButton from '@mui/material/IconButton';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import Avatar from '@mui/material/Avatar';
-import Chip from '@mui/material/Chip';
+import CustomChip from '@core/components/mui/Chip';
 import Checkbox from '@mui/material/Checkbox';
 import Typography from '@mui/material/Typography';
 import Tooltip from '@mui/material/Tooltip';
@@ -161,50 +161,30 @@ export const ContactCard: React.FC<CardProps> = ({
       ) : (
         <div className="flex flex-wrap gap-1 my-2">
           {tercero.is_cliente && (
-            <Chip
+            <CustomChip
               size="small"
               label="Cliente"
-              sx={{
-                height: 20,
-                fontSize: '0.68rem',
-                fontWeight: 600,
-                borderRadius: '9999px',
-                backgroundColor: '#ECFDF5',
-                color: '#059669',
-                border: '1px solid #A7F3D0'
-              }}
+              variant="tonal"
+              color="success"
             />
           )}
-        {tercero.is_proveedor && (
-          <Chip
-            size="small"
-            label="Proveedor"
-            sx={{
-              height: 20,
-              fontSize: '0.68rem',
-              fontWeight: 600,
-              borderRadius: '9999px',
-              backgroundColor: '#EFF6FF',
-              color: '#2563EB',
-              border: '1px solid #BFDBFE'
-            }}
-          />
-        )}
-        {tercero.is_contacto && !tercero.is_cliente && !tercero.is_proveedor && (
-          <Chip
-            size="small"
-            label="Contacto"
-            sx={{
-              height: 20,
-              fontSize: '0.68rem',
-              fontWeight: 500,
-              borderRadius: '9999px',
-              backgroundColor: '#F3F4F6',
-              color: '#4B5563'
-            }}
-          />
-        )}
-      </div>
+          {tercero.is_proveedor && (
+            <CustomChip
+              size="small"
+              label="Proveedor"
+              variant="tonal"
+              color="info"
+            />
+          )}
+          {tercero.is_contacto && !tercero.is_cliente && !tercero.is_proveedor && (
+            <CustomChip
+              size="small"
+              label="Contacto"
+              variant="tonal"
+              color="secondary"
+            />
+          )}
+        </div>
     )}
 
       {/* Info de contacto y ubicación */}

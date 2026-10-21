@@ -1,5 +1,5 @@
 import React from 'react';
-import Chip from '@mui/material/Chip';
+import CustomChip from '@core/components/mui/Chip';
 import Tooltip from '@mui/material/Tooltip';
 import { ContactRole } from '@/types/contactsTypes';
 
@@ -27,18 +27,11 @@ export const ContactRoleChip: React.FC<Props> = ({ rol, isPrincipal }) => {
           </span>
         </Tooltip>
       )}
-      <Chip
+      <CustomChip
         size="small"
+        variant="tonal"
+        color={rol === 'REPRESENTANTE_LEGAL' ? 'primary' : 'secondary'}
         label={roleLabels[rol] || rol}
-        sx={{
-          borderRadius: '9999px',
-          fontWeight: 500,
-          fontSize: '0.72rem',
-          backgroundColor:
-            rol === 'REPRESENTANTE_LEGAL' ? 'rgba(108, 92, 231, 0.12)' : 'rgba(30, 27, 46, 0.06)',
-          color: rol === 'REPRESENTANTE_LEGAL' ? '#6C5CE7' : '#1E1B2E',
-          border: '1px solid rgba(230, 228, 240, 0.8)'
-        }}
       />
     </div>
   );

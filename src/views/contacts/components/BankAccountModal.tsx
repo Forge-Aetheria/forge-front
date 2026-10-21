@@ -15,7 +15,7 @@ import Switch from '@mui/material/Switch'
 import Autocomplete from '@mui/material/Autocomplete'
 import Alert from '@mui/material/Alert'
 import IconButton from '@mui/material/IconButton'
-import Chip from '@mui/material/Chip'
+import CustomChip from '@core/components/mui/Chip'
 
 import {
   BankAccount,
@@ -453,7 +453,7 @@ export const BankAccountModal: React.FC<Props> = ({
                 <Typography variant='body2' sx={{ fontWeight: 700, color: '#1E293B' }}>
                   Habilitar para Pago Móvil
                 </Typography>
-                <Chip label='P2P / C2P' size='small' sx={{ height: 20, fontSize: '0.65rem', fontWeight: 700 }} />
+                <CustomChip label='P2P / C2P' size='small' variant='tonal' color='primary' />
               </Box>
             }
           />
@@ -535,7 +535,7 @@ export const BankAccountModal: React.FC<Props> = ({
             '&:hover': { backgroundColor: '#5b4bc4' }
           }}
         >
-          {saving ? 'Guardando...' : isEditing ? 'Actualizar Cuenta' : 'Guardar Cuenta'}
+          {saving ? 'Guardando...' : 'Guardar'}
         </Button>
       </DialogActions>
     </Dialog>

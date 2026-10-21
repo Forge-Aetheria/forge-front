@@ -22,6 +22,7 @@ import Tooltip from '@mui/material/Tooltip';
 import InputAdornment from '@mui/material/InputAdornment';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import CustomTextField from '@core/components/mui/TextField';
+import CustomChip from '@core/components/mui/Chip';
 import {
   ContactsTabProps,
   TerceroEntity,
@@ -223,9 +224,6 @@ export const EntityContactsTab: React.FC<ContactsTabProps> = ({ readOnly = false
           <Typography variant="h4" className="font-bold text-[#1E1B2E]">
             Contactos & Directorio
           </Typography>
-          <Typography variant="body2" className="text-textSecondary">
-            Directorio de clientes, proveedores y empresas
-          </Typography>
         </div>
 
         {!readOnly && (
@@ -233,18 +231,12 @@ export const EntityContactsTab: React.FC<ContactsTabProps> = ({ readOnly = false
             {/* Controles de Selección Múltiple en Cabecera */}
             {selectedIds.length > 0 && (
               <div className="flex items-center gap-2 animate-fadeIn">
-                <div className="flex items-center gap-1.5 bg-[#F3F0FF] text-[#6C5CE7] border border-[#E9D5FF] px-3 py-1.5 rounded-full text-xs font-semibold">
-                  <span>{selectedIds.length} seleccionados</span>
-                  <Tooltip title="Deseleccionar">
-                    <IconButton
-                      size="small"
-                      onClick={() => setSelectedIds([])}
-                      sx={{ p: 0.2, ml: 0.5, color: '#6C5CE7', '&:hover': { color: '#4B3AA6' } }}
-                    >
-                      <i className="tabler-x text-xs" />
-                    </IconButton>
-                  </Tooltip>
-                </div>
+                <CustomChip
+                  variant="tonal"
+                  color="primary"
+                  label={`${selectedIds.length} seleccionados`}
+                  onDelete={() => setSelectedIds([])}
+                />
 
                 <Button
                   variant="outlined"
@@ -309,9 +301,12 @@ export const EntityContactsTab: React.FC<ContactsTabProps> = ({ readOnly = false
               <Typography variant="h6" className="font-semibold text-[#1E1B2E]">
                 Directorio Maestro
               </Typography>
-              <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#F3F0FF] text-[#6C5CE7] border border-[#E9D5FF]">
-                {sortedTerceros.length} {sortedTerceros.length === 1 ? 'registro' : 'registros'}
-              </span>
+              <CustomChip
+                variant="tonal"
+                color="primary"
+                size="small"
+                label={`${sortedTerceros.length} ${sortedTerceros.length === 1 ? 'registro' : 'registros'}`}
+              />
             </div>
 
             <div className="flex items-center gap-2 flex-wrap">
@@ -321,7 +316,7 @@ export const EntityContactsTab: React.FC<ContactsTabProps> = ({ readOnly = false
                 startIcon={<i className="tabler-layout-columns text-base" />}
                 onClick={e => setColumnAnchorEl(e.currentTarget)}
                 sx={{
-                  borderRadius: '8px',
+                  borderRadius: '9999px',
                   borderColor: '#E6E4F0',
                   color: '#6C5CE7',
                   textTransform: 'none',
@@ -655,7 +650,7 @@ export const EntityContactsTab: React.FC<ContactsTabProps> = ({ readOnly = false
               '&:hover': { backgroundColor: '#DC2626' }
             }}
           >
-            Eliminar
+            Sí, Eliminar
           </Button>
         </DialogActions>
       </Dialog>
