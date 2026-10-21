@@ -7,7 +7,6 @@ import Card from '@mui/material/Card'
 import CardContent from '@mui/material/CardContent'
 import Typography from '@mui/material/Typography'
 import Button from '@mui/material/Button'
-import Chip from '@mui/material/Chip'
 import Grid from '@mui/material/Grid'
 import IconButton from '@mui/material/IconButton'
 import Tooltip from '@mui/material/Tooltip'
@@ -18,7 +17,13 @@ import Dialog from '@mui/material/Dialog'
 import DialogTitle from '@mui/material/DialogTitle'
 import DialogContent from '@mui/material/DialogContent'
 import DialogActions from '@mui/material/DialogActions'
+import Table from '@mui/material/Table'
+import TableHead from '@mui/material/TableHead'
+import TableBody from '@mui/material/TableBody'
+import TableRow from '@mui/material/TableRow'
+import TableCell from '@mui/material/TableCell'
 
+import CustomChip from '@core/components/mui/Chip'
 import CustomTextField from '@core/components/mui/TextField'
 import CustomAutocomplete from '@core/components/mui/Autocomplete'
 import {
@@ -373,14 +378,16 @@ export const OperationOrderDetailView = ({ id, defaultType = 'RECEIPT' }: Props)
               {isCreate ? `Nueva ${typeLabel}` : order?.codigo}
             </Typography>
 
-            <Chip
+            <CustomChip
+              round='true'
               label={typeLabel}
               size='small'
               className='font-semibold bg-[#F3F0FF] text-[#6C5CE7] border border-[#DCD8EC]'
             />
 
             {!isCreate && order && (
-              <Chip
+              <CustomChip
+                round='true'
                 label={
                   order.estado === 'COMPLETED'
                     ? 'REALIZADO'
@@ -419,7 +426,7 @@ export const OperationOrderDetailView = ({ id, defaultType = 'RECEIPT' }: Props)
                 disabled={submitting}
                 startIcon={<i className='tabler-check' />}
               >
-                {submitting ? 'Guardando...' : 'Guardar Operación'}
+                {submitting ? 'Guardando...' : 'Guardar'}
               </Button>
             </>
           ) : (
@@ -431,9 +438,9 @@ export const OperationOrderDetailView = ({ id, defaultType = 'RECEIPT' }: Props)
                       variant='outlined'
                       color='error'
                       onClick={() => setCancelModalOpen(true)}
-                      startIcon={<i className='tabler-x' />}
+                      startIcon={<i className='tabler-ban' />}
                     >
-                      Cancelar Orden
+                      Anular
                     </Button>
                     <Button
                       variant='contained'
@@ -441,7 +448,7 @@ export const OperationOrderDetailView = ({ id, defaultType = 'RECEIPT' }: Props)
                       onClick={() => setValidateModalOpen(true)}
                       startIcon={<i className='tabler-check' />}
                     >
-                      Validar y Procesar
+                      Validar
                     </Button>
                   </>
                 )}
@@ -581,21 +588,33 @@ export const OperationOrderDetailView = ({ id, defaultType = 'RECEIPT' }: Props)
           </div>
 
           <div className='overflow-x-auto rounded-xl border border-[#E6E4F0]'>
-            <table className='w-full text-left border-collapse text-sm'>
-              <thead className='bg-[#FAF9FF] border-b border-[#E6E4F0] text-xs font-semibold text-[#6B7280] uppercase'>
-                <tr>
-                  <th className='py-3 px-4'>Producto / Variante</th>
-                  <th className='py-3 px-4'>SKU</th>
-                  <th className='py-3 px-4 text-center'>Demanda Inicial</th>
-                  <th className='py-3 px-4 text-center'>UoM</th>
-                  {isCreate && <th className='py-3 px-4 text-center w-12'>Acción</th>}
-                </tr>
-              </thead>
-              <tbody className='divide-y divide-[#E6E4F0]'>
+            <Table size='small'>
+              <TableHead sx={{ backgroundColor: '#F4F3F8' }}>
+                <TableRow sx={{ borderBottom: '1px solid #E6E4F0' }}>
+                  <TableCell sx={{ py: 1.5, px: 2, fontWeight: 700, color: '#6B7280', fontSize: '0.75rem', letterSpacing: '0.05em' }}>
+                    PRODUCTO / VARIANTE
+                  </TableCell>
+                  <TableCell sx={{ py: 1.5, px: 2, fontWeight: 700, color: '#6B7280', fontSize: '0.75rem', letterSpacing: '0.05em' }}>
+                    SKU
+                  </TableCell>
+                  <TableCell align='center' sx={{ py: 1.5, px: 2, fontWeight: 700, color: '#6B7280', fontSize: '0.75rem', letterSpacing: '0.05em' }}>
+                    DEMANDA INICIAL
+                  </TableCell>
+                  <TableCell align='center' sx={{ py: 1.5, px: 2, fontWeight: 700, color: '#6B7280', fontSize: '0.75rem', letterSpacing: '0.05em' }}>
+                    UOM
+                  </TableCell>
+                  {isCreate && (
+                    <TableCell align='center' sx={{ py: 1.5, px: 2, width: 56, fontWeight: 700, color: '#6B7280', fontSize: '0.75rem' }}>
+                      ACCIÓN
+                    </TableCell>
+                  )}
+                </TableRow>
+              </TableHead>
+              <TableBody>
                 {isCreate ? (
                   lines.map(line => (
-                    <tr key={line.tempId} className='hover:bg-[#FAF9FF]'>
-                      <td className='py-3 px-4 min-w-[260px]'>
+                    <TableRow hover key={line.tempId} sx={{ '&:hover': { backgroundColor: '#F9F8FF' } }}>
+                      <TableCell sx={{ py: 1.5, px: 2, minWidth: 260 }}>
                         <CustomAutocomplete
                           options={variantOptions}
                           getOptionLabel={opt => opt.label}
@@ -607,11 +626,11 @@ export const OperationOrderDetailView = ({ id, defaultType = 'RECEIPT' }: Props)
                           }}
                           renderInput={params => <CustomTextField {...params} placeholder='Seleccionar artículo...' size='small' />}
                         />
-                      </td>
-                      <td className='py-3 px-4 font-mono text-xs text-[#6B7280]'>
+                      </TableCell>
+                      <TableCell sx={{ py: 1.5, px: 2, fontFamily: 'monospace', fontSize: '0.75rem', color: '#6B7280' }}>
                         {line.variantOption?.sku || '—'}
-                      </td>
-                      <td className='py-3 px-4 text-center w-36'>
+                      </TableCell>
+                      <TableCell align='center' sx={{ py: 1.5, px: 2, width: 140 }}>
                         <CustomTextField
                           type='number'
                           size='small'
@@ -624,11 +643,11 @@ export const OperationOrderDetailView = ({ id, defaultType = 'RECEIPT' }: Props)
                           }}
                           inputProps={{ min: '1', style: { textAlign: 'center' } }}
                         />
-                      </td>
-                      <td className='py-3 px-4 text-center text-xs font-semibold text-[#6B7280]'>
+                      </TableCell>
+                      <TableCell align='center' sx={{ py: 1.5, px: 2, fontSize: '0.75rem', fontWeight: 600, color: '#6B7280' }}>
                         {line.variantOption?.uom || 'UNIDADES'}
-                      </td>
-                      <td className='py-3 px-4 text-center'>
+                      </TableCell>
+                      <TableCell align='center' sx={{ py: 1.5, px: 2 }}>
                         <IconButton
                           size='small'
                           color='error'
@@ -637,27 +656,29 @@ export const OperationOrderDetailView = ({ id, defaultType = 'RECEIPT' }: Props)
                         >
                           <i className='tabler-trash text-base' />
                         </IconButton>
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ))
                 ) : (
                   order?.lineas.map(line => (
-                    <tr key={line.id} className='hover:bg-[#FAF9FF]'>
-                      <td className='py-3.5 px-4 font-medium text-[#1E1B2E]'>
+                    <TableRow hover key={line.id} sx={{ '&:hover': { backgroundColor: '#F9F8FF' } }}>
+                      <TableCell sx={{ py: 1.5, px: 2, fontWeight: 500, color: '#1E1B2E', fontSize: '0.85rem' }}>
                         {line.producto_nombre}
-                      </td>
-                      <td className='py-3.5 px-4 font-mono text-xs text-[#6B7280]'>{line.variante_sku}</td>
-                      <td className='py-3.5 px-4 text-center font-bold text-[#1E1B2E]'>
+                      </TableCell>
+                      <TableCell sx={{ py: 1.5, px: 2, fontFamily: 'monospace', fontSize: '0.75rem', color: '#6B7280' }}>
+                        {line.variante_sku}
+                      </TableCell>
+                      <TableCell align='center' sx={{ py: 1.5, px: 2, fontWeight: 700, color: '#1E1B2E', fontSize: '0.85rem' }}>
                         {line.cantidad_demanda}
-                      </td>
-                      <td className='py-3.5 px-4 text-center text-xs text-[#6B7280] font-semibold'>
+                      </TableCell>
+                      <TableCell align='center' sx={{ py: 1.5, px: 2, fontSize: '0.75rem', fontWeight: 600, color: '#6B7280' }}>
                         {line.uom_code || 'UNIDADES'}
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ))
                 )}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
         </CardContent>
       </Card>
@@ -680,20 +701,20 @@ export const OperationOrderDetailView = ({ id, defaultType = 'RECEIPT' }: Props)
         </CardContent>
       </Card>
 
-      {/* Modal Confirmar Cancelación */}
+      {/* Modal Confirmar Anulación */}
       <Dialog open={cancelModalOpen} onClose={() => setCancelModalOpen(false)} maxWidth='xs' fullWidth>
-        <DialogTitle className='font-bold text-[#1E1B2E]'>¿Cancelar esta operación?</DialogTitle>
+        <DialogTitle className='font-bold text-[#1E1B2E]'>¿Anular esta {typeLabel.toLowerCase()}?</DialogTitle>
         <DialogContent>
           <Typography className='text-sm text-[#6B7280]'>
-            La orden quedará en estado CANCELADO y no podrá revertirse ni procesar movimientos de stock.
+            La orden quedará en estado ANULADA y no podrá revertirse ni procesar movimientos de stock.
           </Typography>
         </DialogContent>
-        <DialogActions className='p-4 pt-0'>
+        <DialogActions className='p-4 pt-0 flex justify-end gap-2'>
           <Button onClick={() => setCancelModalOpen(false)} variant='outlined' color='secondary'>
-            Volver
+            Cancelar
           </Button>
           <Button onClick={handleCancelOrder} variant='contained' color='error' disabled={submitting}>
-            {submitting ? 'Cancelando...' : 'Sí, Cancelar'}
+            {submitting ? 'Anulando...' : `Sí, Anular ${typeLabel}`}
           </Button>
         </DialogActions>
       </Dialog>
@@ -706,12 +727,12 @@ export const OperationOrderDetailView = ({ id, defaultType = 'RECEIPT' }: Props)
             Al validar, los artículos se moverán físicamente en los almacenes correspondientes y se generarán los asientos en el Kárdex de inventario.
           </Typography>
         </DialogContent>
-        <DialogActions className='p-4 pt-0'>
+        <DialogActions className='p-4 pt-0 flex justify-end gap-2'>
           <Button onClick={() => setValidateModalOpen(false)} variant='outlined' color='secondary'>
-            Revisar
+            Cancelar
           </Button>
           <Button onClick={handleValidateOrder} variant='contained' color='primary' disabled={submitting}>
-            {submitting ? 'Procesando...' : 'Confirmar y Validar'}
+            {submitting ? 'Procesando...' : `Sí, Validar ${typeLabel}`}
           </Button>
         </DialogActions>
       </Dialog>
