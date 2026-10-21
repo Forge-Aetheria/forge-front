@@ -262,9 +262,7 @@ export const QuoteMasterDetailForm: React.FC<Props> = ({
         severity: 'success'
       });
 
-      setTimeout(() => {
-        router.push(`/sales/quotes/${result.id}`);
-      }, 700);
+      router.push(`/sales/quotes/${result.id}`);
     } catch (err: any) {
       setToast({
         open: true,

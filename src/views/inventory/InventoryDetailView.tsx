@@ -306,9 +306,7 @@ const InventoryDetailView: React.FC<Props> = ({ id }) => {
       await deleteProductTemplate(id)
       setToast({ open: true, message: 'Artículo eliminado exitosamente', severity: 'success' })
       setDeleteConfirmOpen(false)
-      setTimeout(() => {
-        router.push('/inventory/products')
-      }, 600)
+      router.push('/inventory/products')
     } catch {
       setToast({ open: true, message: 'Error al eliminar el artículo', severity: 'error' })
     }

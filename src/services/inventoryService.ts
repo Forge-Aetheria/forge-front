@@ -7,7 +7,14 @@ import type {
   WarehouseOperationsDashboard,
   FiscalConfig
 } from '@/types/inventoryTypes'
-import type { GqlStockMove } from '@/types/inventoryDto'
+import { executeGraphQL } from '@/libs/graphqlClient'
+import {
+  GET_TEMPLATES_QUERY,
+  GET_TEMPLATE_BY_ID_QUERY,
+  GET_KARDEX_QUERY
+} from '@/graphql/inventory.gql'
+import type { GqlProductTemplate, GqlKardexPage, GqlStockMove } from '@/types/inventoryDto'
+import { mapGqlTemplateToFrontend } from '@/services/adapters/inventoryAdapter'
 import {
   getActiveBcvRate,
   getFiscalConfig,
@@ -47,9 +54,11 @@ export {
 // PRODUCT TEMPLATES & VARIANTS CRUD (WITH IN-MEMORY CACHE)
 // ==========================================
 let cachedTemplates: ProductTemplate[] | null = null
+let fetchTemplatesPromise: Promise<ProductTemplate[]> | null = null
 
 export const invalidateTemplatesCache = (): void => {
   cachedTemplates = null
+  fetchTemplatesPromise = null
 }
 
 export const getInventoryTemplates = async (forceRefresh = false): Promise<ProductTemplate[]> => {
@@ -57,13 +66,54 @@ export const getInventoryTemplates = async (forceRefresh = false): Promise<Produ
     return cachedTemplates
   }
 
-  const stored = loadStoredTemplates()
-  cachedTemplates = stored
-  return stored
+  if (!forceRefresh && fetchTemplatesPromise) {
+    return fetchTemplatesPromise
+  }
+
+  fetchTemplatesPromise = (async () => {
+    try {
+      const res = await executeGraphQL<{ templates: { nodes: GqlProductTemplate[] } }>(
+        GET_TEMPLATES_QUERY,
+        { page: 1, perPage: 100 },
+        { timeoutMs: 4000 }
+      )
+
+      if (res?.templates?.nodes && res.templates.nodes.length > 0) {
+        const mapped = res.templates.nodes.map(mapGqlTemplateToFrontend)
+        cachedTemplates = mapped
+        saveStoredTemplates(mapped)
+        return mapped
+      }
+    } catch {
+      // Fallback controlado a datos persistidos si el backend no está disponible o no hay red
+    } finally {
+      fetchTemplatesPromise = null
+    }
+
+    const stored = loadStoredTemplates()
+    cachedTemplates = stored
+    return stored
+  })()
+
+  return fetchTemplatesPromise
 }
 
 export const getInventoryTemplateById = async (id: string): Promise<ProductTemplate | null> => {
-  const templates = cachedTemplates || loadStoredTemplates()
+  try {
+    const res = await executeGraphQL<{ template: GqlProductTemplate }>(
+      GET_TEMPLATE_BY_ID_QUERY,
+      { id },
+      { timeoutMs: 4000 }
+    )
+
+    if (res?.template) {
+      return mapGqlTemplateToFrontend(res.template)
+    }
+  } catch {
+    // Fallback a almacenamiento local
+  }
+
+  const templates = loadStoredTemplates()
   const item = templates.find(template => template.id === id) || null
 
   return item
@@ -72,7 +122,21 @@ export const getInventoryTemplateById = async (id: string): Promise<ProductTempl
 /**
  * Consulta de histórico de Kárdex transaccional para una variante de producto.
  */
-export const getVariantKardex = async (_variantId: string): Promise<GqlStockMove[]> => {
+export const getVariantKardex = async (variantId: string): Promise<GqlStockMove[]> => {
+  try {
+    const res = await executeGraphQL<{ kardex: GqlKardexPage }>(
+      GET_KARDEX_QUERY,
+      { variantId, page: 1, perPage: 50 },
+      { timeoutMs: 4000 }
+    )
+
+    if (res?.kardex?.nodes) {
+      return res.kardex.nodes
+    }
+  } catch {
+    // Si falla o no hay datos, retornar array vacío
+  }
+
   return []
 }
 

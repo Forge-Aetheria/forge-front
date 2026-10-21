@@ -265,9 +265,7 @@ export const OperationOrderDetailView = ({ id, defaultType = 'RECEIPT' }: Props)
         severity: 'success'
       })
 
-      setTimeout(() => {
-        router.push(baseRoute)
-      }, 1000)
+      router.push(baseRoute)
     } catch (err: any) {
       setToast({
         open: true,

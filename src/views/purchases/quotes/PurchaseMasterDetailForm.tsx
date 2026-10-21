@@ -329,9 +329,7 @@ export const PurchaseMasterDetailForm: React.FC<Props> = ({ initialQuote, mode =
         severity: 'success'
       })
 
-      setTimeout(() => {
-        router.push(`/purchases/quotes/${saved.id}`)
-      }, 650)
+      router.push(`/purchases/quotes/${saved.id}`)
     } catch (err: any) {
       const msg = err?.message || 'Error al procesar la solicitud de compra.'
       setInlineError(msg)

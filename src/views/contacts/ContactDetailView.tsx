@@ -349,9 +349,7 @@ export const ContactDetailView: React.FC<Props> = ({ id }) => {
       if (isCreate) {
         const created = await contactsService.createTercero(payload);
         setToast({ open: true, message: '¡Contacto registrado exitosamente!', severity: 'success' });
-        setTimeout(() => {
-          router.push(`/contacts/${created.id}`);
-        }, 500);
+        router.push(`/contacts/${created.id}`);
       } else {
         const updated = await contactsService.updateTercero(id, payload);
         setContact(updated);
@@ -386,9 +384,7 @@ export const ContactDetailView: React.FC<Props> = ({ id }) => {
       await contactsService.deactivateTercero(id);
       setToast({ open: true, message: 'Contacto eliminado exitosamente', severity: 'success' });
       setDeleteConfirmOpen(false);
-      setTimeout(() => {
-        router.push('/contacts');
-      }, 700);
+      router.push('/contacts');
     } catch (err: any) {
       setToast({ open: true, message: err?.message || 'Error al eliminar el contacto', severity: 'error' });
     }
