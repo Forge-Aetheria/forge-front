@@ -7,7 +7,8 @@ import Typography from '@mui/material/Typography'
 import Button from '@mui/material/Button'
 import TextField from '@mui/material/TextField'
 import MenuItem from '@mui/material/MenuItem'
-import Chip from '@mui/material/Chip'
+import CustomChip from '@core/components/mui/Chip'
+import TablePagination from '@mui/material/TablePagination'
 import Table from '@mui/material/Table'
 import TableBody from '@mui/material/TableBody'
 import TableCell from '@mui/material/TableCell'
@@ -45,6 +46,8 @@ export const InvoicesListView: React.FC = () => {
   const [typeFilter, setTypeFilter] = useState<'ALL' | InvoiceAccountingType>(initialType || 'ALL')
   const [statusFilter, setStatusFilter] = useState<'ALL' | InvoiceStatus>('ALL')
   const [docTypeFilter, setDocTypeFilter] = useState<string>('ALL')
+  const [page, setPage] = useState(0)
+  const [rowsPerPage, setRowsPerPage] = useState(10)
 
   // Modals for Actions from list
   const [cancelTargetInvoice, setCancelTargetInvoice] = useState<AccountingInvoice | null>(null)
@@ -108,6 +111,10 @@ export const InvoicesListView: React.FC = () => {
       return matchSearch && matchType && matchStatus && matchDocType
     })
   }, [invoices, searchTerm, typeFilter, statusFilter, docTypeFilter])
+
+  const paginatedInvoices = useMemo(() => {
+    return filteredInvoices.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+  }, [filteredInvoices, page, rowsPerPage])
 
   const handleCancelSuccess = (canceled: AccountingInvoice) => {
     setInvoices(prev => prev.map(i => (i.id === canceled.id ? canceled : i)))
@@ -203,35 +210,37 @@ export const InvoicesListView: React.FC = () => {
 
     if (status === 'REVERSED' || isNcReversed) {
       return (
-        <Chip
+        <CustomChip
           label='Revertida'
           size='small'
-          sx={{ backgroundColor: 'rgba(108, 92, 231, 0.15)', color: '#6C5CE7', fontWeight: 800, border: '1px solid #6C5CE7' }}
+          variant='tonal'
+          color='primary'
         />
       )
     }
 
     if (inv && inv.pagosAsociados && inv.pagosAsociados.length > 0 && inv.saldoPendienteUsd > 0.01) {
       return (
-        <Chip
+        <CustomChip
           label='Abonada Parcial'
           size='small'
-          sx={{ backgroundColor: 'rgba(245, 158, 11, 0.12)', color: '#D97706', fontWeight: 700 }}
+          variant='tonal'
+          color='warning'
         />
       )
     }
 
     switch (status) {
       case 'PAID':
-        return <Chip label='Pagada' size='small' sx={{ backgroundColor: 'rgba(16, 185, 129, 0.12)', color: '#10B981', fontWeight: 700 }} />
+        return <CustomChip label='Pagada' size='small' variant='tonal' color='success' />
       case 'POSTED':
-        return <Chip label='Publicada' size='small' sx={{ backgroundColor: 'rgba(108, 92, 231, 0.12)', color: '#6C5CE7', fontWeight: 700 }} />
+        return <CustomChip label='Publicada' size='small' variant='tonal' color='primary' />
       case 'DRAFT':
-        return <Chip label='Borrador' size='small' sx={{ backgroundColor: 'rgba(148, 163, 184, 0.12)', color: '#64748B', fontWeight: 700 }} />
+        return <CustomChip label='Borrador' size='small' variant='tonal' color='secondary' />
       case 'CANCELED':
-        return <Chip label='Anulada' size='small' sx={{ backgroundColor: 'rgba(239, 68, 68, 0.12)', color: '#EF4444', fontWeight: 700 }} />
+        return <CustomChip label='Anulada' size='small' variant='tonal' color='error' />
       default:
-        return <Chip label='Revertida' size='small' sx={{ backgroundColor: 'rgba(108, 92, 231, 0.15)', color: '#6C5CE7', fontWeight: 800, border: '1px solid #6C5CE7' }} />
+        return <CustomChip label='Revertida' size='small' variant='tonal' color='primary' />
     }
   }
 
@@ -247,28 +256,17 @@ export const InvoicesListView: React.FC = () => {
                 ? 'Facturas de Proveedores (CxP)'
                 : 'Facturas Contables'}
           </Typography>
-          <Typography variant='body2' sx={{ color: '#64748B' }}>
-            {typeFilter === 'CUSTOMER'
-              ? 'Gestión de facturación y cobro a clientes'
-              : typeFilter === 'SUPPLIER'
-                ? 'Control de facturas por pagar a proveedores'
-                : 'Facturas de clientes y compras a proveedores'}
-          </Typography>
         </Box>
 
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
           {selectedIds.length > 0 && (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-              <Chip
+              <CustomChip
                 label={`${selectedIds.length} seleccionados`}
                 size='small'
+                variant='tonal'
+                color='primary'
                 onDelete={() => setSelectedIds([])}
-                sx={{
-                  backgroundColor: '#F3F0FF',
-                  color: '#6C5CE7',
-                  border: '1px solid #6C5CE7',
-                  fontWeight: 700
-                }}
               />
               <Button
                 variant='outlined'
@@ -400,10 +398,38 @@ export const InvoicesListView: React.FC = () => {
           </TextField>
         </Box>
 
+        {/* Table Toolbar */}
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            px: 3,
+            py: 2,
+            backgroundColor: '#FAF9FF',
+            border: '1px solid #E6E4F0',
+            borderBottom: 'none',
+            borderTopLeftRadius: '16px',
+            borderTopRightRadius: '16px'
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Typography variant='subtitle2' sx={{ fontWeight: 700, color: '#1E293B' }}>
+              Facturas Registradas
+            </Typography>
+            <CustomChip
+              label={`${filteredInvoices.length} ${filteredInvoices.length === 1 ? 'factura' : 'facturas'}`}
+              variant='tonal'
+              color='primary'
+              size='small'
+            />
+          </Box>
+        </Box>
+
         {/* Tabla */}
-        <TableContainer sx={{ border: '1px solid #F1F5F9', borderRadius: '16px' }}>
+        <TableContainer sx={{ border: '1px solid #E6E4F0', borderTop: 'none', borderRadius: '0 0 16px 16px' }}>
           <Table>
-            <TableHead sx={{ backgroundColor: '#F8FAFC' }}>
+            <TableHead sx={{ backgroundColor: '#F4F3F8' }}>
               <TableRow>
                 <TableCell padding='checkbox' sx={{ width: 44, p: 0.5 }}>
                   <Checkbox
@@ -450,7 +476,7 @@ export const InvoicesListView: React.FC = () => {
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredInvoices.map(inv => (
+                paginatedInvoices.map(inv => (
                   <TableRow
                     key={inv.id}
                     hover
@@ -474,18 +500,13 @@ export const InvoicesListView: React.FC = () => {
                     </TableCell>
                     <TableCell>
                       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, alignItems: 'flex-start' }}>
-                        <Chip
+                        <CustomChip
                           label={inv.tipo === 'CUSTOMER' ? 'Cliente' : 'Proveedor'}
                           size='small'
-                          sx={{
-                            height: 20,
-                            fontSize: '0.72rem',
-                            fontWeight: 700,
-                            backgroundColor: inv.tipo === 'CUSTOMER' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-                            color: inv.tipo === 'CUSTOMER' ? '#10B981' : '#EF4444'
-                          }}
+                          variant='tonal'
+                          color={inv.tipo === 'CUSTOMER' ? 'success' : 'error'}
                         />
-                        <Chip
+                        <CustomChip
                           label={
                             inv.tipoDocumento === 'NOTA_ENTREGA'
                               ? 'Nota Entrega'
@@ -498,15 +519,8 @@ export const InvoicesListView: React.FC = () => {
                               : 'Factura'
                           }
                           size='small'
-                          variant='outlined'
-                          sx={{
-                            height: 18,
-                            fontSize: '0.68rem',
-                            fontWeight: 600,
-                            borderColor: inv.tipoDocumento === 'NOTA_CREDITO' ? '#6C5CE7' : '#CBD5E1',
-                            color: inv.tipoDocumento === 'NOTA_CREDITO' ? '#6C5CE7' : '#64748B',
-                            backgroundColor: inv.tipoDocumento === 'NOTA_CREDITO' ? 'rgba(108, 92, 231, 0.08)' : 'transparent'
-                          }}
+                          variant='tonal'
+                          color={inv.tipoDocumento === 'NOTA_CREDITO' ? 'primary' : 'secondary'}
                         />
                       </Box>
                     </TableCell>
@@ -536,16 +550,11 @@ export const InvoicesListView: React.FC = () => {
                         </Box>
                         {inv.notasCreditoAplicadas && inv.notasCreditoAplicadas.length > 0 && (
                           <Tooltip title={`${inv.notasCreditoAplicadas.length} Nota(s) de Crédito aplicada(s)`}>
-                            <Chip
+                            <CustomChip
                               label={`${inv.notasCreditoAplicadas.length} NC`}
                               size='small'
-                              sx={{
-                                height: 18,
-                                fontSize: '0.65rem',
-                                fontWeight: 800,
-                                backgroundColor: 'rgba(108, 92, 231, 0.12)',
-                                color: '#6C5CE7'
-                              }}
+                              variant='tonal'
+                              color='primary'
                             />
                           </Tooltip>
                         )}
@@ -615,6 +624,23 @@ export const InvoicesListView: React.FC = () => {
             </TableBody>
           </Table>
         </TableContainer>
+
+        <TablePagination
+          rowsPerPageOptions={[5, 10, 25, 50]}
+          component='div'
+          count={filteredInvoices.length}
+          rowsPerPage={rowsPerPage}
+          page={page}
+          onPageChange={(_, newPage) => setPage(newPage)}
+          onRowsPerPageChange={e => {
+            setRowsPerPage(parseInt(e.target.value, 10))
+            setPage(0)
+          }}
+          labelRowsPerPage='Filas por página:'
+          labelDisplayedRows={({ from, to, count }) =>
+            `${from}-${to} de ${count !== -1 ? count : `más de ${to}`}`
+          }
+        />
       </Card>
 
       {/* Modal Anular Factura desde el listado */}

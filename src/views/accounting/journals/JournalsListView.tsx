@@ -7,7 +7,8 @@ import Typography from '@mui/material/Typography'
 import Button from '@mui/material/Button'
 import TextField from '@mui/material/TextField'
 import MenuItem from '@mui/material/MenuItem'
-import Chip from '@mui/material/Chip'
+import CustomChip from '@core/components/mui/Chip'
+import TablePagination from '@mui/material/TablePagination'
 import Table from '@mui/material/Table'
 import TableBody from '@mui/material/TableBody'
 import TableCell from '@mui/material/TableCell'
@@ -31,6 +32,8 @@ export const JournalsListView: React.FC = () => {
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [typeFilter, setTypeFilter] = useState<'ALL' | string>('ALL')
+  const [page, setPage] = useState(0)
+  const [rowsPerPage, setRowsPerPage] = useState(10)
 
   const [currentView, setCurrentView] = useState<'list' | 'form'>(
     searchParams.get('action') === 'new' ? 'form' : 'list'
@@ -75,6 +78,10 @@ export const JournalsListView: React.FC = () => {
     })
   }, [journals, searchTerm, typeFilter])
 
+  const paginatedJournals = useMemo(() => {
+    return filteredJournals.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+  }, [filteredJournals, page, rowsPerPage])
+
   const handleSuccess = (journal: Journal, msg: string) => {
     setToastMessage(msg)
     loadData()
@@ -87,35 +94,30 @@ export const JournalsListView: React.FC = () => {
     if (isBank) {
       return {
         label: 'Banco',
-        bg: '#E0F2FE',
-        color: '#0284C7'
+        color: 'info' as const
       }
     }
     if (j.tipo === 'CAJA') {
       return {
         label: 'Caja / Efectivo',
-        bg: '#FEF3C7',
-        color: '#D97706'
+        color: 'warning' as const
       }
     }
     if (j.tipo === 'VENTAS') {
       return {
         label: 'Ventas',
-        bg: '#F0EEF9',
-        color: '#6C5CE7'
+        color: 'primary' as const
       }
     }
     if (j.tipo === 'COMPRAS') {
       return {
         label: 'Compras',
-        bg: '#FEE2E2',
-        color: '#EF4444'
+        color: 'error' as const
       }
     }
     return {
       label: 'Operaciones Varias',
-      bg: '#EDE9FE',
-      color: '#8B5CF6'
+      color: 'secondary' as const
     }
   }
 
@@ -141,9 +143,6 @@ export const JournalsListView: React.FC = () => {
         <Box>
           <Typography variant='h5' sx={{ fontWeight: 800, color: '#1E293B' }}>
             Diarios Contables (Libros Auxiliares)
-          </Typography>
-          <Typography variant='body2' sx={{ color: '#64748B' }}>
-            Listado y parametrización de libros auxiliares de ventas, compras, cuentas bancarias y cajas
           </Typography>
         </Box>
 
@@ -218,10 +217,38 @@ export const JournalsListView: React.FC = () => {
           </TextField>
         </Box>
 
+        {/* Table Toolbar */}
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            px: 3,
+            py: 2,
+            backgroundColor: '#FAF9FF',
+            border: '1px solid #E6E4F0',
+            borderBottom: 'none',
+            borderTopLeftRadius: '16px',
+            borderTopRightRadius: '16px'
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Typography variant='subtitle2' sx={{ fontWeight: 700, color: '#1E293B' }}>
+              Diarios Contables Registrados
+            </Typography>
+            <CustomChip
+              label={`${filteredJournals.length} ${filteredJournals.length === 1 ? 'diario' : 'diarios'}`}
+              variant='tonal'
+              color='primary'
+              size='small'
+            />
+          </Box>
+        </Box>
+
         {/* Tabla Lista de Diarios Contables */}
-        <TableContainer sx={{ border: '1px solid #E6E4F0', borderRadius: '16px', overflow: 'hidden' }}>
+        <TableContainer sx={{ border: '1px solid #E6E4F0', borderTop: 'none', borderRadius: '0 0 16px 16px', overflow: 'hidden' }}>
           <Table>
-            <TableHead sx={{ backgroundColor: '#F8FAFC' }}>
+            <TableHead sx={{ backgroundColor: '#F4F3F8' }}>
               <TableRow>
                 <TableCell sx={{ fontWeight: 700, color: '#475569', minWidth: 280 }}>Diario Contable</TableCell>
                 <TableCell sx={{ fontWeight: 700, color: '#475569', width: 120 }}>Código</TableCell>
@@ -249,7 +276,7 @@ export const JournalsListView: React.FC = () => {
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredJournals.map(j => {
+                paginatedJournals.map(j => {
                   const typeChip = getTypeChip(j)
                   const color = j.colorIdentificador || '#6C5CE7'
                   const icon = j.icono || 'tabler-notebook'
@@ -314,31 +341,21 @@ export const JournalsListView: React.FC = () => {
 
                       {/* Tipo */}
                       <TableCell>
-                        <Chip
+                        <CustomChip
                           label={typeChip.label}
                           size='small'
-                          sx={{
-                            fontWeight: 700,
-                            fontSize: '0.72rem',
-                            backgroundColor: typeChip.bg,
-                            color: typeChip.color,
-                            borderRadius: '9999px',
-                            border: `1px solid ${typeChip.color}30`
-                          }}
+                          variant='tonal'
+                          color={typeChip.color}
                         />
                       </TableCell>
 
                       {/* Moneda */}
                       <TableCell>
-                        <Chip
+                        <CustomChip
                           label={monedaLabel}
                           size='small'
-                          sx={{
-                            fontWeight: 600,
-                            fontSize: '0.7rem',
-                            backgroundColor: '#F1F5F9',
-                            color: '#475569'
-                          }}
+                          variant='tonal'
+                          color='secondary'
                         />
                       </TableCell>
 
@@ -399,6 +416,23 @@ export const JournalsListView: React.FC = () => {
             </TableBody>
           </Table>
         </TableContainer>
+
+        <TablePagination
+          rowsPerPageOptions={[5, 10, 25, 50]}
+          component='div'
+          count={filteredJournals.length}
+          rowsPerPage={rowsPerPage}
+          page={page}
+          onPageChange={(_, newPage) => setPage(newPage)}
+          onRowsPerPageChange={e => {
+            setRowsPerPage(parseInt(e.target.value, 10))
+            setPage(0)
+          }}
+          labelRowsPerPage='Filas por página:'
+          labelDisplayedRows={({ from, to, count }) =>
+            `${from}-${to} de ${count !== -1 ? count : `más de ${to}`}`
+          }
+        />
       </Card>
 
       {/* Snackbar Notificaciones */}

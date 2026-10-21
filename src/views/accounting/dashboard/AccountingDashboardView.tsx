@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react'
 import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
 import Button from '@mui/material/Button'
-import Chip from '@mui/material/Chip'
+import CustomChip from '@core/components/mui/Chip'
 import Skeleton from '@mui/material/Skeleton'
 import Snackbar from '@mui/material/Snackbar'
 import Alert from '@mui/material/Alert'
@@ -94,21 +94,13 @@ export const AccountingDashboardView: React.FC = () => {
             <Typography variant='h5' sx={{ fontWeight: 700, color: '#1E293B' }}>
               Tablero de Contabilidad y Tesorería
             </Typography>
-            <Chip
+            <CustomChip
               label={`Tasa BCV: ${tasaBcv.toFixed(2)} Bs/USD`}
               size='small'
-              sx={{
-                fontWeight: 700,
-                backgroundColor: 'rgba(108, 92, 231, 0.1)',
-                color: '#6C5CE7',
-                borderRadius: '9999px',
-                border: '1px solid rgba(108, 92, 231, 0.2)'
-              }}
+              variant='tonal'
+              color='primary'
             />
           </Box>
-          <Typography variant='body2' sx={{ color: '#64748B', mt: 0.5 }}>
-            Monitoreo de liquidez y diarios contables
-          </Typography>
         </Box>
 
         <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
@@ -164,9 +156,6 @@ export const AccountingDashboardView: React.FC = () => {
           <Box>
             <Typography variant='h6' sx={{ fontWeight: 700, color: '#1E293B' }}>
               Diarios Contables Activos
-            </Typography>
-            <Typography variant='caption' sx={{ color: '#64748B' }}>
-              Libros auxiliares organizados por canal financiero y operativo
             </Typography>
           </Box>
 

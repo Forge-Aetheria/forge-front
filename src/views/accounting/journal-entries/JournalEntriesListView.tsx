@@ -7,7 +7,8 @@ import Typography from '@mui/material/Typography'
 import Button from '@mui/material/Button'
 import TextField from '@mui/material/TextField'
 import MenuItem from '@mui/material/MenuItem'
-import Chip from '@mui/material/Chip'
+import CustomChip from '@core/components/mui/Chip'
+import TablePagination from '@mui/material/TablePagination'
 import Table from '@mui/material/Table'
 import TableBody from '@mui/material/TableBody'
 import TableCell from '@mui/material/TableCell'
@@ -38,6 +39,8 @@ export const JournalEntriesListView: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('')
   const [journalFilter, setJournalFilter] = useState('ALL')
   const [sourceFilter, setSourceFilter] = useState<'ALL' | EntrySource>('ALL')
+  const [page, setPage] = useState(0)
+  const [rowsPerPage, setRowsPerPage] = useState(10)
 
   // Full view state (Vista Completa)
   const [isFormActive, setIsFormActive] = useState(false)
@@ -97,6 +100,10 @@ export const JournalEntriesListView: React.FC = () => {
     })
   }, [entries, searchTerm, journalFilter, sourceFilter])
 
+  const paginatedEntries = useMemo(() => {
+    return filteredEntries.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+  }, [filteredEntries, page, rowsPerPage])
+
   const handleOpenCreate = () => {
     setSelectedEntry(null)
     setIsFormActive(true)
@@ -136,15 +143,15 @@ export const JournalEntriesListView: React.FC = () => {
   const getSourceBadge = (source: EntrySource) => {
     switch (source) {
       case 'FACTURA':
-        return <Chip label='Factura' size='small' sx={{ backgroundColor: 'rgba(108, 92, 231, 0.1)', color: '#6C5CE7', fontWeight: 600 }} />
+        return <CustomChip label='Factura' size='small' variant='tonal' color='primary' />
       case 'PAGO':
-        return <Chip label='Pago' size='small' sx={{ backgroundColor: 'rgba(16, 185, 129, 0.1)', color: '#10B981', fontWeight: 600 }} />
+        return <CustomChip label='Pago' size='small' variant='tonal' color='success' />
       case 'PAGO_LOTE':
-        return <Chip label='Lote Proveedores' size='small' sx={{ backgroundColor: 'rgba(14, 165, 233, 0.1)', color: '#0EA5E9', fontWeight: 600 }} />
+        return <CustomChip label='Lote Proveedores' size='small' variant='tonal' color='info' />
       case 'GASTO_DIRECTO':
-        return <Chip label='Gasto Directo' size='small' sx={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', color: '#EF4444', fontWeight: 600 }} />
+        return <CustomChip label='Gasto Directo' size='small' variant='tonal' color='error' />
       case 'MANUAL':
-        return <Chip label='Manual' size='small' sx={{ backgroundColor: 'rgba(245, 158, 11, 0.1)', color: '#F59E0B', fontWeight: 600 }} />
+        return <CustomChip label='Manual' size='small' variant='tonal' color='warning' />
     }
   }
 
@@ -155,9 +162,6 @@ export const JournalEntriesListView: React.FC = () => {
         <Box>
           <Typography variant='h5' sx={{ fontWeight: 700, color: '#1E293B' }}>
             Libro Diario y Asientos Contables
-          </Typography>
-          <Typography variant='body2' sx={{ color: '#64748B' }}>
-            Registro cronológico de apuntes contables y auditoría
           </Typography>
         </Box>
 
@@ -232,10 +236,38 @@ export const JournalEntriesListView: React.FC = () => {
           </TextField>
         </Box>
 
+        {/* Table Toolbar */}
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            px: 3,
+            py: 2,
+            backgroundColor: '#FAF9FF',
+            border: '1px solid #E6E4F0',
+            borderBottom: 'none',
+            borderTopLeftRadius: '16px',
+            borderTopRightRadius: '16px'
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Typography variant='subtitle2' sx={{ fontWeight: 700, color: '#1E293B' }}>
+              Asientos Contables Registrados
+            </Typography>
+            <CustomChip
+              label={`${filteredEntries.length} ${filteredEntries.length === 1 ? 'asiento' : 'asientos'}`}
+              variant='tonal'
+              color='primary'
+              size='small'
+            />
+          </Box>
+        </Box>
+
         {/* Table */}
-        <TableContainer sx={{ border: '1px solid #F1F5F9', borderRadius: '16px' }}>
+        <TableContainer sx={{ border: '1px solid #E6E4F0', borderTop: 'none', borderRadius: '0 0 16px 16px' }}>
           <Table>
-            <TableHead sx={{ backgroundColor: '#F8FAFC' }}>
+            <TableHead sx={{ backgroundColor: '#F4F3F8' }}>
               <TableRow>
                 <TableCell sx={{ fontWeight: 700, color: '#475569' }}>N° Asiento</TableCell>
                 <TableCell sx={{ fontWeight: 700, color: '#475569' }}>Fecha</TableCell>
@@ -263,7 +295,7 @@ export const JournalEntriesListView: React.FC = () => {
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredEntries.map(entry => (
+                paginatedEntries.map(entry => (
                   <TableRow
                     key={entry.id}
                     hover
@@ -294,25 +326,17 @@ export const JournalEntriesListView: React.FC = () => {
                       ${entry.totalHaberUsd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </TableCell>
                     <TableCell align='center'>
-                      <Chip
+                      <CustomChip
                         label={entry.estado === 'POSTED' ? 'Publicado' : entry.estado === 'DRAFT' ? 'Borrador' : 'Anulado'}
                         size='small'
-                        sx={{
-                          fontWeight: 700,
-                          backgroundColor:
-                            entry.estado === 'POSTED'
-                              ? 'rgba(16, 185, 129, 0.12)'
-                              : entry.estado === 'DRAFT'
-                                ? 'rgba(245, 158, 11, 0.15)'
-                                : 'rgba(239, 68, 68, 0.12)',
-                          color:
-                            entry.estado === 'POSTED'
-                              ? '#10B981'
-                              : entry.estado === 'DRAFT'
-                                ? '#D97706'
-                                : '#EF4444',
-                          borderRadius: '9999px'
-                        }}
+                        variant='tonal'
+                        color={
+                          entry.estado === 'POSTED'
+                            ? 'success'
+                            : entry.estado === 'DRAFT'
+                              ? 'warning'
+                              : 'error'
+                        }
                       />
                     </TableCell>
                     <TableCell align='center' onClick={e => e.stopPropagation()}>
@@ -328,6 +352,23 @@ export const JournalEntriesListView: React.FC = () => {
             </TableBody>
           </Table>
         </TableContainer>
+
+        <TablePagination
+          rowsPerPageOptions={[5, 10, 25, 50]}
+          component='div'
+          count={filteredEntries.length}
+          rowsPerPage={rowsPerPage}
+          page={page}
+          onPageChange={(_, newPage) => setPage(newPage)}
+          onRowsPerPageChange={e => {
+            setRowsPerPage(parseInt(e.target.value, 10))
+            setPage(0)
+          }}
+          labelRowsPerPage='Filas por página:'
+          labelDisplayedRows={({ from, to, count }) =>
+            `${from}-${to} de ${count !== -1 ? count : `más de ${to}`}`
+          }
+        />
       </Card>
 
       {/* Toast */}

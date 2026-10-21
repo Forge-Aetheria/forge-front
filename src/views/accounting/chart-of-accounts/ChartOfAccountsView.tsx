@@ -7,7 +7,8 @@ import Typography from '@mui/material/Typography'
 import Button from '@mui/material/Button'
 import TextField from '@mui/material/TextField'
 import MenuItem from '@mui/material/MenuItem'
-import Chip from '@mui/material/Chip'
+import CustomChip from '@core/components/mui/Chip'
+import TablePagination from '@mui/material/TablePagination'
 import Table from '@mui/material/Table'
 import TableBody from '@mui/material/TableBody'
 import TableCell from '@mui/material/TableCell'
@@ -37,6 +38,8 @@ export const ChartOfAccountsView: React.FC = () => {
   // Filters
   const [searchTerm, setSearchTerm] = useState('')
   const [categoryTab, setCategoryTab] = useState<number>(0) // 0: Todas, 1: Activo, 2: Pasivo, 3: Patrimonio, 4: Ingresos, 5: Costos, 6: Gastos
+  const [page, setPage] = useState(0)
+  const [rowsPerPage, setRowsPerPage] = useState(10)
 
   // Full view state (Vista Completa para crear/editar cuenta)
   const [isFormActive, setIsFormActive] = useState(false)
@@ -94,6 +97,10 @@ export const ChartOfAccountsView: React.FC = () => {
       return matchSearch && matchCategory
     })
   }, [accounts, searchTerm, categoryTab])
+
+  const paginatedAccounts = useMemo(() => {
+    return filteredAccounts.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+  }, [filteredAccounts, page, rowsPerPage])
 
   const handleOpenCreate = () => {
     setSelectedAccount(null)
@@ -165,18 +172,18 @@ export const ChartOfAccountsView: React.FC = () => {
       }
     }
 
-    let categoryChip = <Chip label='1. Activo' size='small' sx={{ height: 18, fontSize: '0.68rem', backgroundColor: 'rgba(16, 185, 129, 0.1)', color: '#10B981', fontWeight: 700 }} />
+    let categoryChip = <CustomChip label='1. Activo' size='small' variant='tonal' color='success' />
 
     if (tipo.startsWith('LIABILITY')) {
-      categoryChip = <Chip label='2. Pasivo' size='small' sx={{ height: 18, fontSize: '0.68rem', backgroundColor: 'rgba(239, 68, 68, 0.1)', color: '#EF4444', fontWeight: 700 }} />
+      categoryChip = <CustomChip label='2. Pasivo' size='small' variant='tonal' color='error' />
     } else if (tipo === 'EQUITY') {
-      categoryChip = <Chip label='3. Patrimonio' size='small' sx={{ height: 18, fontSize: '0.68rem', backgroundColor: 'rgba(108, 92, 231, 0.1)', color: '#6C5CE7', fontWeight: 700 }} />
+      categoryChip = <CustomChip label='3. Patrimonio' size='small' variant='tonal' color='primary' />
     } else if (tipo.startsWith('INCOME')) {
-      categoryChip = <Chip label='4. Ingresos' size='small' sx={{ height: 18, fontSize: '0.68rem', backgroundColor: 'rgba(14, 165, 233, 0.1)', color: '#0EA5E9', fontWeight: 700 }} />
+      categoryChip = <CustomChip label='4. Ingresos' size='small' variant='tonal' color='info' />
     } else if (tipo === 'COST_OF_GOODS') {
-      categoryChip = <Chip label='5. Costos' size='small' sx={{ height: 18, fontSize: '0.68rem', backgroundColor: 'rgba(245, 158, 11, 0.1)', color: '#F59E0B', fontWeight: 700 }} />
+      categoryChip = <CustomChip label='5. Costos' size='small' variant='tonal' color='warning' />
     } else if (tipo.startsWith('EXPENSE')) {
-      categoryChip = <Chip label='6. Gastos' size='small' sx={{ height: 18, fontSize: '0.68rem', backgroundColor: 'rgba(236, 72, 153, 0.1)', color: '#EC4899', fontWeight: 700 }} />
+      categoryChip = <CustomChip label='6. Gastos' size='small' variant='tonal' color='secondary' />
     }
 
     return (
@@ -196,9 +203,6 @@ export const ChartOfAccountsView: React.FC = () => {
         <Box>
           <Typography variant='h5' sx={{ fontWeight: 700, color: '#1E293B' }}>
             Plan Único de Cuentas (PUC)
-          </Typography>
-          <Typography variant='body2' sx={{ color: '#64748B' }}>
-            Catálogo jerárquico de cuentas contables y saldos
           </Typography>
         </Box>
 
@@ -276,10 +280,38 @@ export const ChartOfAccountsView: React.FC = () => {
           />
         </Box>
 
+        {/* Table Toolbar */}
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            px: 3,
+            py: 2,
+            backgroundColor: '#FAF9FF',
+            border: '1px solid #E6E4F0',
+            borderBottom: 'none',
+            borderTopLeftRadius: '16px',
+            borderTopRightRadius: '16px'
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Typography variant='subtitle2' sx={{ fontWeight: 700, color: '#1E293B' }}>
+              Cuentas Contables
+            </Typography>
+            <CustomChip
+              label={`${filteredAccounts.length} ${filteredAccounts.length === 1 ? 'cuenta' : 'cuentas'}`}
+              variant='tonal'
+              color='primary'
+              size='small'
+            />
+          </Box>
+        </Box>
+
         {/* Table */}
-        <TableContainer sx={{ border: '1px solid #F1F5F9', borderRadius: '16px' }}>
+        <TableContainer sx={{ border: '1px solid #E6E4F0', borderTop: 'none', borderRadius: '0 0 16px 16px' }}>
           <Table>
-            <TableHead sx={{ backgroundColor: '#F8FAFC' }}>
+            <TableHead sx={{ backgroundColor: '#F4F3F8' }}>
               <TableRow>
                 <TableCell sx={{ fontWeight: 700, color: '#475569' }}>Código</TableCell>
                 <TableCell sx={{ fontWeight: 700, color: '#475569' }}>Nombre de la Cuenta</TableCell>
@@ -307,7 +339,7 @@ export const ChartOfAccountsView: React.FC = () => {
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredAccounts.map(acc => (
+                paginatedAccounts.map(acc => (
                   <TableRow key={acc.id} hover sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
                     <TableCell sx={{ fontWeight: 700, color: '#1E293B', fontFamily: 'monospace' }}>
                       {acc.codigo}
@@ -329,7 +361,7 @@ export const ChartOfAccountsView: React.FC = () => {
                     </TableCell>
                     <TableCell align='center'>
                       {acc.permiteConciliacion ? (
-                        <Chip label='Sí' size='small' sx={{ backgroundColor: 'rgba(16, 185, 129, 0.1)', color: '#10B981', fontWeight: 700 }} />
+                        <CustomChip label='Sí' size='small' variant='tonal' color='success' />
                       ) : (
                         <Typography variant='caption' sx={{ color: '#94A3B8' }}>No</Typography>
                       )}
@@ -347,6 +379,23 @@ export const ChartOfAccountsView: React.FC = () => {
             </TableBody>
           </Table>
         </TableContainer>
+
+        <TablePagination
+          rowsPerPageOptions={[5, 10, 25, 50]}
+          component='div'
+          count={filteredAccounts.length}
+          rowsPerPage={rowsPerPage}
+          page={page}
+          onPageChange={(_, newPage) => setPage(newPage)}
+          onRowsPerPageChange={e => {
+            setRowsPerPage(parseInt(e.target.value, 10))
+            setPage(0)
+          }}
+          labelRowsPerPage='Filas por página:'
+          labelDisplayedRows={({ from, to, count }) =>
+            `${from}-${to} de ${count !== -1 ? count : `más de ${to}`}`
+          }
+        />
       </Card>
 
       {/* Toast */}

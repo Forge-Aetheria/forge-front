@@ -7,7 +7,8 @@ import Typography from '@mui/material/Typography'
 import Button from '@mui/material/Button'
 import TextField from '@mui/material/TextField'
 import MenuItem from '@mui/material/MenuItem'
-import Chip from '@mui/material/Chip'
+import CustomChip from '@core/components/mui/Chip'
+import TablePagination from '@mui/material/TablePagination'
 import Table from '@mui/material/Table'
 import TableBody from '@mui/material/TableBody'
 import TableCell from '@mui/material/TableCell'
@@ -38,6 +39,8 @@ export const CreditNotesListView: React.FC = () => {
   const [creditNotes, setCreditNotes] = useState<AccountingInvoice[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedIds, setSelectedIds] = useState<string[]>([])
+  const [page, setPage] = useState(0)
+  const [rowsPerPage, setRowsPerPage] = useState(10)
 
   // Full-page form view state
   const [isFormActive, setIsFormActive] = useState(false)
@@ -87,6 +90,10 @@ export const CreditNotesListView: React.FC = () => {
       return matchSearch && matchType && matchOrigin
     })
   }, [creditNotes, searchTerm, typeFilter, originFilter])
+
+  const paginatedList = useMemo(() => {
+    return filteredList.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+  }, [filteredList, page, rowsPerPage])
 
   const handleOpenCreate = () => {
     setSelectedNc(null)
@@ -157,13 +164,6 @@ export const CreditNotesListView: React.FC = () => {
                 : typeFilter === 'SUPPLIER'
                 ? 'Notas de Crédito de Proveedores (CxP)'
                 : 'Notas de Crédito Contables'}
-            </Typography>
-            <Typography variant='body2' sx={{ color: '#64748B' }}>
-              {typeFilter === 'CUSTOMER'
-                ? 'Control de notas de crédito emitidas a clientes, devoluciones y ajustes comerciales'
-                : typeFilter === 'SUPPLIER'
-                ? 'Registro de notas de crédito de proveedores y rebajas en compras'
-                : 'Registro de devoluciones, ajustes y compensaciones fiscales con doble partida'}
             </Typography>
           </Box>
         </Box>
@@ -237,10 +237,38 @@ export const CreditNotesListView: React.FC = () => {
           </TextField>
         </Box>
 
+        {/* Table Toolbar */}
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            px: 3,
+            py: 2,
+            backgroundColor: '#FAF9FF',
+            border: '1px solid #E6E4F0',
+            borderBottom: 'none',
+            borderTopLeftRadius: '16px',
+            borderTopRightRadius: '16px'
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Typography variant='subtitle2' sx={{ fontWeight: 700, color: '#1E293B' }}>
+              Notas de Crédito Registradas
+            </Typography>
+            <CustomChip
+              label={`${filteredList.length} ${filteredList.length === 1 ? 'nota' : 'notas'}`}
+              variant='tonal'
+              color='primary'
+              size='small'
+            />
+          </Box>
+        </Box>
+
         {/* Tabla de Notas de Crédito */}
-        <TableContainer sx={{ border: '1px solid #F1F5F9', borderRadius: '16px' }}>
+        <TableContainer sx={{ border: '1px solid #E6E4F0', borderTop: 'none', borderRadius: '0 0 16px 16px' }}>
           <Table>
-            <TableHead sx={{ backgroundColor: '#F8FAFC' }}>
+            <TableHead sx={{ backgroundColor: '#F4F3F8' }}>
               <TableRow>
                 <TableCell padding='checkbox' sx={{ width: 44, p: 0.5 }}>
                   <Checkbox
@@ -289,7 +317,7 @@ export const CreditNotesListView: React.FC = () => {
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredList.map(nc => (
+                paginatedList.map(nc => (
                   <TableRow
                     key={nc.id}
                     hover
@@ -309,16 +337,11 @@ export const CreditNotesListView: React.FC = () => {
                       />
                     </TableCell>
                     <TableCell>
-                      <Chip
+                      <CustomChip
                         label={nc.tipo === 'CUSTOMER' ? 'Cliente' : 'Proveedor'}
                         size='small'
-                        sx={{
-                          height: 20,
-                          fontSize: '0.70rem',
-                          fontWeight: 700,
-                          backgroundColor: nc.tipo === 'CUSTOMER' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-                          color: nc.tipo === 'CUSTOMER' ? '#10B981' : '#EF4444'
-                        }}
+                        variant='tonal'
+                        color={nc.tipo === 'CUSTOMER' ? 'success' : 'error'}
                       />
                     </TableCell>
                     <TableCell sx={{ fontWeight: 700, color: '#6C5CE7' }}>
@@ -337,26 +360,18 @@ export const CreditNotesListView: React.FC = () => {
                     </TableCell>
                     <TableCell>
                       {nc.facturaAfectadaNumero ? (
-                        <Chip
+                        <CustomChip
                           label={`Factura ${nc.facturaAfectadaNumero}`}
                           size='small'
-                          sx={{
-                            backgroundColor: '#F3F0FF',
-                            color: '#6C5CE7',
-                            fontWeight: 700,
-                            border: '1px solid #D8D0F8'
-                          }}
+                          variant='tonal'
+                          color='primary'
                         />
                       ) : (
-                        <Chip
+                        <CustomChip
                           label='Directa / Sin Factura'
                           size='small'
-                          sx={{
-                            backgroundColor: '#FEF3C7',
-                            color: '#B45309',
-                            fontWeight: 600,
-                            border: '1px solid #FCD34D'
-                          }}
+                          variant='tonal'
+                          color='warning'
                         />
                       )}
                     </TableCell>
@@ -385,6 +400,23 @@ export const CreditNotesListView: React.FC = () => {
             </TableBody>
           </Table>
         </TableContainer>
+
+        <TablePagination
+          rowsPerPageOptions={[5, 10, 25, 50]}
+          component='div'
+          count={filteredList.length}
+          rowsPerPage={rowsPerPage}
+          page={page}
+          onPageChange={(_, newPage) => setPage(newPage)}
+          onRowsPerPageChange={e => {
+            setRowsPerPage(parseInt(e.target.value, 10))
+            setPage(0)
+          }}
+          labelRowsPerPage='Filas por página:'
+          labelDisplayedRows={({ from, to, count }) =>
+            `${from}-${to} de ${count !== -1 ? count : `más de ${to}`}`
+          }
+        />
       </Card>
 
       {/* Snackbar Toast */}

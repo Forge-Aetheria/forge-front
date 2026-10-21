@@ -7,7 +7,8 @@ import Typography from '@mui/material/Typography'
 import Button from '@mui/material/Button'
 import TextField from '@mui/material/TextField'
 import MenuItem from '@mui/material/MenuItem'
-import Chip from '@mui/material/Chip'
+import CustomChip from '@core/components/mui/Chip'
+import TablePagination from '@mui/material/TablePagination'
 import Table from '@mui/material/Table'
 import TableBody from '@mui/material/TableBody'
 import TableCell from '@mui/material/TableCell'
@@ -41,6 +42,8 @@ export const PaymentsListView: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('')
   const [typeFilter, setTypeFilter] = useState<'ALL' | 'CUSTOMER' | 'SUPPLIER'>(initialType || 'ALL')
   const [journalFilter, setJournalFilter] = useState('ALL')
+  const [page, setPage] = useState(0)
+  const [rowsPerPage, setRowsPerPage] = useState(10)
 
   // View State (List vs Full Form View)
   const [currentView, setCurrentView] = useState<'list' | 'form'>(
@@ -170,6 +173,10 @@ export const PaymentsListView: React.FC = () => {
     })
   }, [payments, searchTerm, journalFilter, typeFilter])
 
+  const paginatedPayments = useMemo(() => {
+    return filteredPayments.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+  }, [filteredPayments, page, rowsPerPage])
+
   const handlePaymentSuccess = (msg: string) => {
     setToastMessage(msg)
     loadData()
@@ -208,13 +215,6 @@ export const PaymentsListView: React.FC = () => {
               : typeFilter === 'SUPPLIER'
                 ? 'Pagos a Proveedores y Egresos'
                 : 'Tesorería y Movimientos de Pago'}
-          </Typography>
-          <Typography variant='body2' sx={{ color: '#64748B' }}>
-            {typeFilter === 'CUSTOMER'
-              ? 'Registro y control de cobros a clientes'
-              : typeFilter === 'SUPPLIER'
-                ? 'Gestión de pagos y desembolsos a proveedores'
-                : 'Tesorería y movimientos bimonetarios'}
           </Typography>
         </Box>
 
@@ -295,10 +295,38 @@ export const PaymentsListView: React.FC = () => {
           </TextField>
         </Box>
 
+        {/* Table Toolbar */}
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            px: 3,
+            py: 2,
+            backgroundColor: '#FAF9FF',
+            border: '1px solid #E6E4F0',
+            borderBottom: 'none',
+            borderTopLeftRadius: '16px',
+            borderTopRightRadius: '16px'
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Typography variant='subtitle2' sx={{ fontWeight: 700, color: '#1E293B' }}>
+              Movimientos de Pago Registrados
+            </Typography>
+            <CustomChip
+              label={`${filteredPayments.length} ${filteredPayments.length === 1 ? 'pago' : 'pagos'}`}
+              variant='tonal'
+              color='primary'
+              size='small'
+            />
+          </Box>
+        </Box>
+
         {/* Table */}
-        <TableContainer sx={{ border: '1px solid #F1F5F9', borderRadius: '16px' }}>
+        <TableContainer sx={{ border: '1px solid #E6E4F0', borderTop: 'none', borderRadius: '0 0 16px 16px' }}>
           <Table>
-            <TableHead sx={{ backgroundColor: '#F8FAFC' }}>
+            <TableHead sx={{ backgroundColor: '#F4F3F8' }}>
               <TableRow>
                 <TableCell sx={{ fontWeight: 700, color: '#475569' }}>N° Pago</TableCell>
                 <TableCell sx={{ fontWeight: 700, color: '#475569' }}>Fecha</TableCell>
@@ -326,7 +354,7 @@ export const PaymentsListView: React.FC = () => {
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredPayments.map(p => (
+                paginatedPayments.map(p => (
                   <TableRow
                     key={p.id}
                     hover
@@ -376,25 +404,22 @@ export const PaymentsListView: React.FC = () => {
                     </TableCell>
                     <TableCell align='center'>
                       {p.aplicaIgtf ? (
-                        <Chip
+                        <CustomChip
                           label={`+${p.montoIgtfUsd.toFixed(2)} $`}
                           size='small'
-                          sx={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', color: '#EF4444', fontWeight: 700 }}
+                          variant='tonal'
+                          color='error'
                         />
                       ) : (
                         <Typography variant='caption' sx={{ color: '#94A3B8' }}>—</Typography>
                       )}
                     </TableCell>
                     <TableCell align='center'>
-                      <Chip
+                      <CustomChip
                         label='Confirmado'
                         size='small'
-                        sx={{
-                          backgroundColor: 'rgba(16, 185, 129, 0.12)',
-                          color: '#10B981',
-                          fontWeight: 700,
-                          borderRadius: '9999px'
-                        }}
+                        variant='tonal'
+                        color='success'
                       />
                     </TableCell>
                   </TableRow>
@@ -403,6 +428,23 @@ export const PaymentsListView: React.FC = () => {
             </TableBody>
           </Table>
         </TableContainer>
+
+        <TablePagination
+          rowsPerPageOptions={[5, 10, 25, 50]}
+          component='div'
+          count={filteredPayments.length}
+          rowsPerPage={rowsPerPage}
+          page={page}
+          onPageChange={(_, newPage) => setPage(newPage)}
+          onRowsPerPageChange={e => {
+            setRowsPerPage(parseInt(e.target.value, 10))
+            setPage(0)
+          }}
+          labelRowsPerPage='Filas por página:'
+          labelDisplayedRows={({ from, to, count }) =>
+            `${from}-${to} de ${count !== -1 ? count : `más de ${to}`}`
+          }
+        />
       </Card>
 
       {/* Drawer de Pago Individual */}
