@@ -8,7 +8,7 @@ import Typography from '@mui/material/Typography'
 import Button from '@mui/material/Button'
 import IconButton from '@mui/material/IconButton'
 import Tooltip from '@mui/material/Tooltip'
-import Chip from '@mui/material/Chip'
+import CustomChip from '@core/components/mui/Chip'
 import TextField from '@mui/material/TextField'
 import MenuItem from '@mui/material/MenuItem'
 import Table from '@mui/material/Table'
@@ -173,22 +173,16 @@ export const InventoryLocationsView = () => {
     <div className='flex flex-col gap-5'>
       {/* Header */}
       <div className='flex flex-col sm:flex-row sm:items-center justify-between gap-4'>
-        <div>
-          <div className='flex items-center gap-2.5 flex-wrap'>
-            <Typography variant='h4' className='font-bold text-[#1E1B2E]'>
-              Ubicaciones de Almacén
-            </Typography>
-            <Chip
-              size='small'
-              label={`${filteredLocations.length} ubicaciones`}
-              color='primary'
-              variant='outlined'
-              className='rounded-full text-xs font-semibold'
-            />
-          </div>
-          <Typography variant='body2' className='text-[#6B7280] mt-0.5'>
-            Zonas internas, pasillos y estanterías por almacén
+        <div className='flex items-center gap-2.5 flex-wrap'>
+          <Typography variant='h4' className='font-bold text-[#1E1B2E]'>
+            Ubicaciones de Almacén
           </Typography>
+          <CustomChip
+            size='small'
+            label={`${filteredLocations.length} ubicaciones`}
+            color='primary'
+            variant='tonal'
+          />
         </div>
 
         <div className='flex items-center gap-2.5 flex-wrap'>
@@ -313,12 +307,11 @@ export const InventoryLocationsView = () => {
                         <span className='text-[10px] text-[#6B7280] font-mono ml-1.5'>({loc.warehouseCode})</span>
                       </TableCell>
                       <TableCell className='py-2.5'>
-                        <Chip
+                        <CustomChip
                           size='small'
                           label={meta.label}
                           color={meta.color}
-                          variant='outlined'
-                          className='rounded-full text-[11px] font-semibold'
+                          variant='tonal'
                         />
                       </TableCell>
                       <TableCell className='text-xs text-[#6B7280] py-2.5 max-w-[200px] truncate'>

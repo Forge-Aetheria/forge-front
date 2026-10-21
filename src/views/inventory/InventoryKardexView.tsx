@@ -8,8 +8,8 @@ import Card from '@mui/material/Card'
 import CardContent from '@mui/material/CardContent'
 import Typography from '@mui/material/Typography'
 import Button from '@mui/material/Button'
-import Chip from '@mui/material/Chip'
-import TextField from '@mui/material/TextField'
+import CustomChip from '@core/components/mui/Chip'
+import CustomTextField from '@core/components/mui/TextField'
 import MenuItem from '@mui/material/MenuItem'
 import InputAdornment from '@mui/material/InputAdornment'
 import Table from '@mui/material/Table'
@@ -17,6 +17,7 @@ import TableHead from '@mui/material/TableHead'
 import TableBody from '@mui/material/TableBody'
 import TableRow from '@mui/material/TableRow'
 import TableCell from '@mui/material/TableCell'
+import TablePagination from '@mui/material/TablePagination'
 import Snackbar from '@mui/material/Snackbar'
 import Alert from '@mui/material/Alert'
 
@@ -69,6 +70,8 @@ const InventoryKardexView = () => {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedProductId, setSelectedProductId] = useState('ALL')
   const [selectedType, setSelectedType] = useState<string>('ALL')
+  const [page, setPage] = useState(0)
+  const [rowsPerPage, setRowsPerPage] = useState(10)
 
   // Modal state
   const [adjustModalOpen, setAdjustModalOpen] = useState(false)
@@ -107,6 +110,10 @@ const InventoryKardexView = () => {
     })
   }, [movements, selectedProductId, selectedType, searchQuery])
 
+  const paginatedMovements = useMemo(() => {
+    return filteredMovements.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+  }, [filteredMovements, page, rowsPerPage])
+
   const summary = useMemo(() => {
     let totalIn = 0
     let totalOut = 0
@@ -141,22 +148,16 @@ const InventoryKardexView = () => {
     <div className='flex flex-col gap-6'>
       {/* Header */}
       <div className='flex flex-col sm:flex-row sm:items-center justify-between gap-4'>
-        <div>
-          <div className='flex items-center gap-2 mb-1'>
-            <Typography variant='h4' className='font-bold text-[#1E1B4B]'>
-              Kárdex y Libro Mayor de Movimientos
-            </Typography>
-            <Chip
-              size='small'
-              label={`${filteredMovements.length} registros`}
-              color='primary'
-              variant='tonal'
-              className='rounded-full font-bold'
-            />
-          </div>
-          <Typography variant='body2' className='text-textSecondary'>
-            Trazabilidad y movimientos de stock
+        <div className='flex items-center gap-2.5 flex-wrap'>
+          <Typography variant='h4' className='font-bold text-[#1E1B4B]'>
+            Kárdex y Libro Mayor de Movimientos
           </Typography>
+          <CustomChip
+            size='small'
+            label={`${filteredMovements.length} registros`}
+            color='primary'
+            variant='tonal'
+          />
         </div>
 
         <div className='flex items-center gap-2.5 flex-wrap'>
@@ -166,7 +167,7 @@ const InventoryKardexView = () => {
             startIcon={<i className='tabler-adjustments-horizontal' />}
             onClick={() => setAdjustModalOpen(true)}
           >
-            Ajuste de Stock
+            Ajustar
           </Button>
         </div>
       </div>
@@ -230,12 +231,15 @@ const InventoryKardexView = () => {
         <CardContent className='p-5 border-b border-[#E6E4F0] bg-[#FAFAFE]'>
           <div className='grid grid-cols-1 md:grid-cols-12 gap-4 items-center'>
             <div className='md:col-span-5'>
-              <TextField
+              <CustomTextField
                 fullWidth
                 size='small'
                 placeholder='Buscar por SKU, producto, documento o motivo...'
                 value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
+                onChange={e => {
+                  setSearchQuery(e.target.value)
+                  setPage(0)
+                }}
                 slotProps={{
                   input: {
                     startAdornment: (
@@ -249,13 +253,16 @@ const InventoryKardexView = () => {
             </div>
 
             <div className='md:col-span-4'>
-              <TextField
+              <CustomTextField
                 select
                 fullWidth
                 size='small'
                 label='Filtrar por Artículo'
                 value={selectedProductId}
-                onChange={e => setSelectedProductId(e.target.value)}
+                onChange={e => {
+                  setSelectedProductId(e.target.value)
+                  setPage(0)
+                }}
               >
                 <MenuItem value='ALL'>Todos los Artículos del Catálogo</MenuItem>
                 {templates
@@ -265,17 +272,20 @@ const InventoryKardexView = () => {
                       [{t.defaultCode}] {t.name}
                     </MenuItem>
                   ))}
-              </TextField>
+              </CustomTextField>
             </div>
 
             <div className='md:col-span-3'>
-              <TextField
+              <CustomTextField
                 select
                 fullWidth
                 size='small'
                 label='Tipo de Movimiento'
                 value={selectedType}
-                onChange={e => setSelectedType(e.target.value)}
+                onChange={e => {
+                  setSelectedType(e.target.value)
+                  setPage(0)
+                }}
               >
                 <MenuItem value='ALL'>Todos los Movimientos</MenuItem>
                 <MenuItem value='PURCHASE_RECEIPT'>Recepción de Compra (+)</MenuItem>
@@ -283,7 +293,7 @@ const InventoryKardexView = () => {
                 <MenuItem value='ADJUSTMENT_IN'>Ajuste Positivo (+)</MenuItem>
                 <MenuItem value='ADJUSTMENT_OUT'>Ajuste / Merma (-)</MenuItem>
                 <MenuItem value='INITIAL_INVENTORY'>Saldo Inicial</MenuItem>
-              </TextField>
+              </CustomTextField>
             </div>
           </div>
         </CardContent>
@@ -294,9 +304,12 @@ const InventoryKardexView = () => {
             <Typography variant='h6' className='font-semibold text-[#1E1B2E] text-sm'>
               Movimientos Registrados
             </Typography>
-            <span className='text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#F3F0FF] text-[#6C5CE7] border border-[#E9D5FF]'>
-              {filteredMovements.length} {filteredMovements.length === 1 ? 'movimiento' : 'movimientos'}
-            </span>
+            <CustomChip
+              size='small'
+              variant='tonal'
+              color='primary'
+              label={`${filteredMovements.length} ${filteredMovements.length === 1 ? 'movimiento' : 'movimientos'}`}
+            />
           </div>
         </div>
 
@@ -305,40 +318,39 @@ const InventoryKardexView = () => {
         ) : (
           <div className='overflow-x-auto'>
             <Table size='small'>
-              <TableHead className='bg-[#F4F3F8] border-b border-[#E6E4F0]'>
+              <TableHead sx={{ backgroundColor: '#F4F3F8', borderBottom: '1px solid #E6E4F0' }}>
                 <TableRow>
                   <TableCell
-                    className='text-[11px] uppercase tracking-wider text-[#6B7280] font-bold text-center'
-                    style={{ width: 36, maxWidth: 36, padding: '10px 4px' }}
+                    sx={{ width: 36, maxWidth: 36, px: 0.5, py: 1.5, fontWeight: 700, color: '#6B7280', textAlign: 'center', fontSize: '0.75rem', letterSpacing: '0.05em' }}
                   >
                     #
                   </TableCell>
-                  <TableCell className='text-[11px] uppercase tracking-wider text-[#6B7280] font-bold py-2.5'>
-                    Fecha / Hora
+                  <TableCell sx={{ py: 1.5, fontWeight: 700, color: '#6B7280', fontSize: '0.75rem', letterSpacing: '0.05em' }}>
+                    FECHA / HORA
                   </TableCell>
-                  <TableCell className='text-[11px] uppercase tracking-wider text-[#6B7280] font-bold py-2.5'>
-                    Documento Ref.
+                  <TableCell sx={{ py: 1.5, fontWeight: 700, color: '#6B7280', fontSize: '0.75rem', letterSpacing: '0.05em' }}>
+                    DOCUMENTO REF.
                   </TableCell>
-                  <TableCell className='text-[11px] uppercase tracking-wider text-[#6B7280] font-bold py-2.5'>
-                    Artículo / Variante SKU
+                  <TableCell sx={{ py: 1.5, fontWeight: 700, color: '#6B7280', fontSize: '0.75rem', letterSpacing: '0.05em' }}>
+                    ARTÍCULO / VARIANTE SKU
                   </TableCell>
-                  <TableCell className='text-[11px] uppercase tracking-wider text-[#6B7280] font-bold py-2.5'>
-                    Operación
+                  <TableCell sx={{ py: 1.5, fontWeight: 700, color: '#6B7280', fontSize: '0.75rem', letterSpacing: '0.05em' }}>
+                    OPERACIÓN
                   </TableCell>
-                  <TableCell className='text-[11px] uppercase tracking-wider text-[#6B7280] font-bold text-right py-2.5'>
-                    Entrada (+)
+                  <TableCell align='right' sx={{ py: 1.5, fontWeight: 700, color: '#6B7280', fontSize: '0.75rem', letterSpacing: '0.05em' }}>
+                    ENTRADA (+)
                   </TableCell>
-                  <TableCell className='text-[11px] uppercase tracking-wider text-[#6B7280] font-bold text-right py-2.5'>
-                    Salida (-)
+                  <TableCell align='right' sx={{ py: 1.5, fontWeight: 700, color: '#6B7280', fontSize: '0.75rem', letterSpacing: '0.05em' }}>
+                    SALIDA (-)
                   </TableCell>
-                  <TableCell className='text-[11px] uppercase tracking-wider text-[#6B7280] font-bold text-right py-2.5'>
-                    Saldo Físico
+                  <TableCell align='right' sx={{ py: 1.5, fontWeight: 700, color: '#6B7280', fontSize: '0.75rem', letterSpacing: '0.05em' }}>
+                    SALDO FÍSICO
                   </TableCell>
-                  <TableCell className='text-[11px] uppercase tracking-wider text-[#6B7280] font-bold text-right py-2.5'>
-                    Costo Unit.
+                  <TableCell align='right' sx={{ py: 1.5, fontWeight: 700, color: '#6B7280', fontSize: '0.75rem', letterSpacing: '0.05em' }}>
+                    COSTO UNIT.
                   </TableCell>
-                  <TableCell className='text-[11px] uppercase tracking-wider text-[#6B7280] font-bold py-2.5'>
-                    Responsable / Motivo
+                  <TableCell sx={{ py: 1.5, fontWeight: 700, color: '#6B7280', fontSize: '0.75rem', letterSpacing: '0.05em' }}>
+                    RESPONSABLE / MOTIVO
                   </TableCell>
                 </TableRow>
               </TableHead>
@@ -350,7 +362,7 @@ const InventoryKardexView = () => {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredMovements.map((mov, index) => {
+                  paginatedMovements.map((mov, index) => {
                     const meta = movementTypeMeta[mov.tipo_movimiento] || {
                       label: mov.tipo_movimiento,
                       color: 'secondary',
@@ -363,7 +375,7 @@ const InventoryKardexView = () => {
                           className='text-center text-xs font-mono text-textSecondary'
                           style={{ width: 28, maxWidth: 28, padding: '6px 4px' }}
                         >
-                          {index + 1}
+                          {page * rowsPerPage + index + 1}
                         </TableCell>
                         <TableCell className='text-xs whitespace-nowrap text-textSecondary font-mono'>
                           {formatDate(mov.fecha)}
@@ -389,12 +401,11 @@ const InventoryKardexView = () => {
                           </div>
                         </TableCell>
                         <TableCell className='whitespace-nowrap'>
-                          <Chip
+                          <CustomChip
                             size='small'
                             label={meta.label}
                             color={meta.color}
                             variant='tonal'
-                            className='rounded-full text-[11px] font-semibold'
                           />
                         </TableCell>
                         <TableCell className='text-right font-mono text-xs font-bold text-success whitespace-nowrap'>
@@ -425,6 +436,23 @@ const InventoryKardexView = () => {
             </Table>
           </div>
         )}
+
+        <TablePagination
+          rowsPerPageOptions={[10, 25, 50, 100]}
+          component='div'
+          count={filteredMovements.length}
+          rowsPerPage={rowsPerPage}
+          page={page}
+          onPageChange={(_, newPage) => setPage(newPage)}
+          onRowsPerPageChange={e => {
+            setRowsPerPage(parseInt(e.target.value, 10))
+            setPage(0)
+          }}
+          labelRowsPerPage='Filas por página:'
+          labelDisplayedRows={({ from, to, count }) =>
+            `${from}-${to} de ${count !== -1 ? count : `más de ${to}`}`
+          }
+        />
       </Card>
 
       <StockAdjustmentModal

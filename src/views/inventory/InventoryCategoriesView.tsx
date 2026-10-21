@@ -10,7 +10,7 @@ import Typography from '@mui/material/Typography'
 import Button from '@mui/material/Button'
 import IconButton from '@mui/material/IconButton'
 import Tooltip from '@mui/material/Tooltip'
-import Chip from '@mui/material/Chip'
+import CustomChip from '@core/components/mui/Chip'
 import TextField from '@mui/material/TextField'
 import InputAdornment from '@mui/material/InputAdornment'
 import Table from '@mui/material/Table'
@@ -173,22 +173,16 @@ const InventoryCategoriesView = () => {
     <div className='flex flex-col gap-6'>
       {/* Header exclusivo de Categorías */}
       <div className='flex flex-col sm:flex-row sm:items-center justify-between gap-4'>
-        <div>
-          <div className='flex items-center gap-2 mb-1'>
-            <Typography variant='h4' className='font-bold text-[#1E1B4B]'>
-              Categorías de Productos
-            </Typography>
-            <Chip
-              size='small'
-              label={`${filteredCategories.length} categorías`}
-              color='primary'
-              variant='tonal'
-              className='rounded-full font-bold'
-            />
-          </div>
-          <Typography variant='body2' className='text-textSecondary'>
-            Clasificación comercial y operativa de artículos
+        <div className='flex items-center gap-2.5 flex-wrap'>
+          <Typography variant='h4' className='font-bold text-[#1E1B4B]'>
+            Categorías de Productos
           </Typography>
+          <CustomChip
+            size='small'
+            label={`${filteredCategories.length} categorías`}
+            color='primary'
+            variant='tonal'
+          />
         </div>
 
         <div className='flex items-center gap-2.5'>
@@ -353,7 +347,7 @@ const InventoryCategoriesView = () => {
                       />
                     </TableCell>
                     <TableCell className='text-center'>
-                      <Chip size='small' label='Nueva' color='primary' variant='tonal' className='rounded-full text-[11px]' />
+                      <CustomChip size='small' label='Nueva' color='primary' variant='tonal' />
                     </TableCell>
                     <TableCell className='text-right whitespace-nowrap'>
                       <div className='flex items-center justify-end gap-1'>
@@ -401,12 +395,11 @@ const InventoryCategoriesView = () => {
                             sx={{ width: 95 }}
                           />
                         ) : (
-                          <Chip
+                          <CustomChip
                             size='small'
                             label={cat.code}
                             color='primary'
                             variant='tonal'
-                            className='rounded-full font-mono font-bold text-xs'
                           />
                         )}
                       </TableCell>
@@ -445,12 +438,11 @@ const InventoryCategoriesView = () => {
                         )}
                       </TableCell>
                       <TableCell className='text-center'>
-                        <Chip
+                        <CustomChip
                           size='small'
                           label={`${count} art.`}
                           color={count > 0 ? 'secondary' : 'default'}
                           variant='tonal'
-                          className='rounded-full font-mono text-xs'
                         />
                       </TableCell>
                       <TableCell className='text-right whitespace-nowrap'>

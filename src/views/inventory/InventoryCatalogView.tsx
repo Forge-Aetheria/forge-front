@@ -78,9 +78,6 @@ const InventoryCatalogView = () => {
           <Typography variant='h4' className='font-bold text-[#1E1B2E]'>
             Catálogo Maestro de Productos y Servicios
           </Typography>
-          <Typography variant='body2' className='text-[#6B7280]'>
-            Productos, variantes y precios
-          </Typography>
         </div>
 
         <div className='flex items-center gap-2.5 flex-wrap'>

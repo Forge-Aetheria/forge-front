@@ -10,7 +10,8 @@ import Typography from '@mui/material/Typography'
 import Button from '@mui/material/Button'
 import IconButton from '@mui/material/IconButton'
 import Tooltip from '@mui/material/Tooltip'
-import Chip from '@mui/material/Chip'
+import CustomChip from '@core/components/mui/Chip'
+import CustomTextField from '@core/components/mui/TextField'
 import TextField from '@mui/material/TextField'
 import Autocomplete from '@mui/material/Autocomplete'
 import MenuItem from '@mui/material/MenuItem'
@@ -20,6 +21,7 @@ import TableHead from '@mui/material/TableHead'
 import TableBody from '@mui/material/TableBody'
 import TableRow from '@mui/material/TableRow'
 import TableCell from '@mui/material/TableCell'
+import TablePagination from '@mui/material/TablePagination'
 import Drawer from '@mui/material/Drawer'
 import Divider from '@mui/material/Divider'
 import Popover from '@mui/material/Popover'
@@ -84,6 +86,8 @@ const InventoryAdjustmentsView = () => {
 
   const [searchQuery, setSearchQuery] = useState('')
   const [reasonFilter, setReasonFilter] = useState<string>('ALL')
+  const [page, setPage] = useState(0)
+  const [rowsPerPage, setRowsPerPage] = useState(10)
   const [toast, setToast] = useState<{ open: boolean; message: string; severity: 'success' | 'error' | 'info' }>({
     open: false,
     message: '',
@@ -270,6 +274,10 @@ const InventoryAdjustmentsView = () => {
     })
   }, [adjustments, reasonFilter, searchQuery])
 
+  const paginatedAdjustments = useMemo(() => {
+    return filteredAdjustments.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+  }, [filteredAdjustments, page, rowsPerPage])
+
   const formatDate = (iso: string) => {
     try {
       return new Date(iso).toLocaleDateString('es-VE', {
@@ -293,22 +301,16 @@ const InventoryAdjustmentsView = () => {
     <div className='flex flex-col gap-6'>
       {/* Header */}
       <div className='flex flex-col sm:flex-row sm:items-center justify-between gap-4'>
-        <div>
-          <div className='flex items-center gap-2 mb-1'>
-            <Typography variant='h4' className='font-bold text-[#1E1B4B]'>
-              Auditoría y Ajustes de Stock Físico
-            </Typography>
-            <Chip
-              size='small'
-              label={`${filteredAdjustments.length} actas`}
-              color='primary'
-              variant='tonal'
-              className='rounded-full font-bold'
-            />
-          </div>
-          <Typography variant='body2' className='text-textSecondary'>
-            Ajustes de existencias y conteos físicos
+        <div className='flex items-center gap-2.5 flex-wrap'>
+          <Typography variant='h4' className='font-bold text-[#1E1B4B]'>
+            Auditoría y Ajustes de Stock Físico
           </Typography>
+          <CustomChip
+            size='small'
+            label={`${filteredAdjustments.length} actas`}
+            color='primary'
+            variant='tonal'
+          />
         </div>
 
         <div className='flex items-center gap-2.5 flex-wrap'>
@@ -352,12 +354,15 @@ const InventoryAdjustmentsView = () => {
         <CardContent className='p-5 border-b border-[#E6E4F0] bg-[#FAFAFE]'>
           <div className='grid grid-cols-1 md:grid-cols-12 gap-4 items-center'>
             <div className='md:col-span-7'>
-              <TextField
+              <CustomTextField
                 fullWidth
                 size='small'
                 placeholder='Buscar en el historial por correlativo (AJU-2026-...), artículo, SKU u observaciones...'
                 value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
+                onChange={e => {
+                  setSearchQuery(e.target.value)
+                  setPage(0)
+                }}
                 slotProps={{
                   input: {
                     startAdornment: (
@@ -371,13 +376,16 @@ const InventoryAdjustmentsView = () => {
             </div>
 
             <div className='md:col-span-5'>
-              <TextField
+              <CustomTextField
                 select
                 fullWidth
                 size='small'
                 label='Filtrar por Motivo de Ajuste'
                 value={reasonFilter}
-                onChange={e => setReasonFilter(e.target.value)}
+                onChange={e => {
+                  setReasonFilter(e.target.value)
+                  setPage(0)
+                }}
               >
                 <MenuItem value='ALL'>Todos los Motivos</MenuItem>
                 <MenuItem value='CONTEO_FISICO'>Toma Física / Conteo Cíclico</MenuItem>
@@ -385,7 +393,7 @@ const InventoryAdjustmentsView = () => {
                 <MenuItem value='CADUCIDAD'>Vencimiento / Caducidad de Lote</MenuItem>
                 <MenuItem value='CONSUMO_INTERNO'>Consumo Interno de la Empresa</MenuItem>
                 <MenuItem value='CORRECCION_SISTEMA'>Corrección de Saldo en Sistema</MenuItem>
-              </TextField>
+              </CustomTextField>
             </div>
           </div>
         </CardContent>
@@ -396,9 +404,12 @@ const InventoryAdjustmentsView = () => {
             <Typography variant='h6' className='font-semibold text-[#1E1B2E] text-sm'>
               Actas de Ajuste Aplicadas
             </Typography>
-            <span className='text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#F3F0FF] text-[#6C5CE7] border border-[#E9D5FF]'>
-              {filteredAdjustments.length} {filteredAdjustments.length === 1 ? 'registro' : 'registros'}
-            </span>
+            <CustomChip
+              size='small'
+              variant='tonal'
+              color='primary'
+              label={`${filteredAdjustments.length} ${filteredAdjustments.length === 1 ? 'registro' : 'registros'}`}
+            />
           </div>
         </div>
 
@@ -462,12 +473,11 @@ const InventoryAdjustmentsView = () => {
                       </TableCell>
 
                       <TableCell className='whitespace-nowrap'>
-                        <Chip
+                        <CustomChip
                           size='small'
-                          label='NUEVO AJUSTE'
+                          label='Nuevo Ajuste'
                           color='primary'
                           variant='tonal'
-                          className='rounded-full font-bold text-[10px] h-5'
                         />
                         <Typography variant='caption' className='text-textSecondary block font-mono mt-0.5'>
                           En edición
@@ -580,12 +590,11 @@ const InventoryAdjustmentsView = () => {
                       {/* Live Difference Badge */}
                       <TableCell className='text-center whitespace-nowrap'>
                         {opt ? (
-                          <Chip
+                          <CustomChip
                             size='small'
                             label={`${diff >= 0 ? '+' : ''}${diff} ${opt.uom_code}`}
                             color={diff > 0 ? 'success' : diff < 0 ? 'error' : 'secondary'}
                             variant='tonal'
-                            className='rounded-full font-mono font-bold text-xs'
                           />
                         ) : (
                           <span className='text-xs text-textSecondary'>—</span>
@@ -648,7 +657,7 @@ const InventoryAdjustmentsView = () => {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredAdjustments.map((adj, index) => {
+                  paginatedAdjustments.map((adj, index) => {
                     const reasonMeta = reasonLabels[adj.motivo] || {
                       label: adj.motivo,
                       color: 'secondary'
@@ -665,7 +674,7 @@ const InventoryAdjustmentsView = () => {
                           className='text-center text-xs font-mono text-textSecondary'
                           style={{ width: 28, maxWidth: 28, padding: '6px 4px' }}
                         >
-                          {index + 1}
+                          {page * rowsPerPage + index + 1}
                         </TableCell>
                         <TableCell className='whitespace-nowrap'>
                           <Typography variant='body2' className='font-mono font-bold text-primary'>
@@ -684,12 +693,11 @@ const InventoryAdjustmentsView = () => {
                           </Typography>
                         </TableCell>
                         <TableCell className='whitespace-nowrap'>
-                          <Chip
+                          <CustomChip
                             size='small'
                             label={reasonMeta.label}
                             color={reasonMeta.color}
                             variant='tonal'
-                            className='rounded-full text-[11px] font-semibold'
                           />
                         </TableCell>
                         <TableCell className='text-center font-mono text-xs text-textSecondary'>
@@ -699,12 +707,11 @@ const InventoryAdjustmentsView = () => {
                           {adj.stock_contado} {adj.uom_code}
                         </TableCell>
                         <TableCell className='text-center whitespace-nowrap'>
-                          <Chip
+                          <CustomChip
                             size='small'
                             label={`${adj.diferencia >= 0 ? '+' : ''}${adj.diferencia} ${adj.uom_code}`}
                             color={adj.diferencia > 0 ? 'success' : adj.diferencia < 0 ? 'error' : 'secondary'}
                             variant='tonal'
-                            className='rounded-full font-mono font-bold text-xs'
                           />
                         </TableCell>
                         {draftRows.length > 0 && <TableCell />}
@@ -716,6 +723,23 @@ const InventoryAdjustmentsView = () => {
             </Table>
           </div>
         )}
+
+        <TablePagination
+          rowsPerPageOptions={[10, 25, 50]}
+          component='div'
+          count={filteredAdjustments.length}
+          rowsPerPage={rowsPerPage}
+          page={page}
+          onPageChange={(_, newPage) => setPage(newPage)}
+          onRowsPerPageChange={e => {
+            setRowsPerPage(parseInt(e.target.value, 10))
+            setPage(0)
+          }}
+          labelRowsPerPage='Filas por página:'
+          labelDisplayedRows={({ from, to, count }) =>
+            `${from}-${to} de ${count !== -1 ? count : `más de ${to}`}`
+          }
+        />
       </Card>
 
       {/* Popover for adding an optional note on a draft row */}
@@ -787,12 +811,11 @@ const InventoryAdjustmentsView = () => {
                   <Typography variant='h6' className='font-bold font-mono text-primary'>
                     {selectedAdjustment.correlativo}
                   </Typography>
-                  <Chip
+                  <CustomChip
                     size='small'
-                    label='APLICADO'
+                    label='Aplicado'
                     color='success'
                     variant='tonal'
-                    className='rounded-full font-bold text-[10px] h-5'
                   />
                 </div>
                 <Typography variant='caption' className='text-textSecondary font-mono'>
@@ -860,7 +883,7 @@ const InventoryAdjustmentsView = () => {
                     <Typography variant='caption' className='text-textSecondary block'>
                       Diferencia
                     </Typography>
-                    <Chip
+                    <CustomChip
                       size='small'
                       label={`${selectedAdjustment.diferencia >= 0 ? '+' : ''}${selectedAdjustment.diferencia} ${selectedAdjustment.uom_code}`}
                       color={
@@ -871,7 +894,7 @@ const InventoryAdjustmentsView = () => {
                             : 'secondary'
                       }
                       variant='tonal'
-                      className='rounded-full font-mono font-bold text-xs mt-1'
+                      className='font-mono font-bold text-xs mt-1'
                     />
                   </div>
                 </div>
@@ -918,12 +941,11 @@ const InventoryAdjustmentsView = () => {
                   <Typography variant='caption' className='text-textSecondary uppercase font-semibold'>
                     Motivo de Auditoría
                   </Typography>
-                  <Chip
+                  <CustomChip
                     size='small'
                     label={reasonLabels[selectedAdjustment.motivo]?.label || selectedAdjustment.motivo}
                     color={reasonLabels[selectedAdjustment.motivo]?.color || 'secondary'}
                     variant='tonal'
-                    className='rounded-full text-xs font-semibold'
                   />
                 </div>
 

@@ -42,14 +42,9 @@ const InventoryTableFilters = ({
   return (
     <CardContent className='p-5 flex flex-col gap-4 border-b border-[#E6E4F0] bg-[#FFFFFF]'>
       <div className='flex items-center justify-between flex-wrap gap-3'>
-        <div>
-          <Typography variant='h6' className='font-bold text-[#1E1B2E]'>
-            Filtros de Catálogo Maestro
-          </Typography>
-          <span className='text-xs text-[#6B7280]'>
-            Busque por código maestro, SKU de variante, código EAN, categoría o disponibilidad
-          </span>
-        </div>
+        <Typography variant='h6' className='font-bold text-[#1E1B2E]'>
+          Filtros de Catálogo Maestro
+        </Typography>
 
         {/* Feature Flag: Localización Fiscal SENIAT */}
         <div className='flex items-center gap-2.5 bg-[#F8F7FC] px-3.5 py-1.5 rounded-full border border-[#E6E4F0]'>

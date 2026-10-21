@@ -11,7 +11,7 @@ import Grid from '@mui/material/Grid'
 import Typography from '@mui/material/Typography'
 import Button from '@mui/material/Button'
 import IconButton from '@mui/material/IconButton'
-import Chip from '@mui/material/Chip'
+import CustomChip from '@core/components/mui/Chip'
 import Avatar from '@mui/material/Avatar'
 import Divider from '@mui/material/Divider'
 import Tooltip from '@mui/material/Tooltip'
@@ -449,7 +449,7 @@ const InventoryDetailView: React.FC<Props> = ({ id }) => {
           <Button
             component={Link}
             href='/inventory/products'
-            variant='tonal'
+            variant='outlined'
             color='secondary'
             size='small'
             className='shrink-0'
@@ -457,31 +457,17 @@ const InventoryDetailView: React.FC<Props> = ({ id }) => {
             Cancelar
           </Button>
 
-          {/* Guardar Cambios (Minimalista) */}
-          <Tooltip title='Guardar Cambios'>
-            <span>
-              <IconButton
-                onClick={handleSaveChanges}
-                disabled={saving}
-                sx={{
-                  width: 38,
-                  height: 38,
-                  borderRadius: '9999px',
-                  backgroundColor: '#6C5CE7',
-                  color: '#FFFFFF',
-                  boxShadow: '0 4px 12px rgba(108, 92, 231, 0.3)',
-                  '&:hover': { backgroundColor: '#5B4CDB' },
-                  '&:disabled': { backgroundColor: '#E2E8F0', color: '#94A3B8' }
-                }}
-              >
-                {saving ? (
-                  <i className='tabler-loader-2 animate-spin text-lg' />
-                ) : (
-                  <i className='tabler-device-floppy text-lg' />
-                )}
-              </IconButton>
-            </span>
-          </Tooltip>
+          {/* Guardar Cambios */}
+          <Button
+            variant='contained'
+            color='primary'
+            size='small'
+            onClick={handleSaveChanges}
+            disabled={saving}
+            startIcon={<i className={saving ? 'tabler-loader-2 animate-spin text-base' : 'tabler-device-floppy text-base'} />}
+          >
+            {saving ? 'Guardando...' : 'Guardar'}
+          </Button>
 
           {/* Eliminar */}
           <Tooltip title='Eliminar artículo'>
@@ -579,7 +565,7 @@ const InventoryDetailView: React.FC<Props> = ({ id }) => {
                         {financials.marginPercentage.toFixed(1)}% (+${financials.marginAmount.toFixed(2)})
                       </span>
                     </div>
-                    <Chip
+                    <CustomChip
                       size='small'
                       label={
                         financials.marginPercentage >= 30
@@ -596,7 +582,6 @@ const InventoryDetailView: React.FC<Props> = ({ id }) => {
                           : 'error'
                       }
                       variant='tonal'
-                      className='rounded-full text-[11px] font-bold'
                     />
                   </div>
                 </div>
@@ -1066,7 +1051,7 @@ const InventoryDetailView: React.FC<Props> = ({ id }) => {
                     <div className='flex items-center justify-between flex-wrap gap-3 px-4 py-3 rounded-xl bg-[#F8F7FA] border border-[#E6E4F0]'>
                       <div className='flex items-center gap-2.5 flex-wrap'>
                         <span className='text-xs text-[#6B7280] font-medium'>Margen actual:</span>
-                        <Chip
+                        <CustomChip
                           size='small'
                           label={`${financials.marginPercentage.toFixed(1)}% (${financials.marginAmount >= 0 ? '+' : ''}$${financials.marginAmount.toFixed(2)} USD)`}
                           color={
@@ -1077,7 +1062,6 @@ const InventoryDetailView: React.FC<Props> = ({ id }) => {
                               : 'error'
                           }
                           variant='tonal'
-                          className='rounded-full font-mono font-bold text-xs'
                         />
                       </div>
 
@@ -1117,14 +1101,13 @@ const InventoryDetailView: React.FC<Props> = ({ id }) => {
 
                           <div className='flex items-center gap-1 flex-wrap pt-3'>
                             {[25, 35, 50, 100].map(preset => (
-                              <Chip
+                              <CustomChip
                                 key={preset}
                                 label={`${preset}%`}
                                 size='small'
                                 onClick={() => setTargetMargin(preset)}
-                                color={Math.round(targetMargin) === preset ? 'primary' : 'default'}
-                                variant={Math.round(targetMargin) === preset ? 'filled' : 'outlined'}
-                                className='rounded-full font-mono text-xs cursor-pointer'
+                                color={Math.round(targetMargin) === preset ? 'primary' : 'secondary'}
+                                variant='tonal'
                               />
                             ))}
                           </div>
@@ -1460,11 +1443,10 @@ const InventoryDetailView: React.FC<Props> = ({ id }) => {
                         size='small'
                         variant='contained'
                         color='primary'
-                        className='rounded-full'
-                        startIcon={<i className='tabler-plus' />}
+                        startIcon={<i className='tabler-plus text-base' />}
                         onClick={() => setAdjustModalOpen(true)}
                       >
-                        Registrar Ajuste
+                        Ajustar
                       </Button>
                     )}
                   </div>

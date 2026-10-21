@@ -10,7 +10,7 @@ import Typography from '@mui/material/Typography'
 import Button from '@mui/material/Button'
 import IconButton from '@mui/material/IconButton'
 import Tooltip from '@mui/material/Tooltip'
-import Chip from '@mui/material/Chip'
+import CustomChip from '@core/components/mui/Chip'
 import TextField from '@mui/material/TextField'
 import MenuItem from '@mui/material/MenuItem'
 import Table from '@mui/material/Table'
@@ -204,22 +204,16 @@ const InventoryWarehousesView = () => {
     <div className='flex flex-col gap-6'>
       {/* Header exclusivo de Almacenes Físicos */}
       <div className='flex flex-col sm:flex-row sm:items-center justify-between gap-4'>
-        <div>
-          <div className='flex items-center gap-2 mb-1'>
-            <Typography variant='h4' className='font-bold text-[#1E1B2E]'>
-              Almacenes Físicos
-            </Typography>
-            <Chip
-              size='small'
-              label={`${warehouses.length} almacenes`}
-              color='primary'
-              variant='outlined'
-              className='rounded-full text-xs font-semibold'
-            />
-          </div>
-          <Typography variant='body2' className='text-[#6B7280]'>
-            Gestión de almacenes principales, secundarios y sucursales
+        <div className='flex items-center gap-2.5 flex-wrap'>
+          <Typography variant='h4' className='font-bold text-[#1E1B2E]'>
+            Almacenes Físicos
           </Typography>
+          <CustomChip
+            size='small'
+            label={`${warehouses.length} almacenes`}
+            color='primary'
+            variant='tonal'
+          />
         </div>
 
         <div className='flex items-center gap-2.5 flex-wrap'>
@@ -282,12 +276,11 @@ const InventoryWarehousesView = () => {
                               {wh.name}
                             </Typography>
                             {wh.isDefault && (
-                              <Chip
+                              <CustomChip
                                 size='small'
                                 label='Principal'
                                 color='primary'
                                 variant='tonal'
-                                className='rounded-full text-[10px] font-bold h-5'
                               />
                             )}
                           </div>
@@ -321,12 +314,11 @@ const InventoryWarehousesView = () => {
                         <Typography variant='caption' className='text-textSecondary'>
                           Resp: <strong className='text-[#1E1B4B]'>{wh.manager || 'N/A'}</strong>
                         </Typography>
-                        <Chip
+                        <CustomChip
                           size='small'
                           label={`${wh.locations.length} ubicaciones`}
                           color={isSelected ? 'primary' : 'secondary'}
                           variant='tonal'
-                          className='rounded-full font-mono text-[11px] font-semibold h-5'
                         />
                       </div>
                     </div>
@@ -344,12 +336,11 @@ const InventoryWarehousesView = () => {
                           <Typography variant='subtitle1' className='font-bold text-[#1E1B4B]'>
                             Ubicaciones en {selectedWarehouse.name}
                           </Typography>
-                          <Chip
+                          <CustomChip
                             size='small'
                             label={selectedWarehouse.code}
                             color='primary'
                             variant='tonal'
-                            className='rounded-full font-mono text-xs font-bold'
                           />
                         </div>
                         <Typography variant='caption' className='text-textSecondary'>
@@ -540,12 +531,11 @@ const InventoryWarehousesView = () => {
                                     </Typography>
                                   </TableCell>
                                   <TableCell className='whitespace-nowrap'>
-                                    <Chip
+                                    <CustomChip
                                       size='small'
                                       label={typeInfo.label}
                                       color={typeInfo.color}
                                       variant='tonal'
-                                      className='rounded-full text-[11px] font-semibold'
                                     />
                                   </TableCell>
                                   <TableCell>

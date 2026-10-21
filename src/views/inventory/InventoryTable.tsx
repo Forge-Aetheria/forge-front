@@ -15,7 +15,7 @@ import TableRow from '@mui/material/TableRow'
 import TableCell from '@mui/material/TableCell'
 import TablePagination from '@mui/material/TablePagination'
 import Typography from '@mui/material/Typography'
-import Chip from '@mui/material/Chip'
+import CustomChip from '@core/components/mui/Chip'
 import IconButton from '@mui/material/IconButton'
 import Tooltip from '@mui/material/Tooltip'
 import Checkbox from '@mui/material/Checkbox'
@@ -222,25 +222,26 @@ const InventoryTable = ({
 
       {/* Barra de Herramientas de Tabla: Conteo, Acciones en Lote y Columnas */}
       <div className='flex items-center justify-between flex-wrap gap-3 px-5 py-3 border-b border-[#E6E4F0] bg-[#FAF9FF]'>
-        <div className='flex items-center gap-3 flex-wrap'>
-          <span className='text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#F3F0FF] text-[#6C5CE7] border border-[#E9D5FF]'>
-            {filteredTemplates.length} {filteredTemplates.length === 1 ? 'artículo' : 'artículos'}
-          </span>
+        <div className='flex items-center gap-2.5 flex-wrap'>
+          <Typography variant='h6' className='font-semibold text-[#1E1B2E] text-sm'>
+            Catálogo de Productos
+          </Typography>
+          <CustomChip
+            size='small'
+            variant='tonal'
+            color='primary'
+            label={`${filteredTemplates.length} ${filteredTemplates.length === 1 ? 'artículo' : 'artículos'}`}
+          />
 
           {selectedIds.length > 0 && (
             <div className='flex items-center gap-2'>
-              <div className='flex items-center gap-1.5 bg-[#F3F0FF] text-[#6C5CE7] border border-[#E9D5FF] px-3 py-1.5 rounded-full text-xs font-semibold'>
-                <span>{selectedIds.length} seleccionados</span>
-                <Tooltip title='Deseleccionar'>
-                  <IconButton
-                    size='small'
-                    onClick={() => setSelectedIds([])}
-                    sx={{ p: 0.2, ml: 0.5, color: '#6C5CE7', '&:hover': { color: '#4B3AA6' } }}
-                  >
-                    <i className='tabler-x text-xs' />
-                  </IconButton>
-                </Tooltip>
-              </div>
+              <CustomChip
+                size='small'
+                variant='tonal'
+                color='primary'
+                label={`${selectedIds.length} seleccionados`}
+                onDelete={() => setSelectedIds([])}
+              />
 
               <Button
                 size='small'
@@ -268,9 +269,6 @@ const InventoryTable = ({
         </div>
 
         <div className='flex items-center gap-3'>
-          <Typography variant='caption' className='text-[#6B7280] hidden lg:inline'>
-            Haz clic en cualquier fila para consultar el artículo
-          </Typography>
           <Button
             size='small'
             variant='outlined'
@@ -502,8 +500,16 @@ const InventoryTable = ({
                     {/* Type Badge */}
                     {visibleColumns.tipo && (
                       <TableCell sx={{ py: 1.2 }}>
-                        <Chip
+                        <CustomChip
                           size='small'
+                          variant='tonal'
+                          color={
+                            template.productType === 'storable'
+                              ? 'primary'
+                              : template.productType === 'consumable'
+                              ? 'warning'
+                              : 'info'
+                          }
                           label={
                             template.productType === 'storable'
                               ? 'Almacenable'
@@ -511,24 +517,6 @@ const InventoryTable = ({
                               ? 'Consumible'
                               : 'Servicio'
                           }
-                          sx={{
-                            borderRadius: '9999px',
-                            fontSize: '0.7rem',
-                            fontWeight: 600,
-                            height: 22,
-                            backgroundColor:
-                              template.productType === 'storable'
-                                ? '#F0EEF9'
-                                : template.productType === 'consumable'
-                                ? '#FEF3C7'
-                                : '#E0F2FE',
-                            color:
-                              template.productType === 'storable'
-                                ? '#6C5CE7'
-                                : template.productType === 'consumable'
-                                ? '#D97706'
-                                : '#0284C7'
-                          }}
                         />
                       </TableCell>
                     )}
@@ -537,19 +525,12 @@ const InventoryTable = ({
                     {visibleColumns.variantes && (
                       <TableCell sx={{ py: 1.2 }}>
                         {template.variants.length > 1 ? (
-                          <Chip
+                          <CustomChip
                             size='small'
-                            label={`${template.variants.length} Variantes`}
-                            icon={<i className='tabler-grid-dots text-xs text-[#6C5CE7]' />}
-                            sx={{
-                              borderRadius: '9999px',
-                              fontSize: '0.7rem',
-                              fontWeight: 600,
-                              height: 22,
-                              backgroundColor: '#F8F7FC',
-                              color: '#1E1B2E',
-                              border: '1px solid #DCD8EC'
-                            }}
+                            variant='tonal'
+                            color='secondary'
+                            label={`${template.variants.length} variantes`}
+                            icon={<i className='tabler-grid-dots text-xs' />}
                           />
                         ) : (
                           <span className='text-xs text-[#9CA3AF]'>Simple (1 SKU)</span>
@@ -616,23 +597,30 @@ const InventoryTable = ({
                         align='center'
                         sx={{ width: 60, minWidth: 60, px: 0.5, py: 1.2 }}
                       >
-                        <span
-                          className={`inline-flex items-center justify-center h-[22px] px-2 rounded-full text-[11px] font-bold whitespace-nowrap leading-none select-none border ${
-                            template.vatRate === 'EXEMPT' || template.vatRate === '0'
-                              ? 'bg-[#F4F3F8] text-[#6B7280] border-[#DCD8EC]'
-                              : 'bg-[#F0EEF9] text-[#6C5CE7] border-[#DCD8EC]'
-                          }`}
-                        >
-                          {financials.taxLabel || '0%'}
-                        </span>
+                        <CustomChip
+                          size='small'
+                          variant='tonal'
+                          color={template.vatRate === 'EXEMPT' || template.vatRate === '0' ? 'secondary' : 'primary'}
+                          label={financials.taxLabel || '0%'}
+                        />
                       </TableCell>
                     )}
 
                     {/* Stock Status Badge */}
                     {visibleColumns.estado && (
                       <TableCell align='center' sx={{ py: 1.2 }}>
-                        <Chip
+                        <CustomChip
                           size='small'
+                          variant='tonal'
+                          color={
+                            isService
+                              ? 'info'
+                              : isOutOfStock
+                              ? 'error'
+                              : isLowStock
+                              ? 'warning'
+                              : 'success'
+                          }
                           label={
                             isService
                               ? 'Activo'
@@ -642,26 +630,6 @@ const InventoryTable = ({
                               ? 'Stock Bajo'
                               : 'En Stock'
                           }
-                          sx={{
-                            borderRadius: '9999px',
-                            fontSize: '0.7rem',
-                            fontWeight: 700,
-                            height: 22,
-                            backgroundColor: isService
-                              ? '#E0F2FE'
-                              : isOutOfStock
-                              ? '#FEE2E2'
-                              : isLowStock
-                              ? '#FEF3C7'
-                              : '#E8F5E9',
-                            color: isService
-                              ? '#0284C7'
-                              : isOutOfStock
-                              ? '#EF4444'
-                              : isLowStock
-                              ? '#D97706'
-                              : '#10B981'
-                          }}
                         />
                       </TableCell>
                     )}
