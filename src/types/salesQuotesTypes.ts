@@ -54,6 +54,10 @@ export interface QuoteLine {
   monto_iva?: number;
   total_linea: number;
   stock_disponible_al_momento?: number;
+
+  // Interconexión Almacén & Facturación (SPEC-009)
+  cantidad_entregada?: number; // Despachado efectivamente por almacén
+  cantidad_facturada?: number; // Facturado efectivamente en factura de cliente
 }
 
 export interface Quote {
@@ -92,6 +96,13 @@ export interface Quote {
   motivo_anulacion?: string;
   orden_venta_id?: string;
   correlativo_orden?: string;
+
+  // Enlaces de Interconexión (SPEC-009)
+  almacen_operacion_id?: string;
+  almacen_operacion_codigo?: string; // ej: "OUT/2026/0095"
+  factura_id?: string;
+  factura_numero?: string; // ej: "INV-2026-0045"
+
   version: number;
   creado_por?: string;
   created_at: string;

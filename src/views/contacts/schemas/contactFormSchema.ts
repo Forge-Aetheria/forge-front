@@ -47,7 +47,15 @@ export const terceroFormSchema = z.object({
   pais: z.string().min(2, 'El país es obligatorio').default('Venezuela'),
   codigo_postal: z.string().optional(),
   contactos_referentes: z.array(contactPersonSchema).default([]),
-  direcciones_adicionales: z.array(entityAddressSchema).default([])
+  direcciones_adicionales: z.array(entityAddressSchema).default([]),
+  cuenta_cxc_id: z.string().optional(),
+  cuenta_cxc_nombre: z.string().optional(),
+  cuenta_cxp_id: z.string().optional(),
+  cuenta_cxp_nombre: z.string().optional(),
+  plazo_pago_dias: z.number().optional(),
+  limite_credito_usd: z.number().optional(),
+  es_contribuyente_especial: z.boolean().optional(),
+  porcentaje_retencion_iva: z.number().optional()
 }).refine(data => data.is_cliente || data.is_proveedor || data.is_contacto, {
   message: 'Debe seleccionar al menos una relación comercial (Cliente, Proveedor o Contacto)',
   path: ['is_cliente']

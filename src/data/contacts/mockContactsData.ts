@@ -62,19 +62,34 @@ export const initialMockTerceros: TerceroEntity[] = [
         numero_cuenta: '0134-0034-21-0341029481',
         titular: 'Inversiones Polar C.A.',
         identificacion_titular: 'J-00041372-8',
-        is_predeterminada: true
+        is_predeterminada: true,
+        status: 'ACTIVO',
+        created_at: new Date(Date.now() - 60 * 86400000).toISOString(),
+        updated_at: new Date().toISOString()
       },
       {
         id: 'bank-002',
         banco: 'Banco Mercantil',
-        tipo_cuenta: 'CUSTODIA_USD',
+        tipo_cuenta: 'CORRIENTE',
         moneda: 'USD',
         numero_cuenta: '0105-0012-44-1012948271',
         titular: 'Inversiones Polar C.A.',
         identificacion_titular: 'J-00041372-8',
-        is_predeterminada: false
+        is_predeterminada: false,
+        status: 'ACTIVO',
+        created_at: new Date(Date.now() - 60 * 86400000).toISOString(),
+        updated_at: new Date().toISOString()
       }
     ],
+    // Contabilidad y Cuentas Contables (SPEC-008)
+    cuenta_cxc_id: 'acc-110201',
+    cuenta_cxc_nombre: 'Cuentas por Cobrar Clientes Nacionales (CxC)',
+    cuenta_cxp_id: 'acc-210101',
+    cuenta_cxp_nombre: 'Cuentas por Pagar Proveedores Nacionales (CxP)',
+    plazo_pago_dias: 30,
+    limite_credito_usd: 15000,
+    es_contribuyente_especial: true,
+    porcentaje_retencion_iva: 75,
     status: 'ACTIVO',
     created_at: new Date(Date.now() - 60 * 86400000).toISOString(),
     updated_at: new Date().toISOString()
@@ -109,6 +124,14 @@ export const initialMockTerceros: TerceroEntity[] = [
       }
     ],
     direcciones_adicionales: [],
+    cuenta_cxc_id: 'acc-110201',
+    cuenta_cxc_nombre: 'Cuentas por Cobrar Clientes Nacionales (CxC)',
+    cuenta_cxp_id: 'acc-210101',
+    cuenta_cxp_nombre: 'Cuentas por Pagar Proveedores Nacionales (CxP)',
+    plazo_pago_dias: 15,
+    limite_credito_usd: 8000,
+    es_contribuyente_especial: true,
+    porcentaje_retencion_iva: 75,
     status: 'ACTIVO',
     created_at: new Date(Date.now() - 40 * 86400000).toISOString(),
     updated_at: new Date().toISOString()
@@ -132,6 +155,14 @@ export const initialMockTerceros: TerceroEntity[] = [
     codigo_postal: '2101',
     contactos_referentes: [],
     direcciones_adicionales: [],
+    cuenta_cxc_id: 'acc-110201',
+    cuenta_cxc_nombre: 'Cuentas por Cobrar Clientes Nacionales (CxC)',
+    cuenta_cxp_id: 'acc-210101',
+    cuenta_cxp_nombre: 'Cuentas por Pagar Proveedores Nacionales (CxP)',
+    plazo_pago_dias: 15,
+    limite_credito_usd: 8000,
+    es_contribuyente_especial: true,
+    porcentaje_retencion_iva: 75,
     status: 'ACTIVO',
     created_at: new Date(Date.now() - 15 * 86400000).toISOString(),
     updated_at: new Date().toISOString()
@@ -155,6 +186,14 @@ export const initialMockTerceros: TerceroEntity[] = [
     codigo_postal: '3001',
     contactos_referentes: [],
     direcciones_adicionales: [],
+    cuenta_cxc_id: 'acc-110201',
+    cuenta_cxc_nombre: 'Cuentas por Cobrar Clientes Nacionales (CxC)',
+    cuenta_cxp_id: 'acc-210101',
+    cuenta_cxp_nombre: 'Cuentas por Pagar Proveedores Nacionales (CxP)',
+    plazo_pago_dias: 15,
+    limite_credito_usd: 8000,
+    es_contribuyente_especial: true,
+    porcentaje_retencion_iva: 75,
     status: 'ACTIVO',
     created_at: new Date(Date.now() - 5 * 86400000).toISOString(),
     updated_at: new Date().toISOString()
@@ -189,6 +228,14 @@ export const initialMockTerceros: TerceroEntity[] = [
       }
     ],
     direcciones_adicionales: [],
+    cuenta_cxc_id: 'acc-110201',
+    cuenta_cxc_nombre: 'Cuentas por Cobrar Clientes Nacionales (CxC)',
+    cuenta_cxp_id: 'acc-210101',
+    cuenta_cxp_nombre: 'Cuentas por Pagar Proveedores Nacionales (CxP)',
+    plazo_pago_dias: 15,
+    limite_credito_usd: 8000,
+    es_contribuyente_especial: true,
+    porcentaje_retencion_iva: 75,
     status: 'ACTIVO',
     created_at: new Date(Date.now() - 2 * 86400000).toISOString(),
     updated_at: new Date().toISOString()

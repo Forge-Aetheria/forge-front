@@ -34,20 +34,8 @@ export interface ContactPerson {
   cedula_identidad?: string;
 }
 
-export type BankAccountType = 'CORRIENTE' | 'AHORRO' | 'PAGO_MOVIL' | 'CUSTODIA_USD' | 'ZELLE' | 'OTRO';
-export type BankCurrency = 'VES' | 'USD' | 'EUR';
-
-export interface BankAccount {
-  id: string;
-  banco: string;
-  tipo_cuenta: BankAccountType;
-  moneda: BankCurrency;
-  numero_cuenta: string; // 20 dígitos o identificador / teléfono / correo
-  titular: string;
-  identificacion_titular: string; // Cédula o RIF
-  is_predeterminada: boolean;
-  telefono_pago_movil?: string;
-}
+import type { BankAccount, BankAccountType, BankCurrency } from './bankAccountTypes';
+export type { BankAccount, BankAccountType, BankCurrency };
 
 export type EntityOrigin = 'NACIONAL' | 'EXTRANJERO';
 
@@ -82,6 +70,18 @@ export interface TerceroEntity {
   // Cuentas Bancarias
   cuentas_bancarias?: BankAccount[];
 
+  // Contabilidad y Cuentas Contables (SPEC-008)
+  cuenta_cxc_id?: string;
+  cuenta_cxc_nombre?: string;
+  cuenta_cxp_id?: string;
+  cuenta_cxp_nombre?: string;
+  plazo_pago_dias?: number;
+  limite_credito_usd?: number;
+  es_contribuyente_especial?: boolean;
+  porcentaje_retencion_iva?: number;
+  cuenta_bancaria_predeterminada_id?: string;
+  cuenta_bancaria_predeterminada_info?: string;
+
   status: 'ACTIVO' | 'INACTIVO';
   created_at: string;
   updated_at: string;
@@ -112,6 +112,18 @@ export interface TerceroFormData {
   contactos_referentes: ContactPerson[];
   direcciones_adicionales: EntityAddress[];
   cuentas_bancarias?: BankAccount[];
+
+  // Contabilidad y Cuentas Contables (SPEC-008)
+  cuenta_cxc_id?: string;
+  cuenta_cxc_nombre?: string;
+  cuenta_cxp_id?: string;
+  cuenta_cxp_nombre?: string;
+  plazo_pago_dias?: number;
+  limite_credito_usd?: number;
+  es_contribuyente_especial?: boolean;
+  porcentaje_retencion_iva?: number;
+  cuenta_bancaria_predeterminada_id?: string;
+  cuenta_bancaria_predeterminada_info?: string;
 }
 
 export interface ContactsTabProps {

@@ -65,6 +65,10 @@ export interface PurchaseQuoteLine {
   alicuota_iva: '16' | '8' | '0' | 'EXEMPT'
   monto_credito_fiscal_iva: number
   total_linea: number
+
+  // Interconexión Almacén & Facturación de Proveedor (SPEC-009)
+  cantidad_recibida?: number // Recibida efectivamente por almacén en orden de recepción
+  cantidad_facturada?: number // Facturada efectivamente en cuenta por pagar
 }
 
 export interface PurchaseQuote {
@@ -113,6 +117,13 @@ export interface PurchaseQuote {
   aprobado_at?: string
   orden_compra_generada_at?: string
   stock_transito_notificado?: boolean
+
+  // Enlaces de Interconexión (SPEC-009)
+  almacen_operacion_id?: string
+  almacen_operacion_codigo?: string // ej: "IN/2026/0091"
+  factura_id?: string
+  factura_numero?: string // ej: "FAC-PROV-2026-0034"
+
   created_at: string
   updated_at: string
 }

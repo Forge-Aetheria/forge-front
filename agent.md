@@ -48,6 +48,12 @@ Este archivo y [`constitution.md`](./constitution.md) definen las reglas de arqu
 * **Justificación:** El ERP debe ser capaz de operar en modo neto universal para cualquier cliente o país. Si los impuestos están desactivados, los precios, márgenes y reportes operan limpiamente con precios base sin sobrecarga de cálculos fiscales.
 
 ### R5. Integridad de Rutas en la Navegación (Dual Menu)
+
+
+
+### R6. Jerarquía de Políticas Comerciales y de Control (Product Override > System Default)
+* **Regla:** Toda política comercial de facturación (cantidades pedidas vs. entregadas) o control de compras (cantidades pedidas vs. recibidas) debe evaluar prioritariamente la política individual asignada al producto en el catálogo. Si el producto tiene configurada la opción `'DEFAULT'` o no está definida, se hereda la política global configurada a nivel de empresa/sistema.
+* **Justificación:** Proporciona flexibilidad operativa para manejar simultáneamente servicios (facturación inmediata sobre orden) y mercancías físicas (facturación contra entrega/recepción de almacén) sin duplicar configuraciones ni romper los flujos de trabajo.
 * **Regla:** Toda nueva ruta, página funcional o módulo del sistema debe registrarse explícitamente tanto en el menú lateral vertical (`src/data/navigation/verticalMenuData.tsx`) como en el menú horizontal (`src/data/navigation/horizontalMenuData.tsx`).
 * **Justificación:** Garantiza coherencia en la experiencia de navegación del usuario independientemente de la vista o modo de layout activo.
 

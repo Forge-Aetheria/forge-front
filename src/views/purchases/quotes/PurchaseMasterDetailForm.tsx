@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation'
 import Card from '@mui/material/Card'
 import CardContent from '@mui/material/CardContent'
 import Button from '@mui/material/Button'
+import IconButton from '@mui/material/IconButton'
+import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 import Grid from '@mui/material/Grid'
 import Table from '@mui/material/Table'
@@ -353,22 +355,27 @@ export const PurchaseMasterDetailForm: React.FC<Props> = ({ initialQuote, mode =
       {/* Header de Navegación y Acciones */}
       <div className='flex flex-col md:flex-row md:items-center justify-between gap-4'>
         <div className='flex items-center gap-3'>
-          <Button
-            component={Link}
-            href='/purchases/quotes'
-            variant='outlined'
-            sx={{
-              borderRadius: '9999px',
-              borderColor: '#DCD8EC',
-              color: '#1E1B2E',
-              minWidth: '40px',
-              width: '40px',
-              height: '40px',
-              p: 0
-            }}
-          >
-            <i className='tabler-arrow-left text-lg' />
-          </Button>
+          <Tooltip title='Volver al listado'>
+            <Button
+              component={Link}
+              href='/purchases/quotes'
+              variant='text'
+              sx={{
+                minWidth: 'auto',
+                width: 38,
+                height: 38,
+                p: 0,
+                borderRadius: '9999px',
+                color: '#6B7280',
+                backgroundColor: '#FFFFFF',
+                border: '1px solid #E6E4F0',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
+                '&:hover': { color: '#6C5CE7', backgroundColor: '#F0EEF9', borderColor: '#6C5CE7' }
+              }}
+            >
+              <i className='tabler-arrow-left text-lg' />
+            </Button>
+          </Tooltip>
           <div>
             <div className='flex flex-wrap items-center gap-2.5'>
               <Typography variant='h4' className='font-bold text-[#1E1B2E]'>
@@ -384,61 +391,58 @@ export const PurchaseMasterDetailForm: React.FC<Props> = ({ initialQuote, mode =
           </div>
         </div>
 
-        {/* Botones de Acción con Prevención de Doble Envío (EARS-UB-05) */}
-        <div className='flex flex-wrap items-center gap-2.5'>
-          <Button
-            variant='outlined'
-            disabled={isSubmitting}
-            onClick={() => handleSubmit(false)}
-            sx={{
-              borderRadius: '9999px',
-              borderColor: '#6C5CE7',
-              color: '#6C5CE7',
-              textTransform: 'none',
-              fontWeight: 600,
-              px: 2.5,
-              py: 1
-            }}
-            startIcon={
-              isSubmitting && submitAction === 'draft' ? (
-                <CircularProgress size={16} color='inherit' />
-              ) : (
-                <i className='tabler-device-floppy text-base' />
-              )
-            }
-          >
-            {isSubmitting && submitAction === 'draft' ? 'Guardando...' : 'Guardar Borrador'}
-          </Button>
+        {/* Botones de Acción con Prevención de Doble Envío (Minimalista) */}
+        <div className='flex items-center gap-2'>
+          <Tooltip title='Guardar Borrador'>
+            <span>
+              <IconButton
+                onClick={() => handleSubmit(false)}
+                disabled={isSubmitting}
+                sx={{
+                  width: 38,
+                  height: 38,
+                  borderRadius: '9999px',
+                  color: '#6B7280',
+                  backgroundColor: '#FFFFFF',
+                  border: '1px solid #E6E4F0',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
+                  '&:hover': { color: '#6C5CE7', backgroundColor: '#F0EEF9', borderColor: '#6C5CE7' },
+                  '&:disabled': { backgroundColor: '#F1F5F9', color: '#94A3B8' }
+                }}
+              >
+                {isSubmitting && submitAction === 'draft' ? (
+                  <CircularProgress size={18} color='inherit' />
+                ) : (
+                  <i className='tabler-device-floppy text-lg' />
+                )}
+              </IconButton>
+            </span>
+          </Tooltip>
 
-          <Button
-            variant='contained'
-            disabled={isSubmitting}
-            onClick={() => handleSubmit(true)}
-            sx={{
-              borderRadius: '9999px',
-              backgroundColor: '#6C5CE7',
-              color: '#FFFFFF',
-              textTransform: 'none',
-              fontWeight: 600,
-              px: 3,
-              py: 1,
-              boxShadow: '0 4px 14px rgba(108, 92, 231, 0.35)',
-              '&:hover': {
-                backgroundColor: '#5B4CDB'
-              }
-            }}
-            startIcon={
-              isSubmitting && submitAction === 'register' ? (
-                <CircularProgress size={16} color='inherit' />
-              ) : (
-                <i className='tabler-file-check text-base' />
-              )
-            }
-          >
-            {isSubmitting && submitAction === 'register'
-              ? 'Registrando...'
-              : 'Registrar Cotización (SC-2026)'}
-          </Button>
+          <Tooltip title='Registrar Cotización'>
+            <span>
+              <IconButton
+                onClick={() => handleSubmit(true)}
+                disabled={isSubmitting}
+                sx={{
+                  width: 38,
+                  height: 38,
+                  borderRadius: '9999px',
+                  backgroundColor: '#6C5CE7',
+                  color: '#FFFFFF',
+                  boxShadow: '0 4px 12px rgba(108, 92, 231, 0.3)',
+                  '&:hover': { backgroundColor: '#5B4CDB' },
+                  '&:disabled': { backgroundColor: '#E2E8F0', color: '#94A3B8' }
+                }}
+              >
+                {isSubmitting && submitAction === 'register' ? (
+                  <CircularProgress size={18} color='inherit' />
+                ) : (
+                  <i className='tabler-file-check text-lg' />
+                )}
+              </IconButton>
+            </span>
+          </Tooltip>
         </div>
       </div>
 

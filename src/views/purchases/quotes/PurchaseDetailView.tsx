@@ -4,6 +4,10 @@ import React, { useEffect, useState, useMemo, useCallback } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import Card from '@mui/material/Card'
+import Box from '@mui/material/Box'
+import Tabs from '@mui/material/Tabs'
+import Tab from '@mui/material/Tab'
+import Divider from '@mui/material/Divider'
 import CardContent from '@mui/material/CardContent'
 import Typography from '@mui/material/Typography'
 import Button from '@mui/material/Button'
@@ -20,9 +24,18 @@ import TableCell from '@mui/material/TableCell'
 import TableContainer from '@mui/material/TableContainer'
 import TableHead from '@mui/material/TableHead'
 import TableRow from '@mui/material/TableRow'
+import Dialog from '@mui/material/Dialog'
+import DialogTitle from '@mui/material/DialogTitle'
+import DialogContent from '@mui/material/DialogContent'
+import DialogActions from '@mui/material/DialogActions'
 
 import { BcvRate, PurchaseQuote, PurchasesFeatureFlags } from '@/types/purchasesTypes'
 import { purchasesService } from '@/services/purchasesService'
+import { getInventoryTemplates } from '@/services/inventoryService'
+import { settingsService } from '@/services/settingsService'
+import type { ProductTemplate } from '@/types/inventoryTypes'
+import type { CommercialPoliciesSettings } from '@/types/settingsTypes'
+import { calculateBillablePurchaseLines, resolveEffectivePurchaseControlPolicy } from '@/utils/policyEngine'
 import { PurchaseStatusChip } from './components/PurchaseStatusChip'
 import { BcvRateBadge } from './components/BcvRateBadge'
 import { PurchaseTotalsCard } from './components/PurchaseTotalsCard'
@@ -40,12 +53,24 @@ export const PurchaseDetailView: React.FC<Props> = ({ id }) => {
   const [activeBcvRate, setActiveBcvRate] = useState<BcvRate | null>(null)
   const [flags] = useState<PurchasesFeatureFlags>(purchasesService.getFeatureFlags())
   const [loading, setLoading] = useState(true)
+  const [activeTab, setActiveTab] = useState(0)
 
   // Estados de Operación Asíncrona (Prevención de Doble Envío - EARS-UB-05)
   const [isApproving, setIsApproving] = useState(false)
   const [isRecalculating, setIsRecalculating] = useState(false)
   const [isConverting, setIsConverting] = useState(false)
+  const [isGeneratingReception, setIsGeneratingReception] = useState(false)
   const [cancelModalOpen, setCancelModalOpen] = useState(false)
+
+  // Interconexión y Motor de Políticas (SPEC-009)
+  const [products, setProducts] = useState<ProductTemplate[]>([])
+  const [commercialPolicies, setCommercialPolicies] = useState<CommercialPoliciesSettings | null>(null)
+  const [policyWarningModal, setPolicyWarningModal] = useState<{
+    open: boolean
+    title: string
+    message: string
+    details?: string[]
+  }>({ open: false, title: '', message: '' })
 
   // Toast Feedback
   const [toast, setToast] = useState<{
@@ -61,10 +86,12 @@ export const PurchaseDetailView: React.FC<Props> = ({ id }) => {
   const loadData = useCallback(async () => {
     try {
       setLoading(true)
-      const [currentQuote, quotesList, bcv] = await Promise.all([
+      const [currentQuote, quotesList, bcv, productTemplates, policies] = await Promise.all([
         purchasesService.getPurchaseQuoteById(id),
         purchasesService.getPurchaseQuotes(),
-        purchasesService.getActiveBcvRate()
+        purchasesService.getActiveBcvRate(),
+        getInventoryTemplates(),
+        settingsService.getCommercialPolicies()
       ])
 
       if (currentQuote) {
@@ -72,6 +99,8 @@ export const PurchaseDetailView: React.FC<Props> = ({ id }) => {
       }
       setAllQuotes(quotesList)
       setActiveBcvRate(bcv)
+      setProducts(productTemplates)
+      setCommercialPolicies(policies)
     } catch (err: any) {
       setToast({
         open: true,
@@ -82,6 +111,53 @@ export const PurchaseDetailView: React.FC<Props> = ({ id }) => {
       setLoading(false)
     }
   }, [id])
+
+  const handleCreateSupplierInvoiceClick = () => {
+    if (!quote) return
+    const billableLines = calculateBillablePurchaseLines(quote, products, commercialPolicies)
+    const totalBillable = billableLines.reduce((acc, l) => acc + l.billableQty, 0)
+
+    if (totalBillable <= 0) {
+      const blockedLines = billableLines.filter(l => l.reason)
+      setPolicyWarningModal({
+        open: true,
+        title: 'Factura Bloqueada por Política de Recepción',
+        message:
+          'No existen cantidades recibidas pendientes de facturar para esta orden de compra. Según la política de control de compra del producto, debe registrar la recepción en almacén previamente.',
+        details: blockedLines.map(
+          b =>
+            `• ${b.line.producto_nombre}: Ordenadas: ${b.orderedQty}, Recibidas: ${b.receivedQty}, Facturadas: ${b.alreadyBilledQty}. Motivo: ${b.reason}`
+        )
+      })
+      return
+    }
+
+    // Redirigir a Facturas de Proveedor con contexto de orden de compra
+    router.push(`/accounting/invoices?type=SUPPLIER&create_from_purchase=${quote.id}`)
+  }
+
+  const handleGenerateReceptionClick = async () => {
+    if (!quote) return
+    try {
+      setIsGeneratingReception(true)
+      const res = await purchasesService.createReceptionForPurchase(quote.id)
+      const reloaded = await purchasesService.getPurchaseQuoteById(quote.id)
+      if (reloaded) setQuote(reloaded)
+      setToast({
+        open: true,
+        severity: 'success',
+        message: res.message
+      })
+    } catch (err: any) {
+      setToast({
+        open: true,
+        severity: 'error',
+        message: err?.message || 'Error al generar la orden de recepción en almacén.'
+      })
+    } finally {
+      setIsGeneratingReception(false)
+    }
+  }
 
   useEffect(() => {
     loadData()
@@ -257,22 +333,27 @@ export const PurchaseDetailView: React.FC<Props> = ({ id }) => {
       <div className='flex items-center justify-between gap-4 flex-wrap'>
         {/* Izquierda: Volver + Correlativo + Estado + Tasa BCV */}
         <div className='flex items-center gap-3 flex-wrap'>
-          <Button
-            component={Link}
-            href='/purchases/quotes'
-            variant='text'
-            sx={{
-              minWidth: 'auto',
-              p: 1,
-              borderRadius: '9999px',
-              color: '#6B7280',
-              backgroundColor: '#FFFFFF',
-              border: '1px solid #E6E4F0',
-              '&:hover': { backgroundColor: '#F4F3F8', color: '#6C5CE7' }
-            }}
-          >
-            <i className='tabler-arrow-left text-lg' />
-          </Button>
+          <Tooltip title='Volver al listado'>
+            <Button
+              component={Link}
+              href='/purchases/quotes'
+              variant='text'
+              sx={{
+                minWidth: 'auto',
+                width: 38,
+                height: 38,
+                p: 0,
+                borderRadius: '9999px',
+                color: '#6B7280',
+                backgroundColor: '#FFFFFF',
+                border: '1px solid #E6E4F0',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
+                '&:hover': { backgroundColor: '#F4F3F8', color: '#6C5CE7' }
+              }}
+            >
+              <i className='tabler-arrow-left text-lg' />
+            </Button>
+          </Tooltip>
 
           <div>
             <div className='flex flex-wrap items-center gap-2.5'>
@@ -285,6 +366,48 @@ export const PurchaseDetailView: React.FC<Props> = ({ id }) => {
                   rate={activeBcvRate}
                   onRefresh={handleSimulateBcvVariation}
                 />
+              )}
+              {quote.almacen_operacion_codigo && (
+                <Tooltip title="Ver Orden de Recepción en Almacén" arrow>
+                  <Link href="/inventory/operations/receipts">
+                    <Chip
+                      label={`Recepción: ${quote.almacen_operacion_codigo}`}
+                      size="small"
+                      clickable
+                      icon={<i className="tabler-truck-delivery text-xs text-[#0284C7]" />}
+                      sx={{
+                        borderRadius: '9999px',
+                        fontWeight: 600,
+                        backgroundColor: '#E0F2FE',
+                        color: '#0284C7',
+                        border: '1px solid #BAE6FD',
+                        cursor: 'pointer',
+                        '&:hover': { backgroundColor: '#BAE6FD' }
+                      }}
+                    />
+                  </Link>
+                </Tooltip>
+              )}
+              {quote.factura_numero && (
+                <Tooltip title="Ver Factura de Proveedor en Contabilidad" arrow>
+                  <Link href="/accounting/invoices?type=SUPPLIER">
+                    <Chip
+                      label={`Factura CxP: ${quote.factura_numero}`}
+                      size="small"
+                      clickable
+                      icon={<i className="tabler-receipt text-xs text-[#10B981]" />}
+                      sx={{
+                        borderRadius: '9999px',
+                        fontWeight: 600,
+                        backgroundColor: '#E8F5E9',
+                        color: '#10B981',
+                        border: '1px solid #A7F3D0',
+                        cursor: 'pointer',
+                        '&:hover': { backgroundColor: '#A7F3D0' }
+                      }}
+                    />
+                  </Link>
+                </Tooltip>
               )}
             </div>
             <Typography variant='body2' className='text-[#6B7280] mt-0.5'>
@@ -443,6 +566,61 @@ export const PurchaseDetailView: React.FC<Props> = ({ id }) => {
             </span>
           </Tooltip>
 
+          {/* Interconexión Recepción de Mercancía en Almacén (SPEC-009) */}
+          {quote.estado === 'PURCHASE_ORDER' && physicalLinesCount > 0 && (
+            <Button
+              variant='contained'
+              size='small'
+              onClick={handleGenerateReceptionClick}
+              disabled={isGeneratingReception}
+              sx={{
+                borderRadius: '9999px',
+                backgroundColor: '#0284C7',
+                color: '#FFFFFF',
+                textTransform: 'none',
+                fontWeight: 600,
+                fontSize: '0.8rem',
+                boxShadow: '0 4px 14px rgba(2, 132, 199, 0.3)',
+                '&:hover': { backgroundColor: '#0369A1' }
+              }}
+              startIcon={
+                isGeneratingReception ? (
+                  <CircularProgress size={14} color='inherit' />
+                ) : (
+                  <i className='tabler-truck-delivery text-base' />
+                )
+              }
+            >
+              {isGeneratingReception
+                ? 'Generando Recepción...'
+                : quote.almacen_operacion_codigo
+                ? 'Generar Recepción Adicional'
+                : 'Recibir Productos'}
+            </Button>
+          )}
+
+          {/* Interconexión Factura de Proveedor en CxP (SPEC-009) */}
+          {quote.estado === 'PURCHASE_ORDER' && (
+            <Button
+              variant='contained'
+              size='small'
+              onClick={handleCreateSupplierInvoiceClick}
+              sx={{
+                borderRadius: '9999px',
+                backgroundColor: '#10B981',
+                color: '#FFFFFF',
+                textTransform: 'none',
+                fontWeight: 600,
+                fontSize: '0.8rem',
+                boxShadow: '0 4px 14px rgba(16, 185, 129, 0.3)',
+                '&:hover': { backgroundColor: '#059669' }
+              }}
+              startIcon={<i className='tabler-receipt text-base' />}
+            >
+              Crear Factura de Proveedor
+            </Button>
+          )}
+
           {/* HU4: Botón Anular */}
           {quote.estado !== 'CANCELED' && (
             <Button
@@ -589,239 +767,466 @@ export const PurchaseDetailView: React.FC<Props> = ({ id }) => {
         </div>
       )}
 
-      {/* Contenido Principal */}
-      <Grid container spacing={4}>
-        {/* Columna Izquierda: Ficha del Proveedor + Tabla de Líneas */}
-        <Grid size={{ xs: 12, lg: 8 }}>
-          <div className='flex flex-col gap-4'>
-            {/* Ficha del Proveedor y Condiciones Pactadas */}
-            <Card
-              sx={{
-                backgroundColor: '#FFFFFF',
-                borderRadius: '20px',
-                border: '1px solid #E6E4F0',
-                boxShadow: '0 4px 18px 0 rgba(108, 92, 231, 0.05)'
-              }}
-            >
-              <CardContent className='p-5 flex flex-col gap-4'>
-                <div className='flex flex-wrap items-center justify-between gap-2'>
-                  <div>
-                    <span className='text-xs font-semibold text-[#6C5CE7] uppercase tracking-wider'>
-                      Proveedor Adjudicado
-                    </span>
-                    <Typography variant='h6' className='font-bold text-[#1E1B2E]'>
-                      {quote.proveedor.razon_social}
-                    </Typography>
-                    {quote.proveedor.nombre_comercial && (
-                      <span className='text-xs text-[#6B7280]'>
-                        Nombre Comercial: {quote.proveedor.nombre_comercial}
-                      </span>
-                    )}
-                  </div>
-
-                  <div className='flex items-center gap-2'>
-                    <Chip
-                      label={`RIF: ${quote.proveedor.identificacion}`}
-                      sx={{
-                        borderRadius: '9999px',
-                        fontWeight: 700,
-                        backgroundColor: '#F0EEF9',
-                        color: '#6C5CE7',
-                        border: '1px solid #DCD8EC'
-                      }}
-                    />
-                  </div>
-                </div>
-
-                <Grid container spacing={2} className='bg-[#F8F7FC] p-3.5 rounded-2xl border border-[#E6E4F0]'>
-                  <Grid size={{ xs: 6, sm: 3 }}>
-                    <span className='text-[11px] text-[#9CA3AF] block'>Ref. Cotización Prov.</span>
-                    <span className='text-xs font-bold text-[#1E1B2E]'>
-                      {quote.referencia_proveedor || 'N/A'}
-                    </span>
-                  </Grid>
-                  <Grid size={{ xs: 6, sm: 3 }}>
-                    <span className='text-[11px] text-[#9CA3AF] block'>Condición de Pago</span>
-                    <span className='text-xs font-bold text-[#10B981]'>
-                      {quote.condicion_pago === 'CREDITO'
-                        ? `Crédito ${quote.dias_credito} días`
-                        : 'Contado'}
-                    </span>
-                  </Grid>
-                  <Grid size={{ xs: 6, sm: 3 }}>
-                    <span className='text-[11px] text-[#9CA3AF] block'>Vigencia Costos</span>
-                    <span className='text-xs font-bold text-[#1E1B2E]'>
-                      {quote.fecha_vencimiento_cotizacion}
-                    </span>
-                  </Grid>
-                  <Grid size={{ xs: 6, sm: 3 }}>
-                    <span className='text-[11px] text-[#9CA3AF] block'>Entrega Estimada</span>
-                    <span className='text-xs font-bold text-[#6C5CE7]'>
-                      {quote.fecha_estimada_entrega}
-                    </span>
-                  </Grid>
-                </Grid>
-
-                <div className='flex flex-wrap items-center justify-between gap-2 text-xs text-[#6B7280]'>
-                  <span className='flex items-center gap-1.5'>
-                    <i className='tabler-map-pin text-xs text-[#6C5CE7]' />
-                    {quote.proveedor.direccion_fiscal}
-                  </span>
-                  <span className='flex items-center gap-3'>
-                    <span className='flex items-center gap-1'>
-                      <i className='tabler-phone text-xs text-[#6B7280]' />
-                      {quote.proveedor.telefono}
-                    </span>
-                    <span className='flex items-center gap-1'>
-                      <i className='tabler-mail text-xs text-[#6B7280]' />
-                      {quote.proveedor.email}
-                    </span>
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Tabla de Líneas de Compra */}
-            <Card
-              sx={{
-                backgroundColor: '#FFFFFF',
-                borderRadius: '20px',
-                border: '1px solid #E6E4F0',
-                boxShadow: '0 4px 18px 0 rgba(108, 92, 231, 0.05)'
-              }}
-            >
-              <CardContent className='p-5 flex flex-col gap-3'>
-                <div className='flex items-center justify-between'>
-                  <Typography variant='h6' className='font-bold text-[#1E1B2E]'>
-                    Detalle de Líneas de Compra ({quote.items.length})
-                  </Typography>
-                  <span className='text-xs text-[#6B7280]'>
-                    Tasa aplicada al documento: <strong>{quote.tasa_bcv.tasa.toFixed(2)} Bs/USD</strong>
-                  </span>
-                </div>
-
-                <TableContainer
+      {/* Tarjeta Principal de la Orden de Compra (Vista Completa estilo Factura) */}
+      <Card
+        sx={{
+          backgroundColor: '#FFFFFF',
+          border: '1px solid #E6E4F0',
+          borderRadius: '24px',
+          boxShadow: '0 4px 20px rgba(0,0,0,0.03)',
+          p: { xs: 3, md: 5 }
+        }}
+      >
+        {/* Cabecera Maestro Limpia y Espaciosa (Full Width estilo Factura) */}
+        <Box
+          sx={{
+            p: 4,
+            mb: 4,
+            backgroundColor: '#F8FAFC',
+            borderRadius: '20px',
+            border: '1px solid #E2E8F0',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 3
+          }}
+        >
+          {/* Fila 1: Proveedor Adjudicado y Datos de Contacto */}
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: { xs: '1fr', md: '1.8fr 1.1fr 1.1fr' },
+              gap: 3,
+              alignItems: 'start'
+            }}
+          >
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+                <Typography variant='caption' sx={{ fontWeight: 700, color: '#6C5CE7', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  Proveedor Adjudicado
+                </Typography>
+                <Chip
+                  label={`RIF: ${quote.proveedor.identificacion}`}
+                  size='small'
                   sx={{
-                    borderRadius: '16px',
-                    border: '1px solid #E6E4F0'
+                    borderRadius: '9999px',
+                    fontWeight: 700,
+                    backgroundColor: '#F0EEF9',
+                    color: '#6C5CE7',
+                    height: 22
                   }}
-                >
-                  <Table size='small'>
-                    <TableHead sx={{ backgroundColor: '#F4F3F8' }}>
-                      <TableRow>
-                        <TableCell sx={{ width: 32, textAlign: 'center', fontWeight: 600 }}>#</TableCell>
-                        <TableCell sx={{ fontWeight: 600 }}>Producto / Servicio</TableCell>
-                        <TableCell align='center' sx={{ fontWeight: 600 }}>
-                          Cant.
+                />
+              </Box>
+              <Typography variant='h6' sx={{ fontWeight: 700, color: '#1E293B', mt: 0.5 }}>
+                {quote.proveedor.razon_social}
+              </Typography>
+              {quote.proveedor.nombre_comercial && (
+                <Typography variant='caption' sx={{ color: '#64748B' }}>
+                  Nombre Comercial: {quote.proveedor.nombre_comercial}
+                </Typography>
+              )}
+            </Box>
+
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: '#64748B', fontSize: '0.82rem' }}>
+                <i className='tabler-phone text-sm text-[#94A3B8]' />
+                <span>{quote.proveedor.telefono || 'Sin teléfono registrado'}</span>
+              </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: '#64748B', fontSize: '0.82rem' }}>
+                <i className='tabler-mail text-sm text-[#94A3B8]' />
+                <span>{quote.proveedor.email || 'Sin correo registrado'}</span>
+              </Box>
+            </Box>
+
+            <Box sx={{ display: 'flex', alignItems: 'start', gap: 1, color: '#64748B', fontSize: '0.82rem' }}>
+              <i className='tabler-map-pin text-sm text-[#94A3B8] mt-0.5 shrink-0' />
+              <span>{quote.proveedor.direccion_fiscal || 'Sin dirección fiscal registrada'}</span>
+            </Box>
+          </Box>
+
+          <Divider sx={{ borderColor: '#E2E8F0' }} />
+
+          {/* Fila 2: Condiciones Pactadas, Vigencia y Métricas */}
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(3, 1fr)', md: 'repeat(5, 1fr)' },
+              gap: 2.5
+            }}
+          >
+            <Box>
+              <Typography variant='caption' sx={{ color: '#94A3B8', fontWeight: 600, display: 'block' }}>
+                Ref. Cotización Prov.
+              </Typography>
+              <Typography variant='body2' sx={{ fontWeight: 700, color: '#1E293B', mt: 0.25 }}>
+                {quote.referencia_proveedor || 'N/A'}
+              </Typography>
+            </Box>
+
+            <Box>
+              <Typography variant='caption' sx={{ color: '#94A3B8', fontWeight: 600, display: 'block' }}>
+                Condición de Pago
+              </Typography>
+              <Typography variant='body2' sx={{ fontWeight: 700, color: '#10B981', mt: 0.25 }}>
+                {quote.condicion_pago === 'CREDITO' ? `Crédito ${quote.dias_credito} días` : 'Contado'}
+              </Typography>
+            </Box>
+
+            <Box>
+              <Typography variant='caption' sx={{ color: '#94A3B8', fontWeight: 600, display: 'block' }}>
+                Vigencia Costos
+              </Typography>
+              <Typography variant='body2' sx={{ fontWeight: 700, color: '#1E293B', mt: 0.25 }}>
+                {quote.fecha_vencimiento_cotizacion}
+              </Typography>
+            </Box>
+
+            <Box>
+              <Typography variant='caption' sx={{ color: '#94A3B8', fontWeight: 600, display: 'block' }}>
+                Entrega Estimada
+              </Typography>
+              <Typography variant='body2' sx={{ fontWeight: 700, color: '#6C5CE7', mt: 0.25 }}>
+                {quote.fecha_estimada_entrega}
+              </Typography>
+            </Box>
+
+            <Box>
+              <Typography variant='caption' sx={{ color: '#94A3B8', fontWeight: 600, display: 'block' }}>
+                Tasa BCV Oficial
+              </Typography>
+              <Typography variant='body2' sx={{ fontWeight: 700, color: '#1E293B', mt: 0.25 }}>
+                {quote.tasa_bcv.tasa.toFixed(2)} Bs/USD
+              </Typography>
+            </Box>
+          </Box>
+        </Box>
+
+        {/* Pestañas (Tabs) Estilo Odoo / Factura a Ancho Completo */}
+        <Box sx={{ borderBottom: '1px solid #E6E4F0', mb: 3 }}>
+          <Tabs
+            value={activeTab}
+            onChange={(_, v) => setActiveTab(v)}
+            sx={{
+              minHeight: 44,
+              '& .MuiTab-root': {
+                textTransform: 'none',
+                fontWeight: 600,
+                fontSize: '0.875rem',
+                color: '#64748B',
+                minHeight: 44,
+                px: 3,
+                '&.Mui-selected': { color: '#6C5CE7', fontWeight: 700 }
+              },
+              '& .MuiTabs-indicator': {
+                backgroundColor: '#6C5CE7',
+                height: 3,
+                borderRadius: '3px 3px 0 0'
+              }
+            }}
+          >
+            <Tab
+              icon={<i className='tabler-list-details text-base mr-1.5' />}
+              iconPosition='start'
+              label={`Líneas de Compra (${quote.items.length})`}
+            />
+            <Tab
+              icon={<i className='tabler-file-text text-base mr-1.5' />}
+              iconPosition='start'
+              label='Condiciones Pactadas'
+            />
+            <Tab
+              icon={<i className='tabler-history text-base mr-1.5' />}
+              iconPosition='start'
+              label='Trazabilidad y Auditoría'
+            />
+          </Tabs>
+        </Box>
+
+        {/* Contenido Pestaña 0: Líneas de Compra (100% de Ancho) */}
+        {activeTab === 0 && (
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <TableContainer
+              sx={{
+                border: '1px solid #E6E4F0',
+                borderRadius: '16px',
+                overflow: 'hidden'
+              }}
+            >
+              <Table size='small'>
+                <TableHead sx={{ backgroundColor: '#F8FAFC' }}>
+                  <TableRow>
+                    <TableCell sx={{ width: 36, textAlign: 'center', fontWeight: 600, color: '#64748B' }}>#</TableCell>
+                    <TableCell sx={{ fontWeight: 600, color: '#64748B', py: 1.5 }}>Producto / Servicio</TableCell>
+                    <TableCell sx={{ fontWeight: 600, color: '#64748B', py: 1.5 }}>Control Fact.</TableCell>
+                    <TableCell align='center' sx={{ fontWeight: 600, color: '#64748B', py: 1.5 }}>Ordenada</TableCell>
+                    <TableCell align='center' sx={{ fontWeight: 600, color: '#64748B', py: 1.5 }}>Recibida</TableCell>
+                    <TableCell align='center' sx={{ fontWeight: 600, color: '#64748B', py: 1.5 }}>Facturada</TableCell>
+                    <TableCell align='right' sx={{ fontWeight: 600, color: '#64748B', py: 1.5 }}>Costo Unit. (USD)</TableCell>
+                    <TableCell align='center' sx={{ fontWeight: 600, color: '#64748B', py: 1.5 }}>Desc.</TableCell>
+                    <TableCell align='center' sx={{ fontWeight: 600, color: '#64748B', py: 1.5 }}>IVA</TableCell>
+                    <TableCell align='right' sx={{ fontWeight: 600, color: '#64748B', py: 1.5 }}>Subtotal Neto (USD / VES)</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {quote.items.map((line, index) => {
+                    const netVes = line.subtotal_neto * quote.tasa_bcv.tasa
+                    const prod = products.find(p => p.id === line.producto_id)
+                    const effPolicy = resolveEffectivePurchaseControlPolicy(prod, commercialPolicies)
+
+                    return (
+                      <TableRow key={line.id || index} hover sx={{ height: 50 }}>
+                        <TableCell sx={{ textAlign: 'center', color: '#94A3B8', fontSize: '0.78rem' }}>
+                          {index + 1}
                         </TableCell>
-                        <TableCell align='right' sx={{ fontWeight: 600 }}>
-                          Costo Unit. (USD)
+                        <TableCell sx={{ py: 1.2 }}>
+                          <div className='flex flex-col gap-0.5'>
+                            <span className='font-semibold text-sm text-[#1E1B2E]'>
+                              {line.producto_nombre}
+                            </span>
+                            <span className='text-xs text-[#6B7280]'>SKU: {line.producto_sku}</span>
+                          </div>
                         </TableCell>
-                        <TableCell align='center' sx={{ fontWeight: 600 }}>
-                          Desc.
+                        <TableCell sx={{ py: 1.2 }}>
+                          <Tooltip
+                            title={
+                              effPolicy === 'RECEIVED'
+                                ? 'Control de factura sobre cantidades recibidas en almacén'
+                                : 'Control de factura sobre cantidades ordenadas en compra'
+                            }
+                            arrow
+                          >
+                            <Chip
+                              size='small'
+                              label={effPolicy === 'RECEIVED' ? 'Sobre Recepción' : 'Sobre Pedido'}
+                              sx={{
+                                borderRadius: '9999px',
+                                fontSize: '0.68rem',
+                                height: 20,
+                                backgroundColor: effPolicy === 'RECEIVED' ? '#E0F2FE' : '#F0EEF9',
+                                color: effPolicy === 'RECEIVED' ? '#0284C7' : '#6C5CE7',
+                                fontWeight: 600
+                              }}
+                            />
+                          </Tooltip>
                         </TableCell>
-                        <TableCell align='center' sx={{ fontWeight: 600 }}>
-                          IVA
+                        <TableCell align='center' sx={{ fontWeight: 600, color: '#1E1B2E', py: 1.2 }}>
+                          {line.cantidad} {line.uom_code}
                         </TableCell>
-                        <TableCell align='right' sx={{ fontWeight: 600 }}>
-                          Subtotal Neto (USD / VES)
+                        <TableCell align='center' sx={{ fontWeight: 600, py: 1.2, color: (line.cantidad_recibida || 0) > 0 ? '#10B981' : '#9CA3AF' }}>
+                          {line.cantidad_recibida ?? 0}
+                        </TableCell>
+                        <TableCell align='center' sx={{ fontWeight: 600, py: 1.2, color: (line.cantidad_facturada || 0) > 0 ? '#6C5CE7' : '#9CA3AF' }}>
+                          {line.cantidad_facturada ?? 0}
+                        </TableCell>
+                        <TableCell align='right' sx={{ color: '#1E1B2E', py: 1.2 }}>
+                          ${line.costo_unitario.toFixed(2)}
+                        </TableCell>
+                        <TableCell align='center' sx={{ color: '#10B981', fontWeight: 600, py: 1.2 }}>
+                          {line.descuento_proveedor_porcentaje > 0
+                            ? `-${line.descuento_proveedor_porcentaje}%`
+                            : '0%'}
+                        </TableCell>
+                        <TableCell align='center' sx={{ py: 1.2 }}>
+                          <span className='inline-flex items-center justify-center h-[22px] px-2 rounded-full text-[11px] font-bold bg-[#F0EEF9] text-[#6C5CE7] border border-[#DCD8EC] whitespace-nowrap leading-none'>
+                            {!quote.aplica_iva_compras ||
+                            line.alicuota_iva === 'EXEMPT' ||
+                            line.alicuota_iva === '0'
+                              ? '0%'
+                              : `${line.alicuota_iva}%`}
+                          </span>
+                        </TableCell>
+                        <TableCell align='right' sx={{ py: 1.2 }}>
+                          <div className='flex flex-col items-end'>
+                            <span className='font-bold text-sm text-[#1E1B2E]'>
+                              ${line.subtotal_neto.toFixed(2)}
+                            </span>
+                            <span className='text-[11px] text-[#10B981] font-semibold'>
+                              Bs. {netVes.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </span>
+                          </div>
                         </TableCell>
                       </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {quote.items.map((line, index) => {
-                        const netVes = line.subtotal_neto * quote.tasa_bcv.tasa
-                        return (
-                          <TableRow key={line.id || index}>
-                            <TableCell sx={{ textAlign: 'center', color: '#9CA3AF', fontSize: '0.78rem' }}>
-                              {index + 1}
-                            </TableCell>
-                            <TableCell sx={{ py: 1.2 }}>
-                              <div className='flex flex-col gap-0.5'>
-                                <span className='font-semibold text-sm text-[#1E1B2E]'>
-                                  {line.producto_nombre}
-                                </span>
-                                <span className='text-xs text-[#6B7280]'>SKU: {line.producto_sku}</span>
-                              </div>
-                            </TableCell>
-                            <TableCell align='center' sx={{ fontWeight: 600, color: '#1E1B2E' }}>
-                              {line.cantidad} {line.uom_code}
-                            </TableCell>
-                            <TableCell align='right' sx={{ color: '#1E1B2E' }}>
-                              ${line.costo_unitario.toFixed(2)}
-                            </TableCell>
-                            <TableCell align='center' sx={{ color: '#10B981', fontWeight: 600 }}>
-                              {line.descuento_proveedor_porcentaje > 0
-                                ? `-${line.descuento_proveedor_porcentaje}%`
-                                : '0%'}
-                            </TableCell>
-                            <TableCell align='center'>
-                              <span className='inline-flex items-center justify-center h-[22px] px-2 rounded-full text-[11px] font-bold bg-[#F0EEF9] text-[#6C5CE7] border border-[#DCD8EC] whitespace-nowrap leading-none'>
-                                {!quote.aplica_iva_compras ||
-                                line.alicuota_iva === 'EXEMPT' ||
-                                line.alicuota_iva === '0'
-                                  ? '0%'
-                                  : `${line.alicuota_iva}%`}
-                              </span>
-                            </TableCell>
-                            <TableCell align='right'>
-                              <div className='flex flex-col items-end'>
-                                <span className='font-bold text-sm text-[#1E1B2E]'>
-                                  ${line.subtotal_neto.toFixed(2)}
-                                </span>
-                                <span className='text-[11px] text-[#10B981]'>
-                                  Bs. {netVes.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                </span>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        )
-                      })}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-              </CardContent>
-            </Card>
+                    )
+                  })}
+                </TableBody>
+              </Table>
+            </TableContainer>
 
-            {/* Observaciones y Términos */}
-            {(quote.observaciones || quote.terminos_negociacion) && (
-              <Card
-                sx={{
-                  backgroundColor: '#FFFFFF',
-                  borderRadius: '20px',
-                  border: '1px solid #E6E4F0'
-                }}
-              >
-                <CardContent className='p-5 grid grid-cols-1 md:grid-cols-2 gap-4 text-xs'>
-                  <div>
-                    <span className='font-bold text-[#1E1B2E] block mb-1'>Observaciones Internas</span>
-                    <p className='text-[#6B7280]'>{quote.observaciones || 'Sin observaciones.'}</p>
-                  </div>
-                  <div>
-                    <span className='font-bold text-[#1E1B2E] block mb-1'>Condiciones de Entrega Pactadas</span>
-                    <p className='text-[#6B7280]'>{quote.terminos_negociacion || 'Condiciones estándar.'}</p>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+            {/* Bloque Inferior: 2 Columnas (Observaciones a la izquierda + Totales a la derecha) */}
+            <Grid container spacing={4} sx={{ mt: 1 }}>
+              <Grid size={{ xs: 12, md: 7 }} className='flex flex-col gap-4'>
+                <Card
+                  sx={{
+                    backgroundColor: '#F8FAFC',
+                    borderRadius: '20px',
+                    border: '1px solid #E2E8F0',
+                    boxShadow: 'none',
+                    p: 4
+                  }}
+                >
+                  <Typography variant='subtitle2' sx={{ fontWeight: 700, color: '#1E1B2E', mb: 1 }}>
+                    Observaciones Internas
+                  </Typography>
+                  <Typography variant='body2' sx={{ color: '#64748B', mb: 3 }}>
+                    {quote.observaciones || 'Sin observaciones registradas.'}
+                  </Typography>
+                  <Divider sx={{ my: 2, borderColor: '#E2E8F0' }} />
+                  <Typography variant='subtitle2' sx={{ fontWeight: 700, color: '#1E1B2E', mb: 1 }}>
+                    Condiciones de Entrega Pactadas
+                  </Typography>
+                  <Typography variant='body2' sx={{ color: '#64748B' }}>
+                    {quote.terminos_negociacion || 'Condiciones estándar de compra aplicables.'}
+                  </Typography>
+                </Card>
+              </Grid>
+
+              <Grid size={{ xs: 12, md: 5 }}>
+                {totalsCalculation && (
+                  <PurchaseTotalsCard
+                    totals={totalsCalculation}
+                    tasaBcv={quote.tasa_bcv.tasa}
+                    flags={flags}
+                    supplier={quote.proveedor}
+                    aplicaIvaCompras={quote.aplica_iva_compras}
+                    aplicaIgtf={Boolean(quote.aplica_igtf)}
+                    disabled
+                  />
+                )}
+              </Grid>
+            </Grid>
+          </Box>
+        )}
+
+        {/* Contenido Pestaña 1: Condiciones Pactadas */}
+        {activeTab === 1 && (
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+            <Box sx={{ backgroundColor: '#F8FAFC', p: 4, borderRadius: '16px', border: '1px solid #E2E8F0' }}>
+              <Typography variant='subtitle2' sx={{ fontWeight: 700, color: '#1E1B2E', mb: 1 }}>
+                Observaciones Internas
+              </Typography>
+              <Typography variant='body2' sx={{ color: '#64748B' }}>
+                {quote.observaciones || 'Sin observaciones registradas.'}
+              </Typography>
+            </Box>
+            <Box sx={{ backgroundColor: '#F8FAFC', p: 4, borderRadius: '16px', border: '1px solid #E2E8F0' }}>
+              <Typography variant='subtitle2' sx={{ fontWeight: 700, color: '#1E1B2E', mb: 1 }}>
+                Condiciones de Entrega Pactadas
+              </Typography>
+              <Typography variant='body2' sx={{ color: '#64748B' }}>
+                {quote.terminos_negociacion || 'Condiciones estándar de compra aplicables.'}
+              </Typography>
+            </Box>
+          </Box>
+        )}
+
+        {/* Contenido Pestaña 2: Trazabilidad y Auditoría */}
+        {activeTab === 2 && (
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+            <Box
+              sx={{
+                backgroundColor: '#FFFFFF',
+                p: 4,
+                borderRadius: '16px',
+                border: '1px solid #E6E4F0',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 2,
+                fontSize: '0.875rem',
+                color: '#64748B'
+              }}
+            >
+              <Typography variant='subtitle2' sx={{ fontWeight: 700, color: '#1E1B2E', mb: 1 }}>
+                Registro y Auditoría del Documento
+              </Typography>
+
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', py: 1, borderBottom: '1px solid #F1F5F9' }}>
+                <span>Fecha de Registro (Creado):</span>
+                <strong style={{ color: '#1E1B2E' }}>{new Date(quote.created_at).toLocaleString()}</strong>
+              </Box>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', py: 1, borderBottom: '1px solid #F1F5F9' }}>
+                <span>Última Modificación:</span>
+                <strong style={{ color: '#1E1B2E' }}>{new Date(quote.updated_at).toLocaleString()}</strong>
+              </Box>
+              {quote.correlativo_orden_compra && (
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', py: 1, borderBottom: '1px solid #F1F5F9', color: '#10B981', fontWeight: 600 }}>
+                  <span>Orden de Compra Asociada:</span>
+                  <span>{quote.correlativo_orden_compra}</span>
+                </Box>
+              )}
+              {quote.almacen_operacion_codigo && (
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', py: 1, borderBottom: '1px solid #F1F5F9', color: '#0284C7', fontWeight: 600 }}>
+                  <span>Recepción de Almacén:</span>
+                  <span>{quote.almacen_operacion_codigo}</span>
+                </Box>
+              )}
+              {quote.factura_numero && (
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', py: 1, borderBottom: '1px solid #F1F5F9', color: '#10B981', fontWeight: 600 }}>
+                  <span>Factura de Proveedor:</span>
+                  <span>{quote.factura_numero}</span>
+                </Box>
+              )}
+              {quote.motivo_anulacion && (
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', py: 1, color: '#EF4444', fontWeight: 600 }}>
+                  <span>Motivo de Anulación:</span>
+                  <span>{quote.motivo_anulacion}</span>
+                </Box>
+              )}
+            </Box>
+          </Box>
+        )}
+      </Card>
+
+      {/* Modal Informativo de Bloqueo por Política de Recepción (SPEC-009) */}
+      <Dialog
+        open={policyWarningModal.open}
+        onClose={() => setPolicyWarningModal(prev => ({ ...prev, open: false }))}
+        PaperProps={{
+          sx: {
+            borderRadius: '20px',
+            p: 1.5,
+            maxWidth: '520px',
+            border: '1px solid #E6E4F0'
+          }
+        }}
+      >
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1.5, pb: 1 }}>
+          <div className='w-9 h-9 rounded-full bg-[#FEF3C7] text-[#D97706] flex items-center justify-center shrink-0'>
+            <i className='tabler-alert-triangle text-xl' />
           </div>
-        </Grid>
-
-        {/* Columna Derecha: Resumen Bimonetario y Crédito Fiscal */}
-        <Grid size={{ xs: 12, lg: 4 }}>
-          {totalsCalculation && (
-            <PurchaseTotalsCard
-              totals={totalsCalculation}
-              tasaBcv={quote.tasa_bcv.tasa}
-              flags={flags}
-              supplier={quote.proveedor}
-              aplicaIvaCompras={quote.aplica_iva_compras}
-              aplicaIgtf={Boolean(quote.aplica_igtf)}
-              disabled
-            />
+          <span className='font-bold text-[#1E1B2E] text-base'>
+            {policyWarningModal.title}
+          </span>
+        </DialogTitle>
+        <DialogContent sx={{ pt: 1 }}>
+          <Typography variant='body2' className='text-[#4B5563] mb-3'>
+            {policyWarningModal.message}
+          </Typography>
+          {policyWarningModal.details && policyWarningModal.details.length > 0 && (
+            <div className='bg-[#FAFAFC] p-3 rounded-xl border border-[#E6E4F0] flex flex-col gap-1.5 text-xs text-[#374151]'>
+              <span className='font-bold text-[#1E1B2E]'>Estado de las líneas:</span>
+              {policyWarningModal.details.map((d, i) => (
+                <div key={i}>{d}</div>
+              ))}
+            </div>
           )}
-        </Grid>
-      </Grid>
+        </DialogContent>
+        <DialogActions sx={{ pt: 2, px: 3, pb: 2 }}>
+          <Button
+            variant='contained'
+            onClick={() => setPolicyWarningModal(prev => ({ ...prev, open: false }))}
+            sx={{
+              borderRadius: '9999px',
+              backgroundColor: '#6C5CE7',
+              color: '#FFFFFF',
+              textTransform: 'none',
+              fontWeight: 600,
+              px: 3,
+              '&:hover': { backgroundColor: '#5B4CDB' }
+            }}
+          >
+            Entendido
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Modal de Anulación (HU4) */}
       <CancelPurchaseModal

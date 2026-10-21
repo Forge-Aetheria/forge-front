@@ -86,6 +86,9 @@ Toda especificación funcional previa a codificar debe redactarse formalmente en
 - **Arquetipo Maestro Obligatorio (`contacts/create`):** Toda vista de formulario independiente bajo la Regla R5 debe implementar la arquitectura y estructura de `/contacts/create` (unificada con la vista detalle bajo el flag `isCreate: id === 'create'`, botón `Volver` tonal en cabecera superior izquierda, barra de acciones `Cancelar` y `Guardar` en cabecera superior derecha, cuerpo en tarjetas limpias y pestañas organizadas para entidades secundarias).
 - **Cláusula de Consulta Obligatoria para Nuevas Iteraciones:** Queda terminantemente prohibido asumir o inventar una estructura visual alternativa para nuevos formularios sin antes consultar explícitamente al usuario si se mantiene la estructura de `/contacts/create` o si se requiere un diseño diferente.
 
+### 4.7 Jerarquía de Políticas Comerciales y de Control (Regla R6)
+- **Regla:** Toda política operativa o comercial (política de facturación sobre cantidades pedidas vs. entregadas, control de compra sobre cantidades pedidas vs. recibidas, y política de entrega) debe implementarse bajo el patrón jerárquico estricto donde la configuración individual del producto prevalece sobre la configuración general del sistema (`Product Override > System Default`). Si el producto tiene configurada la opción `'DEFAULT'` o no está definida, el motor debe recurrir a la política general del sistema.
+
 ---
 
 ## 5. Estándar de Tablas y Listados Maestros (DataGrid Standard Contract)

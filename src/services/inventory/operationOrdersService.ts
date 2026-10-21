@@ -13,6 +13,8 @@ import {
   loadStoredMovements,
   saveStoredMovements
 } from './inventoryStorage'
+import { salesQuotesService } from '@/services/salesQuotesService'
+import { purchasesService } from '@/services/purchasesService'
 
 export const getWarehouseOperationOrderById = async (
   id: string
@@ -249,6 +251,36 @@ export const validateWarehouseOperationOrder = async (
 
   orders[idx] = updatedOrder
   saveStoredOperationOrders(orders)
+
+  // Interconexión Almacén ➔ Ventas y Compras (SPEC-009)
+  if (updatedOrder.documento_origen) {
+    const lineQtys = updatedLines.map(l => ({
+      producto_id: l.producto_id,
+      cantidad: l.cantidad_procesada
+    }))
+
+    if (updatedOrder.tipo === 'DELIVERY') {
+      try {
+        salesQuotesService.recordDeliveryOperation(
+          updatedOrder.documento_origen,
+          updatedOrder.codigo,
+          lineQtys
+        )
+      } catch (err) {
+        console.warn('Error sincronizando entrega con ventas:', err)
+      }
+    } else if (updatedOrder.tipo === 'RECEIPT') {
+      try {
+        purchasesService.recordReceptionOperation(
+          updatedOrder.documento_origen,
+          updatedOrder.codigo,
+          lineQtys
+        )
+      } catch (err) {
+        console.warn('Error sincronizando recepción con compras:', err)
+      }
+    }
+  }
 
   return Promise.resolve(updatedOrder)
 }

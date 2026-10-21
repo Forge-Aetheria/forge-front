@@ -101,9 +101,9 @@ export const QuoteItemRow: React.FC<Props> = ({
             '& .MuiInputBase-root': {
               minHeight: '34px',
               height: '34px',
-              backgroundColor: '#F4F3F8',
+              backgroundColor: '#FFFFFF', boxShadow: 'none !important',
               borderRadius: '10px',
-              border: '1px solid #DCD8EC',
+              border: '1px solid #CBD5E1',
               fontSize: '0.82rem',
               padding: '0 8px'
             },
@@ -163,9 +163,9 @@ export const QuoteItemRow: React.FC<Props> = ({
               '& .MuiInputBase-root': {
                 minHeight: '34px',
                 height: '34px',
-                backgroundColor: isStockInsufficient ? '#FEE2E2' : '#F4F3F8',
+                backgroundColor: isStockInsufficient ? '#FEE2E2' : '#FFFFFF', boxShadow: 'none !important',
                 borderRadius: '10px',
-                border: `1px solid ${isStockInsufficient ? '#FCA5A5' : '#DCD8EC'}`,
+                border: `1px solid ${isStockInsufficient ? '#FCA5A5' : '#CBD5E1'}`,
                 fontSize: '0.82rem'
               },
               '& .MuiInputBase-input': {
@@ -346,9 +346,9 @@ export const QuoteItemRow: React.FC<Props> = ({
             '& .MuiInputBase-root': {
               minHeight: '34px',
               height: '34px',
-              backgroundColor: '#F4F3F8',
+              backgroundColor: '#FFFFFF', boxShadow: 'none !important',
               borderRadius: '10px',
-              border: '1px solid #DCD8EC',
+              border: '1px solid #CBD5E1',
               fontSize: '0.82rem'
             },
             '& .MuiInputBase-input': {
@@ -379,9 +379,9 @@ export const QuoteItemRow: React.FC<Props> = ({
             '& .MuiInputBase-root': {
               minHeight: '34px',
               height: '34px',
-              backgroundColor: '#F4F3F8',
+              backgroundColor: '#FFFFFF', boxShadow: 'none !important',
               borderRadius: '10px',
-              border: '1px solid #DCD8EC',
+              border: '1px solid #CBD5E1',
               fontSize: '0.82rem'
             },
             '& .MuiInputBase-input': {

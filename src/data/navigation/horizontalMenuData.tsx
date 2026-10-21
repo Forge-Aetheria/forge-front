@@ -78,8 +78,19 @@ const horizontalMenuData = (): HorizontalMenuDataType[] => [
   },
   {
     label: 'Contactos',
-    href: '/contacts',
-    icon: 'tabler-address-book'
+    icon: 'tabler-address-book',
+    children: [
+      {
+        label: 'Directorio',
+        href: '/contacts',
+        icon: 'tabler-users'
+      },
+      {
+        label: 'Cuentas Bancarias',
+        href: '/contacts/bank-accounts',
+        icon: 'tabler-building-bank'
+      }
+    ]
   },
   {
     label: 'Ventas',
@@ -106,6 +117,95 @@ const horizontalMenuData = (): HorizontalMenuDataType[] => [
         icon: 'tabler-clock-dollar'
       }
     ]
+  },
+  {
+    label: 'Contabilidad',
+    icon: 'tabler-calculator',
+    children: [
+      {
+        label: 'Tablero General',
+        href: '/accounting/dashboard',
+        icon: 'tabler-layout-dashboard'
+      },
+      {
+        label: 'Clientes',
+        icon: 'tabler-users',
+        children: [
+          {
+            label: 'Facturas de Clientes',
+            href: '/accounting/invoices?type=CUSTOMER',
+            icon: 'tabler-file-invoice'
+          },
+          {
+            label: 'Notas de Crédito',
+            href: '/accounting/credit-notes?type=CUSTOMER',
+            icon: 'tabler-receipt-refund'
+          },
+          {
+            label: 'Cobros / Pagos Recibidos',
+            href: '/accounting/payments?type=CUSTOMER',
+            icon: 'tabler-cash'
+          }
+        ]
+      },
+      {
+        label: 'Proveedores',
+        icon: 'tabler-truck-delivery',
+        children: [
+          {
+            label: 'Facturas de Proveedores',
+            href: '/accounting/invoices?type=SUPPLIER',
+            icon: 'tabler-receipt'
+          },
+          {
+            label: 'Notas de Crédito',
+            href: '/accounting/credit-notes?type=SUPPLIER',
+            icon: 'tabler-receipt-refund'
+          },
+          {
+            label: 'Pagos a Proveedores',
+            href: '/accounting/payments?type=SUPPLIER',
+            icon: 'tabler-credit-card'
+          },
+          {
+            label: 'Lotes de Pago',
+            href: '/accounting/payments/batches',
+            icon: 'tabler-layers-linked'
+          }
+        ]
+      },
+      {
+        label: 'Asientos Contables',
+        href: '/accounting/journal-entries',
+        icon: 'tabler-book-2'
+      },
+      {
+        label: 'Reportes Financieros',
+        href: '/accounting/reports',
+        icon: 'tabler-chart-pie'
+      },
+      {
+        label: 'Configuración',
+        icon: 'tabler-settings',
+        children: [
+          {
+            label: 'Plan de Cuentas (PUC)',
+            href: '/accounting/chart-of-accounts',
+            icon: 'tabler-list-tree'
+          },
+          {
+            label: 'Diarios Contables',
+            href: '/accounting/journals',
+            icon: 'tabler-notebook'
+          }
+        ]
+      }
+    ]
+  },
+  {
+    label: 'Ajustes',
+    href: '/settings',
+    icon: 'tabler-settings'
   },
   {
     label: 'About',

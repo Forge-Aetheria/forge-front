@@ -54,7 +54,7 @@ const TextFieldStyled = styled(TextField)<TextFieldProps>(({ theme }) => ({
       },
       '&:not(.Mui-error).MuiInputBase-colorPrimary': {
         borderColor: 'var(--mui-palette-primary-main)',
-        boxShadow: 'var(--mui-customShadows-primary-sm)'
+        boxShadow: 'none !important'
       },
       '&.MuiInputBase-colorSecondary': {
         borderColor: 'var(--mui-palette-secondary-main)'

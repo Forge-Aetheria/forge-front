@@ -39,7 +39,10 @@ import type {
   ProductType,
   ProductVariant,
   SENIAT_VATRate,
-  StockMovement
+  StockMovement,
+  ProductInvoicingPolicyOption,
+  ProductPurchaseControlOption,
+  ProductDeliveryPolicyOption
 } from '@/types/inventoryTypes'
 import {
   getInventoryTemplates,
@@ -115,6 +118,15 @@ const InventoryDetailView: React.FC<Props> = ({ id }) => {
   const [notes, setNotes] = useState('')
   const [variants, setVariants] = useState<ProductVariant[]>([])
 
+  // Commercial Policies
+  const [invoicingPolicy, setInvoicingPolicy] = useState<ProductInvoicingPolicyOption>('DEFAULT')
+  const [purchaseControlPolicy, setPurchaseControlPolicy] = useState<ProductPurchaseControlOption>('DEFAULT')
+  const [deliveryPolicy, setDeliveryPolicy] = useState<ProductDeliveryPolicyOption>('DEFAULT')
+
+  // Logística (Informativo)
+  const [weight, setWeight] = useState<number>(0)
+  const [volume, setVolume] = useState<number>(0)
+
   // Modals
   const [adjustModalOpen, setAdjustModalOpen] = useState(false)
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
@@ -166,6 +178,11 @@ const InventoryDetailView: React.FC<Props> = ({ id }) => {
         setTagsText((itemData.tags || []).join(', '))
         setNotes(itemData.notes || '')
         setVariants(itemData.variants || [])
+        setInvoicingPolicy(itemData.invoicingPolicy || 'DEFAULT')
+        setPurchaseControlPolicy(itemData.purchaseControlPolicy || 'DEFAULT')
+        setDeliveryPolicy(itemData.deliveryPolicy || 'DEFAULT')
+        setWeight(itemData.weight ?? 0)
+        setVolume(itemData.volume ?? 0)
       }
     } catch {
       setToast({ open: true, message: 'Error al cargar el artículo', severity: 'error' })
@@ -265,7 +282,12 @@ const InventoryDetailView: React.FC<Props> = ({ id }) => {
         vatRate,
         applyISLR,
         tags: parsedTags,
-        variants
+        variants,
+        invoicingPolicy: invoicingPolicy === 'DEFAULT' ? undefined : invoicingPolicy,
+        purchaseControlPolicy: purchaseControlPolicy === 'DEFAULT' ? undefined : purchaseControlPolicy,
+        deliveryPolicy: deliveryPolicy === 'DEFAULT' ? undefined : deliveryPolicy,
+        weight: weight > 0 ? weight : undefined,
+        volume: volume > 0 ? volume : undefined
       })
 
       setTemplate(updated)
@@ -357,16 +379,27 @@ const InventoryDetailView: React.FC<Props> = ({ id }) => {
       <div className='flex items-center justify-between gap-4 flex-wrap sm:flex-nowrap'>
         {/* Izquierda: Botón Volver + Título limpio */}
         <div className='flex items-center gap-3 min-w-0 flex-1'>
-          <Button
-            component={Link}
-            href='/inventory/products'
-            variant='tonal'
-            size='small'
-            startIcon={<i className='tabler-arrow-left' />}
-            className='shrink-0'
-          >
-            Volver
-          </Button>
+          <Tooltip title='Volver al catálogo'>
+            <Button
+              component={Link}
+              href='/inventory/products'
+              variant='text'
+              sx={{
+                minWidth: 'auto',
+                width: 38,
+                height: 38,
+                p: 0,
+                borderRadius: '9999px',
+                color: '#6B7280',
+                backgroundColor: '#FFFFFF',
+                border: '1px solid #E6E4F0',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
+                '&:hover': { color: '#6C5CE7', backgroundColor: '#F0EEF9', borderColor: '#6C5CE7' }
+              }}
+            >
+              <i className='tabler-arrow-left text-lg' />
+            </Button>
+          </Tooltip>
           <div className='min-w-0 flex-1'>
             <Tooltip title={name || 'Artículo'}>
               <Typography variant='h4' className='font-bold text-textPrimary truncate'>
@@ -424,20 +457,31 @@ const InventoryDetailView: React.FC<Props> = ({ id }) => {
             Cancelar
           </Button>
 
-          {/* Guardar Cambios */}
-          <Button
-            variant='contained'
-            color='primary'
-            size='small'
-            disabled={saving}
-            startIcon={
-              saving ? <i className='tabler-loader-2 animate-spin' /> : <i className='tabler-device-floppy' />
-            }
-            onClick={handleSaveChanges}
-            className='shrink-0'
-          >
-            {saving ? 'Guardando...' : 'Guardar Cambios'}
-          </Button>
+          {/* Guardar Cambios (Minimalista) */}
+          <Tooltip title='Guardar Cambios'>
+            <span>
+              <IconButton
+                onClick={handleSaveChanges}
+                disabled={saving}
+                sx={{
+                  width: 38,
+                  height: 38,
+                  borderRadius: '9999px',
+                  backgroundColor: '#6C5CE7',
+                  color: '#FFFFFF',
+                  boxShadow: '0 4px 12px rgba(108, 92, 231, 0.3)',
+                  '&:hover': { backgroundColor: '#5B4CDB' },
+                  '&:disabled': { backgroundColor: '#E2E8F0', color: '#94A3B8' }
+                }}
+              >
+                {saving ? (
+                  <i className='tabler-loader-2 animate-spin text-lg' />
+                ) : (
+                  <i className='tabler-device-floppy text-lg' />
+                )}
+              </IconButton>
+            </span>
+          </Tooltip>
 
           {/* Eliminar */}
           <Tooltip title='Eliminar artículo'>
@@ -691,6 +735,7 @@ const InventoryDetailView: React.FC<Props> = ({ id }) => {
               }}
             >
               <Tab icon={<i className='tabler-id text-lg mr-1.5' />} iconPosition='start' label='Información General' />
+              <Tab icon={<i className='tabler-box-seam text-lg mr-1.5' />} iconPosition='start' label='Inventario' />
               <Tab
                 icon={<i className='tabler-layers-subtract text-lg mr-1.5' />}
                 iconPosition='start'
@@ -1120,8 +1165,184 @@ const InventoryDetailView: React.FC<Props> = ({ id }) => {
                 </div>
               )}
 
-              {/* PESTAÑA 1: MATRIZ DE VARIANTES */}
+              {/* PESTAÑA 1: INVENTARIO (LOGÍSTICA, POLÍTICAS Y ALMACENAMIENTO) */}
               {activeTab === 1 && (
+                <div className='space-y-6'>
+                  {/* Tarjeta 1: Logística */}
+                  <div className='space-y-4'>
+                    <div>
+                      <Typography variant='subtitle2' className='font-bold text-[#1E1B2E] flex items-center gap-1.5'>
+                        <i className='tabler-truck text-[#6C5CE7] text-lg' /> Logística
+                      </Typography>
+                      <Typography variant='caption' className='text-[#6B7280] block mt-0.5'>
+                        Información física del producto para envíos, cubicaje y almacenamiento.
+                      </Typography>
+                    </div>
+
+                    <Grid container spacing={4} alignItems='flex-start'>
+                      <Grid size={{ xs: 12, sm: 6 }}>
+                        <CustomTextField
+                          fullWidth
+                          type='number'
+                          label='Peso (kg)'
+                          placeholder='0.00'
+                          value={weight === 0 ? '' : weight}
+                          onChange={e => setWeight(Math.max(0, parseFloat(e.target.value) || 0))}
+                          helperText='Peso unitario del producto para control de carga y envíos'
+                          InputProps={{
+                            endAdornment: <span className='text-xs text-[#6B7280] font-medium'>kg</span>
+                          }}
+                        />
+                      </Grid>
+
+                      <Grid size={{ xs: 12, sm: 6 }}>
+                        <CustomTextField
+                          fullWidth
+                          type='number'
+                          label='Volumen (m³)'
+                          placeholder='0.000'
+                          value={volume === 0 ? '' : volume}
+                          onChange={e => setVolume(Math.max(0, parseFloat(e.target.value) || 0))}
+                          helperText='Volumen cúbico para transporte y estanterías'
+                          InputProps={{
+                            endAdornment: <span className='text-xs text-[#6B7280] font-medium'>m³</span>
+                          }}
+                        />
+                      </Grid>
+                    </Grid>
+                  </div>
+
+                  <Divider />
+
+                  {/* Tarjeta 2: Políticas de Facturación y Entrega */}
+                  <div className='space-y-4'>
+                    <div>
+                      <Typography variant='subtitle2' className='font-bold text-[#1E1B2E] flex items-center gap-1.5'>
+                        <i className='tabler-clipboard-check text-[#6C5CE7] text-lg' /> Políticas de Facturación y Entrega
+                      </Typography>
+                      <Typography variant='caption' className='text-[#6B7280] block mt-0.5'>
+                        Configura el comportamiento de despacho en almacén y facturación. Si no tiene valor, tomará la política configurada en el sistema.
+                      </Typography>
+                    </div>
+
+                    <Grid container spacing={4} alignItems='flex-start'>
+                      {/* 1. Política de Entrega / Despacho */}
+                      <Grid size={{ xs: 12, md: 4 }}>
+                        <CustomTextField
+                          select
+                          fullWidth
+                          label='Política de Entrega / Despacho'
+                          value={deliveryPolicy === 'DEFAULT' ? '' : deliveryPolicy}
+                          onChange={e => setDeliveryPolicy((e.target.value || 'DEFAULT') as ProductDeliveryPolicyOption)}
+                          helperText='Si no tiene valor, tomará la política configurada en el sistema'
+                        >
+                          <MenuItem value=''>
+                            <em>Sin especificar</em>
+                          </MenuItem>
+                          <MenuItem value='PARTIAL'>Permitir Entregas Parciales</MenuItem>
+                          <MenuItem value='ALL_AT_ONCE'>Entregar Todos a la Vez</MenuItem>
+                        </CustomTextField>
+                      </Grid>
+
+                      {/* 2. Política de Facturación (Ventas) */}
+                      <Grid size={{ xs: 12, md: 4 }}>
+                        <CustomTextField
+                          select
+                          fullWidth
+                          label='Política de Facturación (Ventas)'
+                          value={invoicingPolicy === 'DEFAULT' ? '' : invoicingPolicy}
+                          onChange={e => setInvoicingPolicy((e.target.value || 'DEFAULT') as ProductInvoicingPolicyOption)}
+                          helperText='Si no tiene valor, tomará la política configurada en el sistema'
+                        >
+                          <MenuItem value=''>
+                            <em>Sin especificar</em>
+                          </MenuItem>
+                          <MenuItem value='ORDERED'>Cantidades Pedidas</MenuItem>
+                          <MenuItem value='DELIVERED'>Cantidades Entregadas</MenuItem>
+                        </CustomTextField>
+                      </Grid>
+
+                      {/* 3. Política de Control (Compras) */}
+                      <Grid size={{ xs: 12, md: 4 }}>
+                        <CustomTextField
+                          select
+                          fullWidth
+                          label='Política de Control (Compras)'
+                          value={purchaseControlPolicy === 'DEFAULT' ? '' : purchaseControlPolicy}
+                          onChange={e => setPurchaseControlPolicy((e.target.value || 'DEFAULT') as ProductPurchaseControlOption)}
+                          helperText='Si no tiene valor, tomará la política configurada en el sistema'
+                        >
+                          <MenuItem value=''>
+                            <em>Sin especificar</em>
+                          </MenuItem>
+                          <MenuItem value='ORDERED'>Cantidades Pedidas</MenuItem>
+                          <MenuItem value='RECEIVED'>Cantidades Recibidas</MenuItem>
+                        </CustomTextField>
+                      </Grid>
+                    </Grid>
+
+                    {/* Banner informativo de trazabilidad */}
+                    <div className='p-3.5 rounded-xl bg-[#F8F7FA] border border-[#E6E4F0] flex items-center gap-3'>
+                      <div className='w-8 h-8 rounded-lg bg-[#6C5CE7]/10 flex items-center justify-center shrink-0 text-[#6C5CE7]'>
+                        <i className='tabler-info-circle text-base' />
+                      </div>
+                      <div className='text-xs text-[#6B7280] leading-relaxed'>
+                        <span className='font-semibold text-[#1E1B2E]'>Trazabilidad Operacional: </span>
+                        Al procesar ventas o compras de este producto, el sistema evaluará automáticamente las entregas y recepciones de almacén antes de habilitar la emisión o registro de facturas.
+                      </div>
+                    </div>
+                  </div>
+
+                  <Divider />
+
+                  {/* Tarjeta 3: Almacenamiento y Reposición */}
+                  <div className='space-y-4'>
+                    <div>
+                      <Typography variant='subtitle2' className='font-bold text-[#1E1B2E] flex items-center gap-1.5'>
+                        <i className='tabler-building-warehouse text-[#6C5CE7] text-lg' /> Almacenamiento y Reposición
+                      </Typography>
+                      <Typography variant='caption' className='text-[#6B7280] block mt-0.5'>
+                        Parámetros de stock mínimo para alertas y reposición de almacén.
+                      </Typography>
+                    </div>
+
+                    <Grid container spacing={4} alignItems='flex-start'>
+                      <Grid size={{ xs: 12, sm: 6 }}>
+                        <CustomTextField
+                          fullWidth
+                          type='number'
+                          label='Stock Mínimo de Seguridad'
+                          value={minStock === 0 ? '' : minStock}
+                          placeholder='0'
+                          onChange={e => setMinStock(Math.max(0, parseInt(e.target.value, 10) || 0))}
+                          helperText='Nivel umbral para alertas de reabastecimiento en almacén'
+                          disabled={productType === 'service'}
+                        />
+                      </Grid>
+
+                      <Grid size={{ xs: 12, sm: 6 }}>
+                        <div className='p-3.5 rounded-xl bg-[#F8F7FA] border border-[#E6E4F0] flex items-center justify-between'>
+                          <div>
+                            <span className='text-xs text-[#6B7280] block font-medium'>Stock Físico Consolidado</span>
+                            <span className='text-lg font-bold text-[#1E1B2E] font-mono'>
+                              {variants.reduce((acc, v) => acc + (v.physicalStock || 0), 0)} {uomCode}
+                            </span>
+                          </div>
+                          <div className='text-right'>
+                            <span className='text-xs text-[#6B7280] block font-medium'>Disponible para Venta</span>
+                            <span className='text-lg font-bold text-success font-mono'>
+                              {variants.reduce((acc, v) => acc + (v.availableStock || 0), 0)} {uomCode}
+                            </span>
+                          </div>
+                        </div>
+                      </Grid>
+                    </Grid>
+                  </div>
+                </div>
+              )}
+
+              {/* PESTAÑA 2: MATRIZ DE VARIANTES */}
+              {activeTab === 2 && (
                 <div className='space-y-4'>
                   <div className='flex items-center justify-between flex-wrap gap-2'>
                     <div>
@@ -1222,8 +1443,8 @@ const InventoryDetailView: React.FC<Props> = ({ id }) => {
                 </div>
               )}
 
-              {/* PESTAÑA 2: KÁRDEX DEL ARTÍCULO */}
-              {activeTab === 2 && (
+              {/* PESTAÑA 3: KÁRDEX DEL ARTÍCULO */}
+              {activeTab === 3 && (
                 <div className='space-y-4'>
                   <div className='flex items-center justify-between flex-wrap gap-2'>
                     <div>

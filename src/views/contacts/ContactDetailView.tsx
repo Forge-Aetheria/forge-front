@@ -30,6 +30,9 @@ import TableCell from '@mui/material/TableCell';
 import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
+import Switch from '@mui/material/Switch';
+import Autocomplete from '@mui/material/Autocomplete';
+import Box from '@mui/material/Box';
 import CustomTextField from '@core/components/mui/TextField';
 
 import {
@@ -40,13 +43,15 @@ import {
   EntityAddress,
   ContactPersonRole,
   AddressType,
-  TerceroFormData,
-  BankAccount,
-  BankAccountType,
-  BankCurrency
+  TerceroFormData
 } from '@/types/contactsTypes';
 import { contactsService } from '@/services/contactsService';
+import { accountingService } from '@/services/accountingService';
+import type { Account } from '@/types/accountingTypes';
 import { ContactRoleChip } from './components/ContactRoleChip';
+import type { BankAccount } from '@/types/bankAccountTypes';
+import { bankAccountsService } from '@/services/bankAccountsService';
+import { BankAccountModal } from './components/BankAccountModal';
 
 interface Props {
   id: string;
@@ -61,39 +66,6 @@ const roleOptions: { value: ContactPersonRole; label: string }[] = [
   { value: 'ADMINISTRATIVO', label: 'Administrativo' }
 ];
 
-const venezuelaBanks = [
-  'Banesco Banco Universal',
-  'Banco Mercantil',
-  'Banco de Venezuela',
-  'BBVA Provincial',
-  'Bancamiga Banco Universal',
-  'Banco Nacional de Crédito (BNC)',
-  'Banco Exterior',
-  'Banco Fondo Común (BFC)',
-  'Banplus',
-  '100% Banco',
-  'Bancaribe',
-  'Banco del Tesoro',
-  'Banco Bicentenario',
-  'Zelle (Internacional USD)',
-  'Otro Banco'
-];
-
-const bankAccountTypes: { value: BankAccountType; label: string }[] = [
-  { value: 'CORRIENTE', label: 'Cuenta Corriente' },
-  { value: 'AHORRO', label: 'Cuenta de Ahorros' },
-  { value: 'PAGO_MOVIL', label: 'Pago Móvil (C.I. / Teléfono)' },
-  { value: 'CUSTODIA_USD', label: 'Cuenta Custodia en Dólares (Nacional)' },
-  { value: 'ZELLE', label: 'Zelle (Internacional USD)' },
-  { value: 'OTRO', label: 'Otro Instrumento Bancario' }
-];
-
-const bankCurrencies: { value: BankCurrency; label: string }[] = [
-  { value: 'VES', label: 'VES (Bolívares)' },
-  { value: 'USD', label: 'USD (Dólares)' },
-  { value: 'EUR', label: 'EUR (Euros)' }
-];
-
 export const ContactDetailView: React.FC<Props> = ({ id }) => {
   const router = useRouter();
 
@@ -101,7 +73,13 @@ export const ContactDetailView: React.FC<Props> = ({ id }) => {
   const [allContacts, setAllContacts] = useState<TerceroEntity[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState(0);
+  const [activeTab, setActiveTab] = useState<'general' | 'referentes' | 'direcciones' | 'contabilidad' | 'bancos'>('general');
+
+  // Cuentas Bancarias del Contacto
+  const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([]);
+  const [allSystemBankAccounts, setAllSystemBankAccounts] = useState<BankAccount[]>([]);
+  const [bankModalOpen, setBankModalOpen] = useState(false);
+  const [editingBankAccount, setEditingBankAccount] = useState<BankAccount | null>(null);
 
   // Form Fields
   const [codigo, setCodigo] = useState('');
@@ -126,7 +104,18 @@ export const ContactDetailView: React.FC<Props> = ({ id }) => {
 
   const isCreate = id === 'create' || id === 'new';
 
-  // Modales anidados: Referentes
+  // Apartado de Contabilidad y Cuentas Contables (SPEC-008)
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [cuentaCxcId, setCuentaCxcId] = useState('acc-110201');
+  const [cuentaCxcNombre, setCuentaCxcNombre] = useState('Cuentas por Cobrar Clientes Nacionales (CxC)');
+  const [cuentaCxpId, setCuentaCxpId] = useState('acc-210101');
+  const [cuentaCxpNombre, setCuentaCxpNombre] = useState('Cuentas por Pagar Proveedores Nacionales (CxP)');
+  const [plazoPagoDias, setPlazoPagoDias] = useState<number>(15);
+  const [limiteCreditoUsd, setLimiteCreditoUsd] = useState<number>(0);
+  const [esContribuyenteEspecial, setEsContribuyenteEspecial] = useState<boolean>(false);
+  const [porcentajeRetencionIva, setPorcentajeRetencionIva] = useState<number>(75);
+
+  // Modales anidados
   const [personModalOpen, setPersonModalOpen] = useState(false);
   const [editingPersonId, setEditingPersonId] = useState<string | null>(null);
   const [personNombre, setPersonNombre] = useState('');
@@ -148,18 +137,6 @@ export const ContactDetailView: React.FC<Props> = ({ id }) => {
   const [addressCP, setAddressCP] = useState('');
   const [addressPredeterminada, setAddressPredeterminada] = useState(false);
 
-  // Modales anidados: Cuentas Bancarias
-  const [bankModalOpen, setBankModalOpen] = useState(false);
-  const [editingBankId, setEditingBankId] = useState<string | null>(null);
-  const [bankBanco, setBankBanco] = useState('Banesco Banco Universal');
-  const [bankTipo, setBankTipo] = useState<BankAccountType>('CORRIENTE');
-  const [bankMoneda, setBankMoneda] = useState<BankCurrency>('VES');
-  const [bankNumero, setBankNumero] = useState('');
-  const [bankTitular, setBankTitular] = useState('');
-  const [bankIdentificacion, setBankIdentificacion] = useState('');
-  const [bankTelefonoPagoMovil, setBankTelefonoPagoMovil] = useState('');
-  const [bankPredeterminada, setBankPredeterminada] = useState(false);
-
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
   // Toast
@@ -179,10 +156,18 @@ export const ContactDetailView: React.FC<Props> = ({ id }) => {
 
     try {
       setLoading(true);
-      const [current, list] = await Promise.all([
+      const [current, list, accList, contactConfigs, bankList, allBanks] = await Promise.all([
         contactsService.getTerceroById(id),
-        contactsService.getTerceros()
+        contactsService.getTerceros(),
+        accountingService.getAccounts(),
+        accountingService.getContactAccountingConfigs(),
+        bankAccountsService.getContactBankAccounts(id),
+        bankAccountsService.getBankAccounts()
       ]);
+
+      setAccounts(accList);
+      setBankAccounts(bankList);
+      setAllSystemBankAccounts(allBanks);
 
       if (current) {
         setContact(current);
@@ -205,6 +190,26 @@ export const ContactDetailView: React.FC<Props> = ({ id }) => {
         setContactosReferentes(current.contactos_referentes || []);
         setDireccionesAdicionales(current.direcciones_adicionales || []);
         setCuentasBancarias(current.cuentas_bancarias || []);
+
+        // Cargar cuentas contables y condiciones fiscales
+        const existingConfig = contactConfigs.find(
+          c => c.contactoId === id || c.contactoRif === current.identificacion
+        );
+
+        const cxcId = current.cuenta_cxc_id || existingConfig?.cuentaCxcId || 'acc-110201';
+        const cxcAcc = accList.find(a => a.id === cxcId);
+        setCuentaCxcId(cxcId);
+        setCuentaCxcNombre(current.cuenta_cxc_nombre || existingConfig?.cuentaCxcNombre || cxcAcc?.nombre || 'Cuentas por Cobrar Clientes Nacionales (CxC)');
+
+        const cxpId = current.cuenta_cxp_id || existingConfig?.cuentaCxpId || 'acc-210101';
+        const cxpAcc = accList.find(a => a.id === cxpId);
+        setCuentaCxpId(cxpId);
+        setCuentaCxpNombre(current.cuenta_cxp_nombre || existingConfig?.cuentaCxpNombre || cxpAcc?.nombre || 'Cuentas por Pagar Proveedores Nacionales (CxP)');
+
+        setPlazoPagoDias(current.plazo_pago_dias ?? 15);
+        setLimiteCreditoUsd(current.limite_credito_usd ?? 0);
+        setEsContribuyenteEspecial(current.es_contribuyente_especial ?? false);
+        setPorcentajeRetencionIva(current.porcentaje_retencion_iva ?? 75);
       }
       setAllContacts(list);
     } catch (err: any) {
@@ -229,6 +234,67 @@ export const ContactDetailView: React.FC<Props> = ({ id }) => {
     if (!identificacion) return;
     navigator.clipboard.writeText(identificacion);
     setToast({ open: true, message: '¡Identificación copiada al portapapeles!', severity: 'info' });
+  };
+
+  // Gestión de Cuentas Bancarias del Contacto
+  const handleOpenNewBankAccount = () => {
+    setEditingBankAccount(null);
+    setBankModalOpen(true);
+  };
+
+  const handleOpenEditBankAccount = (acc: BankAccount) => {
+    setEditingBankAccount(acc);
+    setBankModalOpen(true);
+  };
+
+  const handleDeleteBankAccount = async (accId: string, bancoName: string) => {
+    if (!confirm(`¿Estás seguro de eliminar la cuenta bancaria de ${bancoName}?`)) return;
+    try {
+      await bankAccountsService.deleteBankAccount(accId);
+      setBankAccounts(prev => prev.filter(a => a.id !== accId));
+      setToast({ open: true, message: 'Cuenta bancaria eliminada con éxito', severity: 'success' });
+    } catch (err: any) {
+      setToast({ open: true, message: err.message || 'Error al eliminar', severity: 'error' });
+    }
+  };
+
+  const handleSetDefaultBankAccount = async (acc: BankAccount) => {
+    try {
+      await bankAccountsService.setDefaultBankAccount(acc.id, id, false);
+      const refreshed = await bankAccountsService.getContactBankAccounts(id);
+      setBankAccounts(refreshed);
+      setToast({ open: true, message: 'Cuenta establecida como principal', severity: 'success' });
+    } catch (err: any) {
+      setToast({ open: true, message: err.message || 'Error al actualizar', severity: 'error' });
+    }
+  };
+
+  const handleBankAccountSaved = async (saved: BankAccount) => {
+    const refreshed = await bankAccountsService.getContactBankAccounts(id);
+    const allRefreshed = await bankAccountsService.getBankAccounts();
+    setBankAccounts(refreshed);
+    setAllSystemBankAccounts(allRefreshed);
+    setToast({ open: true, message: `Cuenta de ${saved.banco} guardada con éxito`, severity: 'success' });
+  };
+
+  const handleLinkExistingAccount = async (bankAccountId: string) => {
+    if (!bankAccountId || bankAccountId === 'NONE') return;
+    try {
+      await bankAccountsService.updateBankAccount(bankAccountId, {
+        contacto_id: id,
+        contacto_nombre: nombreRazonSocial,
+        contacto_tipo: isCliente && isProveedor ? 'AMBOS' : isCliente ? 'CLIENTE' : 'PROVEEDOR',
+        is_empresa: false,
+        is_predeterminada: bankAccounts.length === 0
+      });
+      const refreshed = await bankAccountsService.getContactBankAccounts(id);
+      const allRefreshed = await bankAccountsService.getBankAccounts();
+      setBankAccounts(refreshed);
+      setAllSystemBankAccounts(allRefreshed);
+      setToast({ open: true, message: 'Cuenta bancaria vinculada al contacto con éxito', severity: 'success' });
+    } catch (err: any) {
+      setToast({ open: true, message: err.message || 'Error al vincular cuenta', severity: 'error' });
+    }
   };
 
   // Guardar Cambios o Crear Contacto
@@ -267,7 +333,17 @@ export const ContactDetailView: React.FC<Props> = ({ id }) => {
         codigo_postal: codigoPostal.trim() || undefined,
         contactos_referentes: tipo === 'EMPRESA' ? contactosReferentes : [],
         direcciones_adicionales: tipo === 'EMPRESA' ? direccionesAdicionales : [],
-        cuentas_bancarias: cuentasBancarias
+        cuentas_bancarias: cuentasBancarias,
+
+        // Contabilidad
+        cuenta_cxc_id: cuentaCxcId,
+        cuenta_cxc_nombre: cuentaCxcNombre,
+        cuenta_cxp_id: cuentaCxpId,
+        cuenta_cxp_nombre: cuentaCxpNombre,
+        plazo_pago_dias: plazoPagoDias,
+        limite_credito_usd: Number(limiteCreditoUsd) || 0,
+        es_contribuyente_especial: esContribuyenteEspecial,
+        porcentaje_retencion_iva: porcentajeRetencionIva
       };
 
       if (isCreate) {
@@ -279,7 +355,23 @@ export const ContactDetailView: React.FC<Props> = ({ id }) => {
       } else {
         const updated = await contactsService.updateTercero(id, payload);
         setContact(updated);
-        setToast({ open: true, message: 'Contacto actualizado exitosamente', severity: 'success' });
+
+        // Sincronizar en mapping contable para facturas y diarios
+        try {
+          await accountingService.updateContactAccountingConfig({
+            contactoId: id,
+            contactoNombre: nombreRazonSocial.trim(),
+            contactoRif: identificacion.trim().toUpperCase(),
+            cuentaCxcId,
+            cuentaCxcNombre,
+            cuentaCxpId,
+            cuentaCxpNombre
+          });
+        } catch (syncErr) {
+          console.error('Error al sincronizar mapeo contable:', syncErr);
+        }
+
+        setToast({ open: true, message: 'Contacto y configuración contable actualizados con éxito', severity: 'success' });
       }
     } catch (err: any) {
       setToast({ open: true, message: err?.message || 'Error al guardar el contacto', severity: 'error' });
@@ -444,95 +536,6 @@ export const ContactDetailView: React.FC<Props> = ({ id }) => {
     setDireccionesAdicionales(prev => prev.filter(a => a.id !== addrId));
   };
 
-  // Gestión de cuentas bancarias
-  const handleOpenAddBank = () => {
-    setEditingBankId(null);
-    setBankBanco('Banesco Banco Universal');
-    setBankTipo('CORRIENTE');
-    setBankMoneda('VES');
-    setBankNumero('');
-    setBankTitular(nombreRazonSocial || '');
-    setBankIdentificacion(identificacion || '');
-    setBankTelefonoPagoMovil(telefonoPrincipal || '');
-    setBankPredeterminada(cuentasBancarias.length === 0);
-    setBankModalOpen(true);
-  };
-
-  const handleOpenEditBank = (acc: BankAccount) => {
-    setEditingBankId(acc.id);
-    setBankBanco(acc.banco);
-    setBankTipo(acc.tipo_cuenta);
-    setBankMoneda(acc.moneda);
-    setBankNumero(acc.numero_cuenta);
-    setBankTitular(acc.titular);
-    setBankIdentificacion(acc.identificacion_titular);
-    setBankTelefonoPagoMovil(acc.telefono_pago_movil || '');
-    setBankPredeterminada(acc.is_predeterminada);
-    setBankModalOpen(true);
-  };
-
-  const handleSaveBank = () => {
-    if (!bankBanco.trim()) {
-      alert('El nombre del banco es obligatorio');
-      return;
-    }
-    if (!bankNumero.trim() && !bankTelefonoPagoMovil.trim()) {
-      alert('Debe indicar el número de cuenta o teléfono para el instrumento');
-      return;
-    }
-    if (!bankTitular.trim()) {
-      alert('El titular de la cuenta es obligatorio');
-      return;
-    }
-
-    if (editingBankId) {
-      setCuentasBancarias(prev =>
-        prev.map(b =>
-          b.id === editingBankId
-            ? {
-                ...b,
-                banco: bankBanco.trim(),
-                tipo_cuenta: bankTipo,
-                moneda: bankMoneda,
-                numero_cuenta: bankNumero.trim(),
-                titular: bankTitular.trim(),
-                identificacion_titular: bankIdentificacion.trim(),
-                telefono_pago_movil: bankTelefonoPagoMovil.trim() || undefined,
-                is_predeterminada: bankPredeterminada
-              }
-            : bankPredeterminada
-            ? { ...b, is_predeterminada: false }
-            : b
-        )
-      );
-    } else {
-      const newAcc: BankAccount = {
-        id: `bank-${Date.now()}`,
-        banco: bankBanco.trim(),
-        tipo_cuenta: bankTipo,
-        moneda: bankMoneda,
-        numero_cuenta: bankNumero.trim(),
-        titular: bankTitular.trim(),
-        identificacion_titular: bankIdentificacion.trim(),
-        telefono_pago_movil: bankTelefonoPagoMovil.trim() || undefined,
-        is_predeterminada: bankPredeterminada
-      };
-      setCuentasBancarias(prev => {
-        let updated = [...prev, newAcc];
-        if (bankPredeterminada) {
-          updated = updated.map(b => (b.id !== newAcc.id ? { ...b, is_predeterminada: false } : b));
-        }
-        return updated;
-      });
-    }
-
-    setBankModalOpen(false);
-  };
-
-  const handleDeleteBank = (bankId: string) => {
-    setCuentasBancarias(prev => prev.filter(b => b.id !== bankId));
-  };
-
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[350px]">
@@ -578,16 +581,27 @@ export const ContactDetailView: React.FC<Props> = ({ id }) => {
       <div className='flex items-center justify-between gap-4 flex-wrap sm:flex-nowrap'>
         {/* Izquierda: Botón Volver + Título + Chip Tipo + Subtítulo */}
         <div className='flex items-center gap-3 min-w-0 flex-1'>
-          <Button
-            component={Link}
-            href='/contacts'
-            variant='tonal'
-            size='small'
-            startIcon={<i className='tabler-arrow-left' />}
-            className='shrink-0'
-          >
-            Volver
-          </Button>
+          <Tooltip title='Volver al directorio'>
+            <Button
+              component={Link}
+              href='/contacts'
+              variant='text'
+              sx={{
+                minWidth: 'auto',
+                width: 38,
+                height: 38,
+                p: 0,
+                borderRadius: '9999px',
+                color: '#6B7280',
+                backgroundColor: '#FFFFFF',
+                border: '1px solid #E6E4F0',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
+                '&:hover': { color: '#6C5CE7', backgroundColor: '#F0EEF9', borderColor: '#6C5CE7' }
+              }}
+            >
+              <i className='tabler-arrow-left text-lg' />
+            </Button>
+          </Tooltip>
           <div className='min-w-0 flex-1'>
             <Tooltip title={isCreate ? 'Nuevo Contacto' : (nombreRazonSocial || 'Contacto')}>
               <Typography variant='h4' className='font-bold text-textPrimary truncate'>
@@ -832,6 +846,73 @@ export const ContactDetailView: React.FC<Props> = ({ id }) => {
                 )}
               </div>
             </Card>
+
+            {/* Perfil y Resumen Contable */}
+            <Card
+              sx={{
+                borderRadius: '20px',
+                border: '1px solid #E6E4F0',
+                backgroundColor: '#FFFFFF',
+                p: 3,
+                boxShadow: '0 4px 18px 0 rgba(108, 92, 231, 0.05)'
+              }}
+            >
+              <div className="flex items-center justify-between mb-3">
+                <Typography variant="subtitle2" className="font-bold text-[#1E1B2E] flex items-center gap-1.5">
+                  <i className="tabler-building-bank text-base text-[#6C5CE7]" />
+                  Perfil Contable
+                </Typography>
+                <Button
+                  size="small"
+                  variant="text"
+                  onClick={() => setActiveTab('contabilidad')}
+                  sx={{ textTransform: 'none', fontSize: '0.75rem', p: 0, color: '#6C5CE7', minWidth: 0, fontWeight: 600 }}
+                >
+                  Configurar
+                </Button>
+              </div>
+              <div className="space-y-2 text-xs text-[#6B7280]">
+                <div className="flex justify-between py-1 border-b border-[#F4F3F8] items-center">
+                  <span>Cuenta CxC (Clientes):</span>
+                  <span className="font-semibold text-[#1E1B2E] font-mono text-[11px] truncate max-w-[160px]" title={cuentaCxcNombre}>
+                    {accounts.find(a => a.id === cuentaCxcId)?.codigo || '1.1.02.01'} CxC
+                  </span>
+                </div>
+                <div className="flex justify-between py-1 border-b border-[#F4F3F8] items-center">
+                  <span>Cuenta CxP (Proveed.):</span>
+                  <span className="font-semibold text-[#1E1B2E] font-mono text-[11px] truncate max-w-[160px]" title={cuentaCxpNombre}>
+                    {accounts.find(a => a.id === cuentaCxpId)?.codigo || '2.1.01.01'} CxP
+                  </span>
+                </div>
+                <div className="flex justify-between py-1 border-b border-[#F4F3F8]">
+                  <span>Plazo de Pago:</span>
+                  <span className="font-semibold text-[#1E1B2E]">
+                    {plazoPagoDias === 0 ? 'Contado (0 días)' : `${plazoPagoDias} días crédito`}
+                  </span>
+                </div>
+                <div className="flex justify-between py-1 border-b border-[#F4F3F8]">
+                  <span>Cuentas Bancarias:</span>
+                  <span
+                    className="font-semibold text-[#6C5CE7] cursor-pointer hover:underline"
+                    onClick={() => setActiveTab('bancos')}
+                  >
+                    {bankAccounts.length} registradas
+                  </span>
+                </div>
+                <div className="flex justify-between py-1 border-b border-[#F4F3F8]">
+                  <span>Contribuyente Esp.:</span>
+                  <span className={`font-semibold ${esContribuyenteEspecial ? 'text-[#6C5CE7]' : 'text-[#6B7280]'}`}>
+                    {esContribuyenteEspecial ? `Sí (${porcentajeRetencionIva}% IVA)` : 'No'}
+                  </span>
+                </div>
+                <div className="flex justify-between py-1">
+                  <span>Límite de Crédito:</span>
+                  <span className="font-semibold text-[#1E1B2E]">
+                    {limiteCreditoUsd > 0 ? `$${limiteCreditoUsd.toLocaleString('en-US', { minimumFractionDigits: 2 })}` : 'Sin límite fijado'}
+                  </span>
+                </div>
+              </div>
+            </Card>
           </div>
         </Grid>
 
@@ -868,14 +949,10 @@ export const ContactDetailView: React.FC<Props> = ({ id }) => {
                 }
               }}
             >
-              <Tab icon={<i className="tabler-id text-lg mr-1.5" />} iconPosition="start" label="Información General" />
-              <Tab
-                icon={<i className="tabler-building-bank text-lg mr-1.5" />}
-                iconPosition="start"
-                label={`Cuentas Bancarias (${cuentasBancarias.length})`}
-              />
+              <Tab value="general" icon={<i className="tabler-id text-lg mr-1.5" />} iconPosition="start" label="Información General" />
               {tipo === 'EMPRESA' && (
                 <Tab
+                  value="referentes"
                   icon={<i className="tabler-users text-lg mr-1.5" />}
                   iconPosition="start"
                   label={`Personas Referentes (${contactosReferentes.length})`}
@@ -883,16 +960,29 @@ export const ContactDetailView: React.FC<Props> = ({ id }) => {
               )}
               {tipo === 'EMPRESA' && (
                 <Tab
+                  value="direcciones"
                   icon={<i className="tabler-map-pins text-lg mr-1.5" />}
                   iconPosition="start"
                   label={`Direcciones / Sucursales (${direccionesAdicionales.length})`}
                 />
               )}
+              <Tab
+                value="contabilidad"
+                icon={<i className="tabler-report-money text-lg mr-1.5" />}
+                iconPosition="start"
+                label="Contabilidad"
+              />
+              <Tab
+                value="bancos"
+                icon={<i className="tabler-building-bank text-lg mr-1.5" />}
+                iconPosition="start"
+                label={`Cuentas Bancarias (${bankAccounts.length})`}
+              />
             </Tabs>
 
             <CardContent className="p-6">
               {/* PESTAÑA 0: INFORMACIÓN GENERAL & FISCAL */}
-              {activeTab === 0 && (
+              {activeTab === 'general' && (
                 <div className="space-y-6">
                   {/* Selector de Tipo */}
                   <div>
@@ -1122,149 +1212,8 @@ export const ContactDetailView: React.FC<Props> = ({ id }) => {
                 </div>
               )}
 
-              {/* PESTAÑA 1: CUENTAS BANCARIAS */}
-              {activeTab === 1 && (
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between flex-wrap gap-2">
-                    <div>
-                      <Typography variant="h6" className="font-bold text-[#1E1B2E]">
-                        Cuentas e Instrumentos Bancarios
-                      </Typography>
-                      <Typography variant="caption" className="text-[#6B7280]">
-                        Cuentas corrientes, de ahorro, pago móvil y cuentas custodia para cobranzas y pagos
-                      </Typography>
-                    </div>
-                    <Button
-                      variant="contained"
-                      size="small"
-                      startIcon={<i className="tabler-plus" />}
-                      onClick={handleOpenAddBank}
-                      sx={{
-                        borderRadius: '9999px',
-                        backgroundColor: '#6C5CE7',
-                        fontWeight: 600,
-                        '&:hover': { backgroundColor: '#5A4AD1' }
-                      }}
-                    >
-                      Agregar Cuenta Bancaria
-                    </Button>
-                  </div>
-
-                  {cuentasBancarias.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center text-center py-12 px-4 border border-dashed border-[#E6E4F0] rounded-2xl bg-[#F8F7FC]">
-                      <i className="tabler-building-bank text-4xl text-[#9CA3AF] mb-2" />
-                      <Typography variant="body1" className="font-semibold text-[#1E1B2E]">
-                        Sin cuentas bancarias registradas
-                      </Typography>
-                      <Typography variant="caption" className="text-[#6B7280] mb-3">
-                        Registra los datos bancarios para facilitar pagos móviles, transferencias y conciliaciones.
-                      </Typography>
-                      <Button
-                        variant="outlined"
-                        size="small"
-                        onClick={handleOpenAddBank}
-                        sx={{ borderRadius: '9999px', borderColor: '#6C5CE7', color: '#6C5CE7' }}
-                      >
-                        Registrar Primera Cuenta
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      {cuentasBancarias.map(acc => (
-                        <Card
-                          key={acc.id}
-                          sx={{
-                            borderRadius: '16px',
-                            border: '1px solid #E6E4F0',
-                            p: 2.5,
-                            backgroundColor: '#FFFFFF',
-                            boxShadow: 'none',
-                            position: 'relative',
-                            transition: 'all 0.2s',
-                            '&:hover': {
-                              borderColor: '#6C5CE7',
-                              boxShadow: '0 4px 12px rgba(108, 92, 231, 0.08)'
-                            }
-                          }}
-                        >
-                          <div className="flex justify-between items-start mb-2">
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                              <span
-                                className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded border ${
-                                  acc.moneda === 'VES'
-                                    ? 'bg-[#EFF6FF] text-[#2563EB] border-[#BFDBFE]'
-                                    : acc.moneda === 'USD'
-                                    ? 'bg-[#ECFDF5] text-[#059669] border-[#A7F3D0]'
-                                    : 'bg-[#F3F0FF] text-[#6C5CE7] border-[#E9D5FF]'
-                                }`}
-                              >
-                                {acc.moneda}
-                              </span>
-                              <span className="text-[10px] bg-gray-100 text-gray-700 font-semibold px-2 py-0.5 rounded border border-gray-200">
-                                {acc.tipo_cuenta === 'CORRIENTE'
-                                  ? 'Cta. Corriente'
-                                  : acc.tipo_cuenta === 'AHORRO'
-                                  ? 'Cta. Ahorros'
-                                  : acc.tipo_cuenta === 'PAGO_MOVIL'
-                                  ? 'Pago Móvil'
-                                  : acc.tipo_cuenta === 'CUSTODIA_USD'
-                                  ? 'Custodia USD'
-                                  : acc.tipo_cuenta === 'ZELLE'
-                                  ? 'Zelle'
-                                  : 'Otro'}
-                              </span>
-                              {acc.is_predeterminada && (
-                                <span className="text-[10px] bg-[#FEF3C7] text-[#B45309] font-bold px-2 py-0.5 rounded border border-[#FDE68A] flex items-center gap-0.5">
-                                  <i className="tabler-star-filled text-[10px]" /> Predeterminada
-                                </span>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-0.5">
-                              <Tooltip title="Editar cuenta">
-                                <IconButton size="small" onClick={() => handleOpenEditBank(acc)} sx={{ color: '#6C5CE7' }}>
-                                  <i className="tabler-edit text-sm" />
-                                </IconButton>
-                              </Tooltip>
-                              <Tooltip title="Eliminar cuenta">
-                                <IconButton size="small" onClick={() => handleDeleteBank(acc.id)} sx={{ color: '#EF4444' }}>
-                                  <i className="tabler-trash text-sm" />
-                                </IconButton>
-                              </Tooltip>
-                            </div>
-                          </div>
-
-                          <Typography variant="subtitle1" className="font-bold text-[#1E1B2E] mb-1">
-                            {acc.banco}
-                          </Typography>
-
-                          <div className="space-y-1 text-xs text-[#6B7280]">
-                            <div className="flex items-center gap-1.5 font-mono text-[#1E1B2E] font-semibold text-sm">
-                              <i className="tabler-credit-card text-base text-[#6C5CE7]" />
-                              <span>{acc.numero_cuenta}</span>
-                            </div>
-                            {acc.telefono_pago_movil && (
-                              <div className="flex items-center gap-1.5">
-                                <i className="tabler-phone text-sm text-[#9CA3AF]" />
-                                <span>Pago Móvil: {acc.telefono_pago_movil}</span>
-                              </div>
-                            )}
-                            <div className="flex items-center gap-1.5 pt-1 border-t border-[#F4F3F8]">
-                              <i className="tabler-user text-sm text-[#9CA3AF]" />
-                              <span>
-                                {acc.titular} {acc.identificacion_titular ? `(${acc.identificacion_titular})` : ''}
-                              </span>
-                            </div>
-                          </div>
-                        </Card>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* PESTAÑA 2: PERSONAS REFERENTES (EMPRESAS) */}
-              {activeTab === 2 && tipo === 'EMPRESA' && (
-                <div className="space-y-4">
+              {/* PESTAÑA: PERSONAS REFERENTES (EMPRESAS) */}
+              {activeTab === 'referentes' && tipo === 'EMPRESA' && (                <div className="space-y-4">
                   <div className="flex items-center justify-between flex-wrap gap-2">
                     <div>
                       <Typography variant="h6" className="font-bold text-[#1E1B2E]">
@@ -1371,8 +1320,8 @@ export const ContactDetailView: React.FC<Props> = ({ id }) => {
                 </div>
               )}
 
-              {/* PESTAÑA 3: DIRECCIONES ADICIONALES (EMPRESAS) */}
-              {activeTab === 3 && tipo === 'EMPRESA' && (
+              {/* PESTAÑA: DIRECCIONES ADICIONALES (EMPRESAS) */}
+              {activeTab === 'direcciones' && tipo === 'EMPRESA' && (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between flex-wrap gap-2">
                     <div>
@@ -1469,137 +1418,600 @@ export const ContactDetailView: React.FC<Props> = ({ id }) => {
                   )}
                 </div>
               )}
+
+              {/* PESTAÑA 3: CONTABILIDAD Y CUENTAS CONTABLES */}
+              {activeTab === 'contabilidad' && (
+                <div className="space-y-6">
+                  {/* Encabezado descriptivo */}
+                  <div className="flex items-start gap-3.5 p-4 bg-[#F8F7FD] rounded-2xl border border-[#EBE8F8]">
+                    <div className="w-10 h-10 rounded-xl bg-[#F0EDFD] flex items-center justify-center text-[#6C5CE7] shrink-0 mt-0.5">
+                      <i className="tabler-building-bank text-xl" />
+                    </div>
+                    <div className="flex-1">
+                      <Typography variant="subtitle1" className="font-bold text-[#1E1B2E]">
+                        Parametrización Contable y Fiscal del Contacto
+                      </Typography>
+                      <Typography variant="body2" className="text-[#6B7280]">
+                        Define las cuentas contables del Plan Único de Cuentas (PUC) asignadas a este tercero para automatizar el registro de facturas, condiciones de pago y retenciones impositivas ante el SENIAT.
+                      </Typography>
+                    </div>
+                  </div>
+
+                  {/* Sección Cuentas Contables */}
+                  <div>
+                    <div className="flex items-center gap-2 mb-3">
+                      <i className="tabler-book-2 text-lg text-[#6C5CE7]" />
+                      <Typography variant="subtitle2" className="font-bold text-[#1E1B2E]">
+                        Cuentas Contables en el Plan de Cuentas (PUC)
+                      </Typography>
+                    </div>
+
+                    <Grid container spacing={3}>
+                      {/* Cuenta CxC */}
+                      <Grid size={{ xs: 12, md: 6 }}>
+                        <div className="space-y-1.5">
+                          <Typography variant="caption" className="font-semibold text-[#1E1B2E] block">
+                            Cuenta por Cobrar (Clientes - CxC) *
+                          </Typography>
+                          <Autocomplete
+                            options={accounts}
+                            getOptionLabel={opt => `${opt.codigo} - ${opt.nombre}`}
+                            value={accounts.find(a => a.id === cuentaCxcId) || null}
+                            onChange={(_, val) => {
+                              if (val) {
+                                setCuentaCxcId(val.id);
+                                setCuentaCxcNombre(val.nombre);
+                              }
+                            }}
+                            isOptionEqualToValue={(option, value) => option.id === value.id}
+                            renderInput={params => (
+                              <CustomTextField
+                                {...params}
+                                fullWidth
+                                placeholder="Escribe el código o nombre de la cuenta CxC..."
+                              />
+                            )}
+                            renderOption={(props, option) => (
+                              <li {...props} key={option.id} className="p-2.5 hover:bg-[#F8F7FD] border-b border-[#F4F3F8] last:border-b-0 cursor-pointer">
+                                <div className="flex items-center justify-between w-full">
+                                  <div>
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-mono text-xs font-bold px-1.5 py-0.5 rounded bg-[#F0EDFD] text-[#6C5CE7]">
+                                        {option.codigo}
+                                      </span>
+                                      <span className="text-sm font-semibold text-[#1E1B2E]">{option.nombre}</span>
+                                    </div>
+                                    <span className="text-xs text-[#6B7280]">{option.tipoCuentaNombre || option.tipo}</span>
+                                  </div>
+                                  <span className="text-xs font-mono font-medium text-[#6B7280]">{option.moneda}</span>
+                                </div>
+                              </li>
+                            )}
+                          />
+                          <Typography variant="caption" className="text-[#6B7280] block text-[11px]">
+                            Cuenta de Activo Corriente donde se asientan las facturas de venta y deudas a favor de la empresa.
+                          </Typography>
+                        </div>
+                      </Grid>
+
+                      {/* Cuenta CxP */}
+                      <Grid size={{ xs: 12, md: 6 }}>
+                        <div className="space-y-1.5">
+                          <Typography variant="caption" className="font-semibold text-[#1E1B2E] block">
+                            Cuenta por Pagar (Proveedores - CxP) *
+                          </Typography>
+                          <Autocomplete
+                            options={accounts}
+                            getOptionLabel={opt => `${opt.codigo} - ${opt.nombre}`}
+                            value={accounts.find(a => a.id === cuentaCxpId) || null}
+                            onChange={(_, val) => {
+                              if (val) {
+                                setCuentaCxpId(val.id);
+                                setCuentaCxpNombre(val.nombre);
+                              }
+                            }}
+                            isOptionEqualToValue={(option, value) => option.id === value.id}
+                            renderInput={params => (
+                              <CustomTextField
+                                {...params}
+                                fullWidth
+                                placeholder="Escribe el código o nombre de la cuenta CxP..."
+                              />
+                            )}
+                            renderOption={(props, option) => (
+                              <li {...props} key={option.id} className="p-2.5 hover:bg-[#F8F7FD] border-b border-[#F4F3F8] last:border-b-0 cursor-pointer">
+                                <div className="flex items-center justify-between w-full">
+                                  <div>
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-mono text-xs font-bold px-1.5 py-0.5 rounded bg-[#FEF2F2] text-[#EF4444]">
+                                        {option.codigo}
+                                      </span>
+                                      <span className="text-sm font-semibold text-[#1E1B2E]">{option.nombre}</span>
+                                    </div>
+                                    <span className="text-xs text-[#6B7280]">{option.tipoCuentaNombre || option.tipo}</span>
+                                  </div>
+                                  <span className="text-xs font-mono font-medium text-[#6B7280]">{option.moneda}</span>
+                                </div>
+                              </li>
+                            )}
+                          />
+                          <Typography variant="caption" className="text-[#6B7280] block text-[11px]">
+                            Cuenta de Pasivo Corriente donde se asientan las facturas de compras, gastos y compromisos de pago.
+                          </Typography>
+                        </div>
+                      </Grid>
+                    </Grid>
+                  </div>
+
+                  <Divider />
+
+                  {/* Sección Cuentas Bancarias del Contacto (Cobros y Pagos) */}
+                  <div>
+                    <div className="flex items-center justify-between flex-wrap gap-2 mb-3">
+                      <div className="flex items-center gap-2">
+                        <i className="tabler-building-bank text-lg text-[#6C5CE7]" />
+                        <Typography variant="subtitle2" className="font-bold text-[#1E1B2E]">
+                          Cuentas Bancarias del Contacto (Cobros y Pagos)
+                        </Typography>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outlined"
+                          size="small"
+                          startIcon={<i className="tabler-plus text-xs" />}
+                          onClick={handleOpenNewBankAccount}
+                          sx={{
+                            borderRadius: '9999px',
+                            borderColor: '#6C5CE7',
+                            color: '#6C5CE7',
+                            fontWeight: 600,
+                            textTransform: 'none',
+                            px: 2.5
+                          }}
+                        >
+                          + Crear Nueva Cuenta
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="p-4 rounded-xl border border-[#E6E4F0] bg-[#FAF9FD] space-y-4">
+                      <Grid container spacing={3}>
+                        {/* Selector de Cuenta Principal del Contacto */}
+                        <Grid size={{ xs: 12, md: 7 }}>
+                          <Typography variant="caption" className="font-semibold text-[#1E1B2E] block mb-1">
+                            Cuenta Bancaria Principal / Predeterminada
+                          </Typography>
+                          <CustomTextField
+                            select
+                            fullWidth
+                            size="small"
+                            value={bankAccounts.find(a => a.is_predeterminada)?.id || (bankAccounts.length > 0 ? bankAccounts[0].id : 'NONE')}
+                            onChange={e => {
+                              const targetId = e.target.value;
+                              if (targetId && targetId !== 'NONE') {
+                                const found = bankAccounts.find(a => a.id === targetId);
+                                if (found) handleSetDefaultBankAccount(found);
+                              }
+                            }}
+                            disabled={bankAccounts.length === 0}
+                          >
+                            {bankAccounts.length === 0 ? (
+                              <MenuItem value="NONE">
+                                <em>Sin cuentas bancarias registradas para este contacto</em>
+                              </MenuItem>
+                            ) : (
+                              bankAccounts.map(acc => (
+                                <MenuItem key={acc.id} value={acc.id}>
+                                  {acc.banco} — {acc.numero_cuenta} ({acc.moneda}) {acc.is_pago_movil && acc.telefono_pago_movil ? `• PM: ${acc.telefono_pago_movil}` : ''}
+                                </MenuItem>
+                              ))
+                            )}
+                          </CustomTextField>
+                          <Typography variant="caption" className="text-[#6B7280] block mt-1 text-[11px]">
+                            Cuenta receptora o emisora para registrar transferencias bancarias y pago móvil en conciliaciones.
+                          </Typography>
+                        </Grid>
+
+                        {/* Vincular cuenta ya existente en el sistema */}
+                        <Grid size={{ xs: 12, md: 5 }}>
+                          <Typography variant="caption" className="font-semibold text-[#1E1B2E] block mb-1">
+                            Vincular Cuenta ya Existente en el Sistema
+                          </Typography>
+                          <CustomTextField
+                            select
+                            fullWidth
+                            size="small"
+                            defaultValue="NONE"
+                            onChange={e => {
+                              if (e.target.value && e.target.value !== 'NONE') {
+                                handleLinkExistingAccount(e.target.value);
+                              }
+                            }}
+                          >
+                            <MenuItem value="NONE">
+                              <em>Seleccionar cuenta existente para asignar...</em>
+                            </MenuItem>
+                            {allSystemBankAccounts
+                              .filter(a => a.contacto_id !== id && !a.is_empresa)
+                              .map(acc => (
+                                <MenuItem key={acc.id} value={acc.id}>
+                                  {acc.banco} ({acc.numero_cuenta}) — {acc.titular}
+                                </MenuItem>
+                              ))}
+                          </CustomTextField>
+                          <Typography variant="caption" className="text-[#6B7280] block mt-1 text-[11px]">
+                            Asocia al contacto una cuenta bancaria ya registrada previamente en el directorio.
+                          </Typography>
+                        </Grid>
+                      </Grid>
+
+                      {/* Tarjetas de Cuentas del Contacto */}
+                      {bankAccounts.length > 0 ? (
+                        <div className="pt-2 border-t border-[#EAE8F2] space-y-2">
+                          <div className="flex items-center justify-between">
+                            <Typography variant="caption" className="text-[#64748B] font-bold text-[11px]">
+                              Cuentas asociadas en nuestro modelo bancario ({bankAccounts.length}):
+                            </Typography>
+                            <Button
+                              size="small"
+                              variant="text"
+                              onClick={() => setActiveTab('bancos')}
+                              sx={{ textTransform: 'none', fontSize: '0.75rem', p: 0, color: '#6C5CE7', minWidth: 0, fontWeight: 600 }}
+                            >
+                              Ver todas en pestaña de bancos →
+                            </Button>
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            {bankAccounts.map(acc => (
+                              <div
+                                key={acc.id}
+                                className="p-3 rounded-xl border border-[#E2E8F0] bg-[#FFFFFF] flex items-center justify-between gap-2 shadow-xs"
+                              >
+                                <div className="truncate">
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="font-bold text-xs text-[#1E1B2E]">{acc.banco}</span>
+                                    <Chip
+                                      label={acc.moneda}
+                                      size="small"
+                                      sx={{
+                                        height: 18,
+                                        fontSize: '0.6rem',
+                                        fontWeight: 800,
+                                        backgroundColor: acc.moneda === 'USD' ? 'rgba(108, 92, 231, 0.12)' : 'rgba(16, 185, 129, 0.12)',
+                                        color: acc.moneda === 'USD' ? '#6C5CE7' : '#10B981'
+                                      }}
+                                    />
+                                    {acc.is_predeterminada && (
+                                      <Chip
+                                        label="Predeterminada"
+                                        size="small"
+                                        sx={{
+                                          height: 18,
+                                          fontSize: '0.6rem',
+                                          fontWeight: 700,
+                                          backgroundColor: 'rgba(16, 185, 129, 0.12)',
+                                          color: '#10B981'
+                                        }}
+                                      />
+                                    )}
+                                  </div>
+                                  <span className="font-mono text-[11px] text-[#475569] font-semibold block truncate mt-0.5">
+                                    {acc.numero_cuenta}
+                                  </span>
+                                  <span className="text-[10px] text-[#64748B] block truncate">
+                                    {acc.titular} ({acc.identificacion_titular})
+                                    {acc.is_pago_movil && acc.telefono_pago_movil ? ` · PM: ${acc.telefono_pago_movil}` : ''}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-1 shrink-0">
+                                  {!acc.is_predeterminada && (
+                                    <Tooltip title="Establecer como cuenta principal">
+                                      <IconButton size="small" onClick={() => handleSetDefaultBankAccount(acc)} sx={{ color: '#F59E0B', p: 0.5 }}>
+                                        <i className="tabler-star text-sm" />
+                                      </IconButton>
+                                    </Tooltip>
+                                  )}
+                                  <Tooltip title="Editar Cuenta">
+                                    <IconButton size="small" onClick={() => handleOpenEditBankAccount(acc)} sx={{ color: '#6C5CE7', p: 0.5 }}>
+                                      <i className="tabler-edit text-sm" />
+                                    </IconButton>
+                                  </Tooltip>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="pt-2 border-t border-[#EAE8F2] flex items-center justify-between">
+                          <Typography variant="caption" className="text-[#94A3B8]">
+                            Este contacto no posee cuentas bancarias en el modelo. Puedes crearlas o vincular una existente arriba.
+                          </Typography>
+                          <Button
+                            variant="contained"
+                            size="small"
+                            startIcon={<i className="tabler-plus" />}
+                            onClick={handleOpenNewBankAccount}
+                            sx={{
+                              borderRadius: '9999px',
+                              backgroundColor: '#6C5CE7',
+                              fontWeight: 700,
+                              textTransform: 'none',
+                              px: 3,
+                              '&:hover': { backgroundColor: '#5b4bc4' }
+                            }}
+                          >
+                            Crear Cuenta Ahora
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <Divider />
+
+                  {/* Sección Condiciones Comerciales */}
+                  <div>
+                    <div className="flex items-center gap-2 mb-3">
+                      <i className="tabler-calendar-time text-lg text-[#6C5CE7]" />
+                      <Typography variant="subtitle2" className="font-bold text-[#1E1B2E]">
+                        Términos de Crédito y Cobranza
+                      </Typography>
+                    </div>
+
+                    <Grid container spacing={3}>
+                      <Grid size={{ xs: 12, sm: 6 }}>
+                        <CustomTextField
+                          select
+                          fullWidth
+                          label="Plazo de Pago / Días de Crédito"
+                          value={plazoPagoDias}
+                          onChange={e => setPlazoPagoDias(Number(e.target.value))}
+                        >
+                          <MenuItem value={0}>De Contado / Pago Inmediato (0 días)</MenuItem>
+                          <MenuItem value={7}>Crédito a 7 días (Semanal)</MenuItem>
+                          <MenuItem value={15}>Crédito a 15 días (Quincenal)</MenuItem>
+                          <MenuItem value={30}>Crédito a 30 días (Mensual)</MenuItem>
+                          <MenuItem value={45}>Crédito a 45 días</MenuItem>
+                          <MenuItem value={60}>Crédito a 60 días (Bimestral)</MenuItem>
+                          <MenuItem value={90}>Crédito a 90 días</MenuItem>
+                        </CustomTextField>
+                        <Typography variant="caption" className="text-[#6B7280] block mt-1 text-[11px]">
+                          Determina la fecha de vencimiento automática al emitir o recibir facturas con este tercero.
+                        </Typography>
+                      </Grid>
+
+                      <Grid size={{ xs: 12, sm: 6 }}>
+                        <CustomTextField
+                          fullWidth
+                          type="number"
+                          label="Límite de Crédito ($ USD)"
+                          placeholder="0.00"
+                          value={limiteCreditoUsd}
+                          onChange={e => setLimiteCreditoUsd(Math.max(0, Number(e.target.value)))}
+                          slotProps={{
+                            input: {
+                              startAdornment: <span className="text-[#6B7280] font-semibold mr-1.5 text-sm">$</span>
+                            }
+                          }}
+                        />
+                        <Typography variant="caption" className="text-[#6B7280] block mt-1 text-[11px]">
+                          Límite de exposición crediticia permitida. Ingresa 0 para dejarlo sin límite o sin evaluación de riesgo.
+                        </Typography>
+                      </Grid>
+                    </Grid>
+                  </div>
+
+                  <Divider />
+
+                  {/* Sección Régimen Fiscal SENIAT */}
+                  <div>
+                    <div className="flex items-center gap-2 mb-3">
+                      <i className="tabler-receipt-tax text-lg text-[#6C5CE7]" />
+                      <Typography variant="subtitle2" className="font-bold text-[#1E1B2E]">
+                        Régimen Fiscal y Retenciones SENIAT (Venezuela)
+                      </Typography>
+                    </div>
+
+                    <div className="p-4 rounded-xl border border-[#E6E4F0] bg-[#FAF9FD] space-y-4">
+                      <div className="flex items-center justify-between flex-wrap gap-3">
+                        <div>
+                          <Typography variant="body2" className="font-bold text-[#1E1B2E]">
+                            Contribuyente Especial (Sujeto Pasivo Especial)
+                          </Typography>
+                          <Typography variant="caption" className="text-[#6B7280] block">
+                            Marcar si la entidad es formalmente agente de retención conforme a designación del SENIAT.
+                          </Typography>
+                        </div>
+                        <Switch
+                          checked={esContribuyenteEspecial}
+                          onChange={e => setEsContribuyenteEspecial(e.target.checked)}
+                          sx={{
+                            '& .MuiSwitch-switchBase.Mui-checked': {
+                              color: '#6C5CE7'
+                            },
+                            '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                              backgroundColor: '#6C5CE7'
+                            }
+                          }}
+                        />
+                      </div>
+
+                      <Grid container spacing={3} className="pt-2">
+                        <Grid size={{ xs: 12, sm: 6 }}>
+                          <CustomTextField
+                            select
+                            fullWidth
+                            label="Porcentaje de Retención de IVA (% Retención)"
+                            value={porcentajeRetencionIva}
+                            onChange={e => setPorcentajeRetencionIva(Number(e.target.value))}
+                          >
+                            <MenuItem value={75}>75% - Retención General Estándar SENIAT (SNAT/2015/0049)</MenuItem>
+                            <MenuItem value={100}>100% - Retención Total (Sin RIF actualizado / Casos especiales)</MenuItem>
+                            <MenuItem value={0}>0% - No Retiene IVA (Contribuyente Ordinario o No Sujeto)</MenuItem>
+                          </CustomTextField>
+                          <Typography variant="caption" className="text-[#6B7280] block mt-1 text-[11px]">
+                            Porcentaje aplicado al Débito Fiscal IVA en comprobantes de retención.
+                          </Typography>
+                        </Grid>
+                      </Grid>
+                    </div>
+                  </div>
+
+                  {/* Banner de automatización */}
+                  <div className="flex items-center gap-3 p-3.5 rounded-xl bg-[#EFF6FF] border border-[#BFDBFE] text-[#1E40AF]">
+                    <i className="tabler-info-circle text-xl shrink-0 text-[#2563EB]" />
+                    <Typography variant="caption" className="text-[#1E40AF] leading-relaxed">
+                      <strong>Automatización Contable:</strong> Al seleccionar a este contacto en la emisión de Facturas de Cliente o registro de Facturas de Proveedor, el sistema cargará automáticamente estas cuentas contables y calculará las retenciones fiscales de acuerdo a esta configuración.
+                    </Typography>
+                  </div>
+                </div>
+              )}
+
+              {/* PESTAÑA 4: CUENTAS BANCARIAS */}
+              {activeTab === 'bancos' && (
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between flex-wrap gap-3 pb-2 border-b border-[#F1F5F9]">
+                    <div>
+                      <Typography variant="subtitle1" className="font-bold text-[#1E1B2E] flex items-center gap-2">
+                        <i className="tabler-building-bank text-xl text-[#6C5CE7]" />
+                        Cuentas Bancarias y Métodos de Cobro/Pago
+                      </Typography>
+                      <Typography variant="caption" className="text-[#6B7280]">
+                        Cuentas asociadas a este contacto para transferencias bancarias, pago móvil y conciliación de facturas
+                      </Typography>
+                    </div>
+
+                    <Button
+                      variant="contained"
+                      startIcon={<i className="tabler-plus" />}
+                      onClick={handleOpenNewBankAccount}
+                      sx={{
+                        borderRadius: '9999px',
+                        backgroundColor: '#6C5CE7',
+                        color: '#FFFFFF',
+                        fontWeight: 700,
+                        textTransform: 'none',
+                        px: 3,
+                        boxShadow: '0 4px 12px rgba(108, 92, 231, 0.25)',
+                        '&:hover': { backgroundColor: '#5b4bc4' }
+                      }}
+                    >
+                      Nueva Cuenta
+                    </Button>
+                  </div>
+
+                  {bankAccounts.length === 0 ? (
+                    <div className="p-8 text-center rounded-2xl border-2 border-dashed border-[#E2E8F0] bg-[#FAF9FD]">
+                      <i className="tabler-building-bank text-4xl text-[#CBD5E1] mb-2 block mx-auto" />
+                      <Typography variant="subtitle2" className="font-bold text-[#475569]">
+                        No hay cuentas bancarias registradas
+                      </Typography>
+                      <Typography variant="caption" className="text-[#94A3B8] block mb-4">
+                        Agrega las cuentas de este contacto para utilizarlas en órdenes de pago y cobranzas.
+                      </Typography>
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        startIcon={<i className="tabler-plus" />}
+                        onClick={handleOpenNewBankAccount}
+                        sx={{
+                          borderRadius: '9999px',
+                          borderColor: '#6C5CE7',
+                          color: '#6C5CE7',
+                          textTransform: 'none',
+                          fontWeight: 600
+                        }}
+                      >
+                        Agregar Primera Cuenta
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {bankAccounts.map(acc => (
+                        <div
+                          key={acc.id}
+                          className="p-4 rounded-2xl border border-[#E6E4F0] bg-[#FFFFFF] hover:border-[#6C5CE7] transition-all flex items-center justify-between flex-wrap gap-3 shadow-xs"
+                        >
+                          <div className="flex items-center gap-3.5">
+                            <div className="w-11 h-11 rounded-xl bg-[rgba(108,92,231,0.1)] text-[#6C5CE7] flex items-center justify-center text-xl shrink-0">
+                              <i className="tabler-building-bank" />
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <Typography variant="subtitle2" className="font-bold text-[#1E1B2E]">
+                                  {acc.banco}
+                                </Typography>
+                                <Chip
+                                  label={acc.moneda}
+                                  size="small"
+                                  sx={{
+                                    height: 20,
+                                    fontSize: '0.65rem',
+                                    fontWeight: 800,
+                                    backgroundColor: acc.moneda === 'USD' ? 'rgba(108, 92, 231, 0.12)' : 'rgba(16, 185, 129, 0.12)',
+                                    color: acc.moneda === 'USD' ? '#6C5CE7' : '#10B981'
+                                  }}
+                                />
+                                {acc.is_predeterminada && (
+                                  <Chip
+                                    label="Predeterminada"
+                                    size="small"
+                                    sx={{
+                                      height: 20,
+                                      fontSize: '0.65rem',
+                                      fontWeight: 700,
+                                      backgroundColor: 'rgba(16, 185, 129, 0.12)',
+                                      color: '#10B981'
+                                    }}
+                                  />
+                                )}
+                              </div>
+                              <Typography variant="body2" className="font-mono text-[#475569] text-xs mt-0.5 font-semibold">
+                                {acc.numero_cuenta}
+                              </Typography>
+                              <div className="flex items-center gap-2 mt-1 text-[11px] text-[#64748B]">
+                                <span>Titular: <strong>{acc.titular}</strong> ({acc.identificacion_titular})</span>
+                                <span>•</span>
+                                <span>Tipo: <span className="capitalize">{acc.tipo_cuenta.toLowerCase()}</span></span>
+                                {acc.is_pago_movil && acc.telefono_pago_movil && (
+                                  <>
+                                    <span>•</span>
+                                    <span className="text-[#10B981] font-bold">Pago Móvil: {acc.telefono_pago_movil}</span>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-1">
+                            {!acc.is_predeterminada && (
+                              <Tooltip title="Establecer como cuenta principal">
+                                <IconButton size="small" onClick={() => handleSetDefaultBankAccount(acc)} sx={{ color: '#F59E0B' }}>
+                                  <i className="tabler-star text-base" />
+                                </IconButton>
+                              </Tooltip>
+                            )}
+                            <Tooltip title="Editar Cuenta">
+                              <IconButton size="small" onClick={() => handleOpenEditBankAccount(acc)} sx={{ color: '#6C5CE7' }}>
+                                <i className="tabler-edit text-base" />
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title="Eliminar Cuenta">
+                              <IconButton size="small" onClick={() => handleDeleteBankAccount(acc.id, acc.banco)} sx={{ color: '#EF4444' }}>
+                                <i className="tabler-trash text-base" />
+                              </IconButton>
+                            </Tooltip>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
         </Grid>
       </Grid>
-
-      {/* Modal Agregar/Editar Cuenta Bancaria */}
-      <Dialog
-        open={bankModalOpen}
-        onClose={() => setBankModalOpen(false)}
-        maxWidth="sm"
-        fullWidth
-        PaperProps={{ sx: { borderRadius: '20px', p: 1 } }}
-      >
-        <DialogTitle className="font-bold text-[#1E1B2E] flex items-center gap-2">
-          <i className="tabler-building-bank text-xl text-[#6C5CE7]" />
-          {editingBankId ? 'Editar Cuenta Bancaria' : 'Agregar Cuenta Bancaria'}
-        </DialogTitle>
-        <DialogContent className="space-y-4 pt-2">
-          <CustomTextField
-            select
-            fullWidth
-            label="Banco *"
-            value={bankBanco}
-            onChange={e => setBankBanco(e.target.value)}
-          >
-            {venezuelaBanks.map(b => (
-              <MenuItem key={b} value={b}>
-                {b}
-              </MenuItem>
-            ))}
-          </CustomTextField>
-
-          <Grid container spacing={2}>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <CustomTextField
-                select
-                fullWidth
-                label="Tipo de Instrumento *"
-                value={bankTipo}
-                onChange={e => setBankTipo(e.target.value as BankAccountType)}
-              >
-                {bankAccountTypes.map(t => (
-                  <MenuItem key={t.value} value={t.value}>
-                    {t.label}
-                  </MenuItem>
-                ))}
-              </CustomTextField>
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <CustomTextField
-                select
-                fullWidth
-                label="Moneda *"
-                value={bankMoneda}
-                onChange={e => setBankMoneda(e.target.value as BankCurrency)}
-              >
-                {bankCurrencies.map(c => (
-                  <MenuItem key={c.value} value={c.value}>
-                    {c.label}
-                  </MenuItem>
-                ))}
-              </CustomTextField>
-            </Grid>
-          </Grid>
-
-          <CustomTextField
-            fullWidth
-            label="Número de Cuenta (20 Dígitos) / Identificador *"
-            placeholder="0134-XXXX-XX-XXXXXXXXXX o correo Zelle"
-            value={bankNumero}
-            onChange={e => setBankNumero(e.target.value)}
-          />
-
-          <CustomTextField
-            fullWidth
-            label="Teléfono Pago Móvil (Opcional)"
-            placeholder="04141234567"
-            value={bankTelefonoPagoMovil}
-            onChange={e => setBankTelefonoPagoMovil(e.target.value)}
-          />
-
-          <Grid container spacing={2}>
-            <Grid size={{ xs: 12, sm: 7 }}>
-              <CustomTextField
-                fullWidth
-                label="Titular de la Cuenta *"
-                placeholder="Nombre o Razón Social"
-                value={bankTitular}
-                onChange={e => setBankTitular(e.target.value)}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 5 }}>
-              <CustomTextField
-                fullWidth
-                label="Cédula / RIF Titular"
-                placeholder="J-12345678-0 o V-12345678"
-                value={bankIdentificacion}
-                onChange={e => setBankIdentificacion(e.target.value)}
-              />
-            </Grid>
-          </Grid>
-
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={bankPredeterminada}
-                onChange={e => setBankPredeterminada(e.target.checked)}
-                sx={{ color: '#6C5CE7', '&.Mui-checked': { color: '#6C5CE7' } }}
-              />
-            }
-            label={<span className="text-sm font-medium text-[#1E1B2E]">Establecer como cuenta principal predeterminada</span>}
-          />
-        </DialogContent>
-        <DialogActions className="p-4">
-          <Button onClick={() => setBankModalOpen(false)} sx={{ color: '#6B7280' }}>
-            Cancelar
-          </Button>
-          <Button
-            variant="contained"
-            onClick={handleSaveBank}
-            sx={{
-              borderRadius: '9999px',
-              backgroundColor: '#6C5CE7',
-              px: 3,
-              '&:hover': { backgroundColor: '#5A4AD1' }
-            }}
-          >
-            Guardar Cuenta
-          </Button>
-        </DialogActions>
-      </Dialog>
 
       {/* Modal Agregar / Editar Persona Referente */}
       <Dialog
@@ -1827,6 +2239,17 @@ export const ContactDetailView: React.FC<Props> = ({ id }) => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Modal Cuenta Bancaria */}
+      <BankAccountModal
+        open={bankModalOpen}
+        onClose={() => setBankModalOpen(false)}
+        onSuccess={handleBankAccountSaved}
+        initialAccount={editingBankAccount}
+        lockedContactId={contact?.id}
+        lockedContactName={contact?.nombre_razon_social}
+        lockedContactRif={contact?.identificacion}
+      />
 
       {/* Feedback Toast */}
       <Snackbar

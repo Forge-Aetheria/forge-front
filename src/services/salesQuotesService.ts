@@ -17,6 +17,9 @@ import {
   mockClientsLookup,
   mockProductsLookup
 } from '@/data/sales/quotes/mockQuotesData';
+import { createWarehouseOperationOrder } from '@/services/inventory/operationOrdersService';
+
+const STORAGE_KEY_QUOTES = 'forge_sales_quotes';
 
 class SalesQuotesService {
   private quotes: Quote[] = [...initialMockQuotes];
@@ -25,6 +28,34 @@ class SalesQuotesService {
   private bcvRate: BcvRate = { ...initialMockBcvRate };
   private quoteCounter = 43;
   private orderCounter = 16;
+
+  constructor() {
+    this.hydrateFromStorage();
+  }
+
+  private hydrateFromStorage(): void {
+    if (typeof window === 'undefined') return;
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY_QUOTES);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          this.quotes = parsed;
+        }
+      }
+    } catch {
+      // Fallback a initialMockQuotes
+    }
+  }
+
+  private persistToStorage(): void {
+    if (typeof window === 'undefined') return;
+    try {
+      localStorage.setItem(STORAGE_KEY_QUOTES, JSON.stringify(this.quotes));
+    } catch {
+      // Ignore quota errors
+    }
+  }
 
   // Feature Flags
   public getFeatureFlags(): SalesFeatureFlags {
@@ -289,6 +320,7 @@ class SalesQuotesService {
     };
 
     this.quotes.unshift(newQuote);
+    this.persistToStorage();
     return { ...newQuote };
   }
 
@@ -386,6 +418,7 @@ class SalesQuotesService {
     };
 
     this.quotes[idx] = updated;
+    this.persistToStorage();
     return { ...updated };
   }
 
@@ -415,6 +448,7 @@ class SalesQuotesService {
     };
 
     this.quotes[idx] = updated;
+    this.persistToStorage();
     return { ...updated };
   }
 
@@ -456,6 +490,7 @@ class SalesQuotesService {
     };
 
     this.quotes[idx] = updated;
+    this.persistToStorage();
     return { ...updated };
   }
 
@@ -478,6 +513,7 @@ class SalesQuotesService {
     };
 
     this.quotes[idx] = updated;
+    this.persistToStorage();
     return { ...updated };
   }
 
@@ -534,6 +570,7 @@ class SalesQuotesService {
       correlativo_orden: correlativoOrden,
       updated_at: new Date().toISOString()
     };
+    this.persistToStorage();
 
     return {
       success: true,
@@ -545,6 +582,123 @@ class SalesQuotesService {
       message: `Orden de Venta ${correlativoOrden} generada exitosamente con reserva de inventario.`,
       created_at: new Date().toISOString()
     };
+  }
+
+  // Crear Orden de Despacho / Entrega vinculada en Almacén (SPEC-009)
+  public async createDeliveryForQuote(quoteId: string): Promise<{ success: boolean; codigo: string; operationId: string; message: string }> {
+    await new Promise(r => setTimeout(r, 300));
+    const idx = this.quotes.findIndex(q => q.id === quoteId);
+    if (idx === -1) throw new Error('Cotización no encontrada.');
+
+    const q = this.quotes[idx];
+    if (q.estado !== 'APPROVED' && !q.orden_venta_id) {
+      throw new Error('Solo se pueden generar entregas para cotizaciones aprobadas o con orden de venta.');
+    }
+
+    const storableLines = q.items.filter(it => it.is_physical_stock);
+    if (storableLines.length === 0) {
+      throw new Error('Esta cotización no contiene artículos físicos o inventariables para despachar.');
+    }
+
+    // Crear la orden de entrega en almacén
+    const opLines = storableLines.map(line => ({
+      producto_id: line.producto_id,
+      producto_nombre: line.producto_nombre,
+      variante_id: `var-${line.producto_id}`,
+      variante_sku: line.producto_sku,
+      uom_code: 'un',
+      cantidad_demanda: line.cantidad,
+      cantidad_procesada: line.cantidad,
+      costo_unitario_usd: line.precio_unitario
+    }));
+
+    const docOrigen = q.correlativo_orden || q.correlativo;
+
+    const opOrder = await createWarehouseOperationOrder({
+      tipo: 'DELIVERY',
+      tercero_nombre: q.cliente.nombre_razon_social,
+      documento_origen: docOrigen,
+      almacen_origen_nombre: 'Almacén Central',
+      almacen_destino_nombre: `Cliente: ${q.cliente.nombre_razon_social}`,
+      fecha_programada: new Date().toISOString().slice(0, 10),
+      notas: `Despacho generado desde venta ${docOrigen}`,
+      estado: 'READY',
+      lineas: opLines
+    });
+
+    // Guardar vinculación en la cotización
+    this.quotes[idx] = {
+      ...q,
+      almacen_operacion_id: opOrder.id,
+      almacen_operacion_codigo: opOrder.codigo,
+      updated_at: new Date().toISOString()
+    };
+    this.persistToStorage();
+
+    return {
+      success: true,
+      codigo: opOrder.codigo,
+      operationId: opOrder.id,
+      message: `Orden de Despacho ${opOrder.codigo} generada exitosamente en Almacén.`
+    };
+  }
+
+  // Registrar despacho efectivo ejecutado por almacén (actualiza cantidad_entregada)
+  public recordDeliveryOperation(originRef: string, operationCode: string, lines: { producto_id: string; cantidad: number }[]): void {
+    this.hydrateFromStorage();
+    const idx = this.quotes.findIndex(q => q.correlativo === originRef || q.correlativo_orden === originRef || q.id === originRef);
+    if (idx === -1) return;
+
+    const q = this.quotes[idx];
+    const updatedItems = q.items.map(item => {
+      const match = lines.find(l => l.producto_id === item.producto_id);
+      if (match) {
+        return {
+          ...item,
+          cantidad_entregada: (item.cantidad_entregada || 0) + match.cantidad
+        };
+      }
+      return item;
+    });
+
+    this.quotes[idx] = {
+      ...q,
+      almacen_operacion_codigo: operationCode,
+      items: updatedItems,
+      updated_at: new Date().toISOString()
+    };
+    this.persistToStorage();
+  }
+
+  // Registrar factura emitida en contabilidad (actualiza cantidad_facturada y enlace)
+  public recordInvoiceLink(originRef: string, invoiceId: string, invoiceNumber: string, billedLines?: { producto_id: string; cantidad: number }[]): void {
+    this.hydrateFromStorage();
+    const idx = this.quotes.findIndex(q => q.correlativo === originRef || q.correlativo_orden === originRef || q.id === originRef);
+    if (idx === -1) return;
+
+    const q = this.quotes[idx];
+    let updatedItems = q.items;
+    if (billedLines && billedLines.length > 0) {
+      updatedItems = q.items.map(item => {
+        const match = billedLines.find(l => l.producto_id === item.producto_id);
+        if (match) {
+          return {
+            ...item,
+            cantidad_facturada: (item.cantidad_facturada || 0) + match.cantidad
+          };
+        }
+        return item;
+      });
+    }
+
+    this.quotes[idx] = {
+      ...q,
+      factura_id: invoiceId,
+      factura_numero: invoiceNumber,
+      items: updatedItems,
+      updated_at: new Date().toISOString()
+    };
+    this.persistToStorage();
   }
 }
 

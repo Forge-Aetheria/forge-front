@@ -32,6 +32,8 @@ export const mockProductTemplates: ProductTemplate[] = [
     minStock: 15,
     vatRate: '16',
     applyISLR: false,
+    invoicingPolicy: 'DELIVERED',
+    purchaseControlPolicy: 'RECEIVED',
     createdAt: '2026-09-10T09:00:00Z',
     updatedAt: '2026-10-14T15:30:00Z',
     attributes: [
@@ -312,6 +314,8 @@ export const mockProductTemplates: ProductTemplate[] = [
     targetMargin: 60.0,
     vatRate: '16',
     applyISLR: true,
+    invoicingPolicy: 'ORDERED',
+    purchaseControlPolicy: 'ORDERED',
     createdAt: '2026-09-25T13:00:00Z',
     updatedAt: '2026-10-14T12:00:00Z',
     attributes: [],
