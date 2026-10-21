@@ -12,7 +12,7 @@ import MenuItem from '@mui/material/MenuItem'
 import Switch from '@mui/material/Switch'
 import FormControlLabel from '@mui/material/FormControlLabel'
 import Alert from '@mui/material/Alert'
-import Chip from '@mui/material/Chip'
+import CustomChip from '@core/components/mui/Chip'
 import CircularProgress from '@mui/material/CircularProgress'
 import Grid from '@mui/material/Grid'
 import Divider from '@mui/material/Divider'
@@ -337,7 +337,7 @@ export const AccountFormView: React.FC<Props> = ({ account, onBack, onSaved }) =
       {/* 1. BARRA SUPERIOR DE ACCIONES Y RETORNO */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2.5 }}>
-          <Tooltip title='Volver al plan de cuentas'>
+          <Tooltip title='Volver'>
             <IconButton
               onClick={onBack}
               sx={{
@@ -360,89 +360,61 @@ export const AccountFormView: React.FC<Props> = ({ account, onBack, onSaved }) =
               <Typography variant='h5' sx={{ fontWeight: 800, color: '#1E293B' }}>
                 {isEditing ? `Editar Cuenta: ${account?.codigo} - ${account?.nombre}` : 'Nueva Cuenta Contable'}
               </Typography>
-              <Chip
+              <CustomChip
                 label={selectedSubtype.categoria}
                 size='small'
-                sx={{
-                  fontWeight: 700,
-                  fontSize: '0.75rem',
-                  backgroundColor: 'rgba(108, 92, 231, 0.12)',
-                  color: '#6C5CE7'
-                }}
+                variant='tonal'
+                color='primary'
               />
-              {activo ? (
-                <Chip
-                  label='Cuenta Activa'
-                  size='small'
-                  sx={{
-                    fontWeight: 700,
-                    fontSize: '0.75rem',
-                    backgroundColor: 'rgba(16, 185, 129, 0.12)',
-                    color: '#10B981'
-                  }}
-                />
-              ) : (
-                <Chip
-                  label='Inactiva'
-                  size='small'
-                  sx={{
-                    fontWeight: 700,
-                    fontSize: '0.75rem',
-                    backgroundColor: 'rgba(239, 68, 68, 0.12)',
-                    color: '#EF4444'
-                  }}
-                />
-              )}
+              <CustomChip
+                label={activo ? 'Activa' : 'Inactiva'}
+                size='small'
+                variant='tonal'
+                color={activo ? 'success' : 'error'}
+              />
             </Box>
-            <Typography variant='caption' sx={{ color: '#64748B' }}>
-              Parametrización en el Plan Único de Cuentas (PUC) de Venezuela / Bimonetario
-            </Typography>
           </Box>
         </Box>
 
-        {/* Botones de Cabecera (Minimalista) */}
+        {/* Botones de Cabecera */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
           <Button
-            variant='outlined'
+            variant='tonal'
+            color='secondary'
+            size='small'
             onClick={onBack}
             disabled={submitting}
             sx={{
               borderRadius: '9999px',
-              borderColor: '#CBD5E1',
-              color: '#64748B',
               fontWeight: 600,
-              textTransform: 'none',
-              px: 2.5,
-              height: 38
+              textTransform: 'none'
             }}
           >
             Cancelar
           </Button>
 
-          <Tooltip title={isEditing ? 'Guardar Cambios' : 'Crear Cuenta'}>
-            <span>
-              <IconButton
-                onClick={handleSubmit}
-                disabled={submitting}
-                sx={{
-                  width: 38,
-                  height: 38,
-                  borderRadius: '9999px',
-                  backgroundColor: '#6C5CE7',
-                  color: '#FFFFFF',
-                  boxShadow: '0 4px 12px rgba(108, 92, 231, 0.3)',
-                  '&:hover': { backgroundColor: '#5B4CDB' },
-                  '&:disabled': { backgroundColor: '#E2E8F0', color: '#94A3B8' }
-                }}
-              >
-                {submitting ? (
-                  <CircularProgress size={18} color='inherit' />
-                ) : (
-                  <i className='tabler-device-floppy text-lg' />
-                )}
-              </IconButton>
-            </span>
-          </Tooltip>
+          <Button
+            variant='contained'
+            color='primary'
+            size='small'
+            onClick={handleSubmit}
+            disabled={submitting}
+            startIcon={
+              submitting ? (
+                <CircularProgress size={16} color='inherit' />
+              ) : (
+                <i className='tabler-device-floppy text-base' />
+              )
+            }
+            sx={{
+              borderRadius: '9999px',
+              fontWeight: 600,
+              textTransform: 'none',
+              px: 3
+            }}
+          >
+            Guardar
+          </Button>
         </Box>
       </Box>
 
@@ -602,16 +574,7 @@ export const AccountFormView: React.FC<Props> = ({ account, onBack, onSaved }) =
               <Typography variant='caption' sx={{ fontWeight: 700, color: '#475569' }}>
                 Código Jerárquico *
               </Typography>
-              <Chip
-                label={jerarquiaNivel}
-                size='small'
-                sx={{
-                  fontWeight: 600,
-                  fontSize: '0.7rem',
-                  backgroundColor: '#F1F5F9',
-                  color: '#475569'
-                }}
-              />
+              <CustomChip label={jerarquiaNivel} size='small' variant='tonal' color='secondary' />
             </Box>
             <TextField
               fullWidth
@@ -700,19 +663,7 @@ export const AccountFormView: React.FC<Props> = ({ account, onBack, onSaved }) =
                     : 'Cuentas nominales y transitorias del ejercicio fiscal'}
                 </Typography>
               </Box>
-              <Chip
-                label={selectedSubtype.destinoReporte === 'BALANCE_GENERAL' ? 'Balance' : 'PyG'}
-                size='small'
-                sx={{
-                  fontWeight: 700,
-                  fontSize: '0.72rem',
-                  backgroundColor:
-                    selectedSubtype.destinoReporte === 'BALANCE_GENERAL'
-                      ? 'rgba(14, 165, 233, 0.1)'
-                      : 'rgba(245, 158, 11, 0.1)',
-                  color: selectedSubtype.destinoReporte === 'BALANCE_GENERAL' ? '#0284C7' : '#D97706'
-                }}
-              />
+              <CustomChip label={selectedSubtype.destinoReporte === 'BALANCE_GENERAL' ? 'Balance' : 'PyG'} size='small' variant='tonal' color={selectedSubtype.destinoReporte === 'BALANCE_GENERAL' ? 'info' : 'warning'} />
             </Box>
           </Grid>
         </Grid>
@@ -907,36 +858,34 @@ export const AccountFormView: React.FC<Props> = ({ account, onBack, onSaved }) =
       {/* 6. BARRA DE ACCIÓN INFERIOR */}
       <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, pb: 4 }}>
         <Button
-          variant='outlined'
+          variant='tonal'
+          color='secondary'
+          size='small'
           onClick={onBack}
           disabled={submitting}
           sx={{
             borderRadius: '9999px',
-            borderColor: '#CBD5E1',
-            color: '#64748B',
             fontWeight: 600,
-            textTransform: 'none',
-            px: 4
+            textTransform: 'none'
           }}
         >
           Cancelar
         </Button>
         <Button
           variant='contained'
+          color='primary'
+          size='small'
           onClick={handleSubmit}
           disabled={submitting}
-          startIcon={submitting ? <CircularProgress size={16} color='inherit' /> : <i className='tabler-check' />}
+          startIcon={submitting ? <CircularProgress size={16} color='inherit' /> : <i className='tabler-device-floppy text-base' />}
           sx={{
             borderRadius: '9999px',
-            backgroundColor: '#6C5CE7',
-            fontWeight: 700,
+            fontWeight: 600,
             textTransform: 'none',
-            px: 5,
-            boxShadow: '0 4px 14px rgba(108, 92, 231, 0.3)',
-            '&:hover': { backgroundColor: '#5b4bc4' }
+            px: 4
           }}
         >
-          {submitting ? 'Guardando...' : isEditing ? 'Guardar Cambios' : 'Crear Cuenta'}
+          {submitting ? 'Guardando...' : 'Guardar'}
         </Button>
       </Box>
     </Box>

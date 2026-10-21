@@ -282,26 +282,6 @@ const InventoryQuickViewDrawer = ({
       {/* Footer Actions */}
       <div className='pt-4 mt-6 border-t border-[#E6E4F0] flex items-center justify-between gap-2 flex-wrap'>
         <div className='flex items-center gap-2'>
-          {!isService && onAdjustStock && (
-            <Button
-              variant='outlined'
-              size='small'
-              onClick={() => {
-                onClose()
-                onAdjustStock(template)
-              }}
-              sx={{
-                borderRadius: '9999px',
-                textTransform: 'none',
-                borderColor: '#DCD8EC',
-                color: '#6C5CE7',
-                fontWeight: 600
-              }}
-              startIcon={<i className='tabler-adjustments-horizontal text-sm' />}
-            >
-              Ajustar Stock
-            </Button>
-          )}
         </div>
 
         <Button

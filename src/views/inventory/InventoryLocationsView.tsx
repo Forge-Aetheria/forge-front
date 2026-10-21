@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import Card from '@mui/material/Card'
 import CardContent from '@mui/material/CardContent'
 import Typography from '@mui/material/Typography'
@@ -49,7 +50,8 @@ export const InventoryLocationsView = () => {
   const [warehouses, setWarehouses] = useState<Warehouse[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
-  const [selectedWarehouseFilter, setSelectedWarehouseFilter] = useState('ALL')
+  const searchParams = useSearchParams()
+  const [selectedWarehouseFilter, setSelectedWarehouseFilter] = useState(searchParams.get('warehouseId') || 'ALL')
   const [selectedTypeFilter, setSelectedTypeFilter] = useState('ALL')
 
   // Modal de Nueva Ubicación

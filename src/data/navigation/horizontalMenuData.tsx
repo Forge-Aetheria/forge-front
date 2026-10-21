@@ -40,6 +40,11 @@ const horizontalMenuData = (): HorizontalMenuDataType[] => [
             label: 'Ajustes de Stock',
             href: '/inventory/adjustments',
             icon: 'tabler-adjustments-horizontal'
+          },
+          {
+            label: 'Costos en Destino',
+            href: '/inventory/operations/landed-costs',
+            icon: 'tabler-calculator'
           }
         ]
       },
@@ -181,8 +186,29 @@ const horizontalMenuData = (): HorizontalMenuDataType[] => [
       },
       {
         label: 'Reportes Financieros',
-        href: '/accounting/reports',
-        icon: 'tabler-chart-pie'
+        icon: 'tabler-chart-pie',
+        children: [
+          {
+            label: 'Balance General',
+            href: '/accounting/reports/balance-sheet',
+            icon: 'tabler-scale'
+          },
+          {
+            label: 'Estado de Resultados',
+            href: '/accounting/reports/profit-and-loss',
+            icon: 'tabler-report-money'
+          },
+          {
+            label: 'Libro Mayor',
+            href: '/accounting/reports/general-ledger',
+            icon: 'tabler-books'
+          },
+          {
+            label: 'Balance de Comprobación',
+            href: '/accounting/reports/trial-balance',
+            icon: 'tabler-list-check'
+          }
+        ]
       },
       {
         label: 'Configuración',

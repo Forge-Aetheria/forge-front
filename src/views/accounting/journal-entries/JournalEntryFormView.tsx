@@ -9,7 +9,7 @@ import TextField from '@mui/material/TextField'
 import Autocomplete from '@mui/material/Autocomplete'
 import MenuItem from '@mui/material/MenuItem'
 import IconButton from '@mui/material/IconButton'
-import Chip from '@mui/material/Chip'
+import CustomChip from '@core/components/mui/Chip'
 import Table from '@mui/material/Table'
 import TableBody from '@mui/material/TableBody'
 import TableCell from '@mui/material/TableCell'
@@ -299,7 +299,7 @@ export const JournalEntryFormView: React.FC<Props> = ({
       {/* 1. BARRA SUPERIOR DE ACCIONES Y RETORNO */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2.5 }}>
-          <Tooltip title='Volver al libro diario'>
+          <Tooltip title='Volver'>
             <IconButton
               onClick={onBack}
               sx={{
@@ -323,155 +323,115 @@ export const JournalEntryFormView: React.FC<Props> = ({
                 {currentEntry ? `Asiento Contable: ${currentEntry.numeroAsiento}` : 'Nuevo Asiento Contable (Libro Diario)'}
               </Typography>
               {currentEntry && (
-                <Chip
+                <CustomChip
                   label={currentEntry.estado === 'POSTED' ? 'Publicado' : currentEntry.estado === 'DRAFT' ? 'Borrador' : 'Anulado'}
                   size='small'
-                  sx={{
-                    fontWeight: 800,
-                    fontSize: '0.75rem',
-                    backgroundColor:
-                      currentEntry.estado === 'POSTED'
-                        ? 'rgba(16, 185, 129, 0.12)'
-                        : currentEntry.estado === 'DRAFT'
-                          ? 'rgba(245, 158, 11, 0.15)'
-                          : 'rgba(239, 68, 68, 0.12)',
-                    color:
-                      currentEntry.estado === 'POSTED'
-                        ? '#10B981'
-                        : currentEntry.estado === 'DRAFT'
-                          ? '#D97706'
-                          : '#EF4444'
-                  }}
+                  variant='tonal'
+                  color={currentEntry.estado === 'POSTED' ? 'success' : currentEntry.estado === 'DRAFT' ? 'warning' : 'error'}
                 />
               )}
               {currentEntry?.origen && (
-                <Chip
+                <CustomChip
                   label={`Origen: ${currentEntry.origen}`}
                   size='small'
-                  sx={{
-                    fontWeight: 600,
-                    fontSize: '0.72rem',
-                    backgroundColor: '#F1F5F9',
-                    color: '#64748B'
-                  }}
+                  variant='tonal'
+                  color='secondary'
                 />
               )}
             </Box>
-            <Typography variant='caption' sx={{ color: '#64748B' }}>
-              {isReadOnly
-                ? 'Asiento registrado y auditado (Modo Solo Lectura - Inmutable)'
-                : 'Registro de partida doble bimonetaria en tiempo real (Debe = Haber)'}
-            </Typography>
           </Box>
         </Box>
 
         {/* Botones de Cabecera */}
-        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
+        <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center', flexWrap: 'wrap' }}>
           <Button
-            variant='outlined'
+            variant='tonal'
+            color='secondary'
+            size='small'
             onClick={onBack}
             disabled={submitting}
             sx={{
               borderRadius: '9999px',
-              borderColor: '#CBD5E1',
-              color: '#64748B',
               fontWeight: 600,
-              textTransform: 'none',
-              px: 3.5
+              textTransform: 'none'
             }}
           >
-            {isReadOnly ? 'Cerrar' : 'Cancelar'}
+            {isReadOnly ? 'Volver' : 'Cancelar'}
           </Button>
 
           {isReadOnly ? (
             <>
               <Button
                 variant='outlined'
+                color='warning'
+                size='small'
                 onClick={handleResetToDraft}
                 disabled={submitting}
-                startIcon={<i className='tabler-rotate-2' />}
+                startIcon={<i className='tabler-rotate-2 text-base' />}
                 sx={{
                   borderRadius: '9999px',
-                  borderColor: '#D97706',
-                  color: '#D97706',
                   fontWeight: 600,
-                  textTransform: 'none',
-                  px: 3.5,
-                  '&:hover': {
-                    borderColor: '#B45309',
-                    backgroundColor: 'rgba(217, 119, 6, 0.04)'
-                  }
+                  textTransform: 'none'
                 }}
               >
-                Restablecer a Borrador
+                A Borrador
               </Button>
 
               <Button
-                variant='contained'
+                variant='outlined'
+                color='error'
+                size='small'
                 onClick={handleReverseEntry}
                 disabled={submitting}
-                startIcon={submitting ? <CircularProgress size={18} color='inherit' /> : <i className='tabler-rotate-clockwise' />}
+                startIcon={submitting ? <CircularProgress size={16} color='inherit' /> : <i className='tabler-rotate-clockwise text-base' />}
                 sx={{
                   borderRadius: '9999px',
-                  backgroundColor: '#EF4444',
-                  textTransform: 'none',
-                  fontWeight: 700,
-                  px: 4,
-                  boxShadow: '0 4px 14px rgba(239, 68, 68, 0.3)',
-                  '&:hover': { backgroundColor: '#dc2626' }
+                  fontWeight: 600,
+                  textTransform: 'none'
                 }}
               >
-                Revertir Asiento (Crear Contraasiento)
+                Revertir
               </Button>
             </>
           ) : (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-              <Tooltip title='Guardar como Borrador'>
-                <span>
-                  <IconButton
-                    onClick={() => handleSave('DRAFT')}
-                    disabled={submitting}
-                    sx={{
-                      width: 38,
-                      height: 38,
-                      borderRadius: '9999px',
-                      color: '#6B7280',
-                      backgroundColor: '#FFFFFF',
-                      border: '1px solid #E6E4F0',
-                      boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
-                      '&:hover': { color: '#6C5CE7', backgroundColor: '#F0EEF9', borderColor: '#6C5CE7' },
-                      '&:disabled': { backgroundColor: '#F1F5F9', color: '#94A3B8' }
-                    }}
-                  >
-                    {submitting ? (
-                      <CircularProgress size={18} color='inherit' />
-                    ) : (
-                      <i className='tabler-device-floppy text-lg' />
-                    )}
-                  </IconButton>
-                </span>
-              </Tooltip>
+              <Button
+                variant='outlined'
+                color='primary'
+                size='small'
+                onClick={() => handleSave('DRAFT')}
+                disabled={submitting}
+                startIcon={
+                  submitting ? (
+                    <CircularProgress size={16} color='inherit' />
+                  ) : (
+                    <i className='tabler-device-floppy text-base' />
+                  )
+                }
+                sx={{
+                  borderRadius: '9999px',
+                  fontWeight: 600,
+                  textTransform: 'none'
+                }}
+              >
+                Guardar
+              </Button>
 
-              <Tooltip title='Publicar Asiento (Debe = Haber)'>
-                <span>
-                  <IconButton
-                    onClick={() => handleSave('POSTED')}
-                    disabled={!isBalanced || submitting}
-                    sx={{
-                      width: 38,
-                      height: 38,
-                      borderRadius: '9999px',
-                      backgroundColor: '#6C5CE7',
-                      color: '#FFFFFF',
-                      boxShadow: '0 4px 12px rgba(108, 92, 231, 0.3)',
-                      '&:hover': { backgroundColor: '#5B4CDB' },
-                      '&:disabled': { backgroundColor: '#E2E8F0', color: '#94A3B8' }
-                    }}
-                  >
-                    <i className='tabler-check text-lg' />
-                  </IconButton>
-                </span>
-              </Tooltip>
+              <Button
+                variant='contained'
+                color='primary'
+                size='small'
+                onClick={() => handleSave('POSTED')}
+                disabled={!isBalanced || submitting}
+                startIcon={<i className='tabler-check text-base' />}
+                sx={{
+                  borderRadius: '9999px',
+                  fontWeight: 600,
+                  textTransform: 'none'
+                }}
+              >
+                Publicar
+              </Button>
             </Box>
           )}
         </Box>
@@ -740,17 +700,7 @@ export const JournalEntryFormView: React.FC<Props> = ({
                                   {opt.nombre}
                                 </Typography>
                               </Box>
-                              <Chip
-                                label={opt.tipoCuentaNombre || (opt.tipo.startsWith('ASSET') ? 'Activo' : opt.tipo.startsWith('EXPENSE') ? 'Gasto' : opt.tipo.startsWith('INCOME') ? 'Ingreso' : 'Pasivo')}
-                                size='small'
-                                sx={{
-                                  height: 20,
-                                  fontSize: '0.68rem',
-                                  fontWeight: 700,
-                                  backgroundColor: '#F1F5F9',
-                                  color: '#64748B'
-                                }}
-                              />
+                              <CustomChip label={opt.tipoCuentaNombre || (opt.tipo.startsWith('ASSET') ? 'Activo' : opt.tipo.startsWith('EXPENSE') ? 'Gasto' : opt.tipo.startsWith('INCOME') ? 'Ingreso' : 'Pasivo')} size='small' variant='tonal' color='secondary' />
                             </Box>
                           </li>
                         )}

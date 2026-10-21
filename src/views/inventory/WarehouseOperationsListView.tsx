@@ -563,8 +563,15 @@ const WarehouseOperationsListView: React.FC<WarehouseOperationsListViewProps> = 
             component={Link}
             href={`${currentBaseRoute}/create`}
             variant='contained'
-            color='primary'
             startIcon={<i className='tabler-plus text-base' />}
+            sx={{
+              borderRadius: '9999px',
+              backgroundColor: '#6C5CE7',
+              textTransform: 'none',
+              fontWeight: 600,
+              px: 3.5,
+              '&:hover': { backgroundColor: '#5B4CDB' }
+            }}
           >
             Nuevo
           </Button>

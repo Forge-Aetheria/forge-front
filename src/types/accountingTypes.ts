@@ -132,6 +132,8 @@ export interface InvoicePaymentAssociation {
 export interface InvoiceLine {
   id: string
   productoOConcepto: string
+  productoId?: string
+  isLandedCost?: boolean
   cuentaContableId: string  // Cuenta de Ingreso (Ventas) o Costo/Gasto/Activo (Compras)
   cuentaContableNombre?: string
   cantidad: number

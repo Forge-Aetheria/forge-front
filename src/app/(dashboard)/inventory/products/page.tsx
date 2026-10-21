@@ -1,7 +1,7 @@
 import InventoryCatalogView from '@/views/inventory/InventoryCatalogView'
 
 export const metadata = {
-  title: 'Catálogo de Productos | Inventario ERP'
+  title: 'Productos | Forge ERP'
 }
 
 const InventoryProductsPage = () => {

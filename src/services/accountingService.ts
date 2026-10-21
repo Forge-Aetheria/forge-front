@@ -45,6 +45,7 @@ const DEFAULT_ACCOUNTS: Account[] = [
   { id: 'acc-110105', codigo: '1.1.01.05', nombre: 'Fondo Fijo de Caja Chica', tipo: 'ASSET_CURRENT', subtipo: 'BANCO_CAJA', tipoCuentaNombre: 'Banco y Caja', moneda: 'USD', permiteConciliacion: true, saldoUsd: 300.00, saldoVes: 16200.00, activo: true },
   { id: 'acc-110201', codigo: '1.1.02.01', nombre: 'Cuentas por Cobrar Clientes Nacionales (CxC)', tipo: 'ASSET_CURRENT', subtipo: 'CXC', tipoCuentaNombre: 'Cuentas por Cobrar (Clientes)', moneda: 'AMBAS', permiteConciliacion: true, saldoUsd: 14200.00, saldoVes: 769640.00, activo: true },
   { id: 'acc-110301', codigo: '1.1.03.01', nombre: 'Inventario de Mercancía para la Venta', tipo: 'ASSET_CURRENT', subtipo: 'INVENTARIO', tipoCuentaNombre: 'Inventario de Mercancía', moneda: 'USD', permiteConciliacion: false, saldoUsd: 32600.00, saldoVes: 1766920.00, activo: true },
+  { id: 'acc-110302', codigo: '1.1.03.02', nombre: 'Mercancías en Tránsito / Costos en Destino', tipo: 'ASSET_CURRENT', subtipo: 'INVENTARIO', tipoCuentaNombre: 'Inventario de Mercancía', moneda: 'USD', permiteConciliacion: false, saldoUsd: 4200.00, saldoVes: 227640.00, activo: true },
   { id: 'acc-110401', codigo: '1.1.04.01', nombre: 'Crédito Fiscal IVA (Compras)', tipo: 'ASSET_CURRENT', subtipo: 'ACTIVO_CORRIENTE', tipoCuentaNombre: 'Activo Corriente', moneda: 'VES', permiteConciliacion: true, saldoUsd: 850.00, saldoVes: 46070.00, activo: true },
   { id: 'acc-110402', codigo: '1.1.04.02', nombre: 'Retenciones de IVA por Compensar', tipo: 'ASSET_CURRENT', subtipo: 'ACTIVO_CORRIENTE', tipoCuentaNombre: 'Activo Corriente', moneda: 'VES', permiteConciliacion: true, saldoUsd: 420.00, saldoVes: 22764.00, activo: true },
 
@@ -60,7 +61,7 @@ const DEFAULT_ACCOUNTS: Account[] = [
 
   // 3. PATRIMONIO
   { id: 'acc-310101', codigo: '3.1.01.01', nombre: 'Capital Social Suscrito y Pagado', tipo: 'EQUITY', subtipo: 'PATRIMONIO', tipoCuentaNombre: 'Capital y Patrimonio', moneda: 'USD', permiteConciliacion: false, saldoUsd: 35000.00, saldoVes: 1897000.00, activo: true },
-  { id: 'acc-330101', codigo: '3.3.01.01', nombre: 'Resultados Acumulados (Ejercicios Anteriores)', tipo: 'EQUITY', subtipo: 'PATRIMONIO', tipoCuentaNombre: 'Capital y Patrimonio', moneda: 'USD', permiteConciliacion: false, saldoUsd: 18200.00, saldoVes: 986440.00, activo: true },
+  { id: 'acc-330101', codigo: '3.3.01.01', nombre: 'Resultados Acumulados (Ejercicios Anteriores)', tipo: 'EQUITY', subtipo: 'PATRIMONIO', tipoCuentaNombre: 'Capital y Patrimonio', moneda: 'USD', permiteConciliacion: false, saldoUsd: 18395.00, saldoVes: 993330.00, activo: true },
 
   // 4. INGRESOS
   { id: 'acc-410101', codigo: '4.1.01.01', nombre: 'Ingresos por Venta de Mercancías', tipo: 'INCOME', subtipo: 'INGRESO_VENTAS', tipoCuentaNombre: 'Ingresos por Venta', moneda: 'AMBAS', permiteConciliacion: false, saldoUsd: 28400.00, saldoVes: 1539280.00, activo: true },
@@ -336,6 +337,46 @@ const DEFAULT_INVOICES: AccountingInvoice[] = [
     saldoPendienteUsd: 522.00,
     saldoPendienteVes: 28240.20,
     asientoAsociadoId: 'as-004',
+    pagosAsociados: []
+  },
+  {
+    id: 'inv-prov-004',
+    numeroFactura: 'PROV-2026-0120',
+    tipo: 'SUPPLIER',
+    tipoDocumento: 'FACTURA',
+    moneda: 'USD',
+    contactoId: 'ct-prov-04',
+    contactoNombre: 'Transportes & Logística Aduanal Express C.A.',
+    contactoRif: 'J-40112233-4',
+    contactoCuentaContableId: 'acc-210101',
+    contactoCuentaContableNombre: 'Cuentas por Pagar Proveedores Nacionales',
+    fechaEmision: '2026-10-16',
+    fechaVencimiento: '2026-10-31',
+    tasaBcv: 54.20,
+    estado: 'POSTED',
+    diarioId: 'jou-purchases',
+    lineas: [
+      {
+        id: 'lin-05',
+        productoOConcepto: 'Flete Marítimo Internacional y Gastos de Desaduanamiento La Guaira',
+        cuentaContableId: 'acc-110302',
+        cuentaContableNombre: 'Mercancías en Tránsito / Costos en Destino',
+        cantidad: 1,
+        precioUnitarioUsd: 1200.00,
+        tasaImpuestoPct: 16,
+        subtotalUsd: 1200.00,
+        ivaUsd: 192.00,
+        totalUsd: 1392.00,
+        isLandedCost: true
+      }
+    ],
+    totalNetoUsd: 1200.00,
+    totalIvaUsd: 192.00,
+    totalUsd: 1392.00,
+    totalVes: 75446.40,
+    saldoPendienteUsd: 1392.00,
+    saldoPendienteVes: 75446.40,
+    asientoAsociadoId: 'as-005',
     pagosAsociados: []
   }
 ]
@@ -2137,13 +2178,23 @@ export const accountingService = {
     })
   },
 
-  // Reportes Financieros Bimonetarios
+  // Reportes Financieros Bimonetarios (VEN-NIF / Odoo Style)
   getBalanceSheet: async (tasaBcv: number, targetMoves: 'POSTED' | 'ALL' = 'POSTED'): Promise<FinancialReportRow[]> => {
     const accounts = accountingService.getAccountsWithTargetMoves(targetMoves, tasaBcv)
 
+    const ingresosAccs = accounts.filter(a => a.tipo.startsWith('INCOME'))
+    const costosAccs = accounts.filter(a => a.tipo === 'COST_OF_GOODS')
+    const gastosAccs = accounts.filter(a => a.tipo.startsWith('EXPENSE'))
+
+    const totalIngresosUsd = ingresosAccs.reduce((acc, a) => acc + a.saldoUsd, 0)
+    const totalCostosUsd = costosAccs.reduce((acc, a) => acc + a.saldoUsd, 0)
+    const totalGastosUsd = gastosAccs.reduce((acc, a) => acc + a.saldoUsd, 0)
+    const utilidadNetaUsd = Number((totalIngresosUsd - totalCostosUsd - totalGastosUsd).toFixed(2))
+    const utilidadNetaVes = Number((utilidadNetaUsd * tasaBcv).toFixed(2))
+
     const buildGroup = (tipoPrefix: string, titulo: string, nivel: number) => {
       const accs = accounts.filter(a => a.tipo.startsWith(tipoPrefix))
-      const montoUsd = accs.reduce((acc, a) => acc + a.saldoUsd, 0)
+      const montoUsd = Number(accs.reduce((acc, a) => acc + a.saldoUsd, 0).toFixed(2))
       const montoVes = Number((montoUsd * tasaBcv).toFixed(2))
 
       return {
@@ -2166,11 +2217,36 @@ export const accountingService = {
     const activoCorriente = buildGroup('ASSET_CURRENT', 'Activo Corriente (Circulante)', 2)
     const activoNoCorriente = buildGroup('ASSET_NON_CURRENT', 'Activo No Corriente (Fijo)', 2)
     const pasivoCorriente = buildGroup('LIABILITY_CURRENT', 'Pasivo Corriente (A Corto Plazo)', 2)
-    const patrimonio = buildGroup('EQUITY', 'Patrimonio de los Accionistas', 2)
+    const pasivoNoCorriente = buildGroup('LIABILITY_NON_CURRENT', 'Pasivo No Corriente (Largo Plazo)', 2)
+    const patrimonioBase = buildGroup('EQUITY', 'Capital Social y Reservas', 2)
 
-    const totalActivoUsd = activoCorriente.montoUsd + activoNoCorriente.montoUsd
-    const totalPasivoUsd = pasivoCorriente.montoUsd
-    const totalPatrimonioUsd = patrimonio.montoUsd
+    const resultadoEjercicioRow: FinancialReportRow = {
+      codigo: '3.4.01.01',
+      concepto: 'Resultado del Ejercicio Actual (Utilidad / Pérdida del Período)',
+      nivel: 3,
+      esColapsable: false,
+      montoUsd: utilidadNetaUsd,
+      montoVes: utilidadNetaVes
+    }
+
+    const totalPatrimonioUsd = Number((patrimonioBase.montoUsd + utilidadNetaUsd).toFixed(2))
+    const totalPatrimonioVes = Number((totalPatrimonioUsd * tasaBcv).toFixed(2))
+
+    const patrimonio: FinancialReportRow = {
+      concepto: 'Patrimonio de los Accionistas',
+      nivel: 2,
+      esColapsable: true,
+      montoUsd: totalPatrimonioUsd,
+      montoVes: totalPatrimonioVes,
+      subfilas: [...(patrimonioBase.subfilas || []), resultadoEjercicioRow]
+    }
+
+    const totalActivoUsd = Number((activoCorriente.montoUsd + activoNoCorriente.montoUsd).toFixed(2))
+    const totalPasivoUsd = Number((pasivoCorriente.montoUsd + pasivoNoCorriente.montoUsd).toFixed(2))
+
+    const pasivoSubfilas = pasivoNoCorriente.subfilas && pasivoNoCorriente.subfilas.length > 0
+      ? [pasivoCorriente, pasivoNoCorriente]
+      : [pasivoCorriente]
 
     return [
       {
@@ -2187,14 +2263,14 @@ export const accountingService = {
         esColapsable: true,
         montoUsd: totalPasivoUsd,
         montoVes: Number((totalPasivoUsd * tasaBcv).toFixed(2)),
-        subfilas: [pasivoCorriente]
+        subfilas: pasivoSubfilas
       },
       {
         concepto: '3. PATRIMONIO NETO',
         nivel: 1,
         esColapsable: true,
         montoUsd: totalPatrimonioUsd,
-        montoVes: Number((totalPatrimonioUsd * tasaBcv).toFixed(2)),
+        montoVes: totalPatrimonioVes,
         subfilas: [patrimonio]
       }
     ]
@@ -2203,23 +2279,33 @@ export const accountingService = {
   getProfitAndLoss: async (tasaBcv: number, targetMoves: 'POSTED' | 'ALL' = 'POSTED'): Promise<FinancialReportRow[]> => {
     const accounts = accountingService.getAccountsWithTargetMoves(targetMoves, tasaBcv)
 
-    const ingresosAccs = accounts.filter(a => a.tipo.startsWith('INCOME'))
+    const ingresosOperacionalesAccs = accounts.filter(a => a.tipo === 'INCOME')
+    const ingresosFinancierosAccs = accounts.filter(a => a.tipo === 'INCOME_FINANCIAL')
     const costosAccs = accounts.filter(a => a.tipo === 'COST_OF_GOODS')
-    const gastosAccs = accounts.filter(a => a.tipo.startsWith('EXPENSE'))
+    const gastosOperativosAccs = accounts.filter(a => a.tipo === 'EXPENSE_OPERATING')
+    const gastosFinancierosAccs = accounts.filter(a => a.tipo === 'EXPENSE_FINANCIAL')
 
-    const totalIngresosUsd = ingresosAccs.reduce((acc, a) => acc + a.saldoUsd, 0)
-    const totalCostosUsd = costosAccs.reduce((acc, a) => acc + a.saldoUsd, 0)
-    const totalGastosUsd = gastosAccs.reduce((acc, a) => acc + a.saldoUsd, 0)
-    const utilidadNetaUsd = totalIngresosUsd - totalCostosUsd - totalGastosUsd
+    const totalIngresosOperUsd = Number(ingresosOperacionalesAccs.reduce((acc, a) => acc + a.saldoUsd, 0).toFixed(2))
+    const totalCostosUsd = Number(costosAccs.reduce((acc, a) => acc + a.saldoUsd, 0).toFixed(2))
+    const margenBrutoUsd = Number((totalIngresosOperUsd - totalCostosUsd).toFixed(2))
+
+    const totalGastosOperUsd = Number(gastosOperativosAccs.reduce((acc, a) => acc + a.saldoUsd, 0).toFixed(2))
+    const utilidadOperativaUsd = Number((margenBrutoUsd - totalGastosOperUsd).toFixed(2))
+
+    const totalIngresosFinancUsd = Number(ingresosFinancierosAccs.reduce((acc, a) => acc + a.saldoUsd, 0).toFixed(2))
+    const totalGastosFinancUsd = Number(gastosFinancierosAccs.reduce((acc, a) => acc + a.saldoUsd, 0).toFixed(2))
+    const resultadoFinancieroNetoUsd = Number((totalIngresosFinancUsd - totalGastosFinancUsd).toFixed(2))
+
+    const utilidadNetaUsd = Number((utilidadOperativaUsd + resultadoFinancieroNetoUsd).toFixed(2))
 
     return [
       {
-        concepto: '4. INGRESOS OPERACIONALES Y EXTRAORDINARIOS',
+        concepto: '4.1 INGRESOS OPERACIONALES (VENTAS)',
         nivel: 1,
         esColapsable: true,
-        montoUsd: totalIngresosUsd,
-        montoVes: Number((totalIngresosUsd * tasaBcv).toFixed(2)),
-        subfilas: ingresosAccs.map(a => ({
+        montoUsd: totalIngresosOperUsd,
+        montoVes: Number((totalIngresosOperUsd * tasaBcv).toFixed(2)),
+        subfilas: ingresosOperacionalesAccs.map(a => ({
           codigo: a.codigo,
           concepto: a.nombre,
           nivel: 2,
@@ -2229,7 +2315,7 @@ export const accountingService = {
         }))
       },
       {
-        concepto: '5. COSTOS DE MERCANCÍA VENDIDA',
+        concepto: '5.1 COSTO DE VENTAS DE MERCANCÍA (COGS)',
         nivel: 1,
         esColapsable: true,
         montoUsd: totalCostosUsd,
@@ -2244,12 +2330,19 @@ export const accountingService = {
         }))
       },
       {
-        concepto: '6. GASTOS DE OPERACIÓN Y FINANCIEROS',
+        concepto: 'MARGEN BRUTO COMERCIAL',
+        nivel: 1,
+        esColapsable: false,
+        montoUsd: margenBrutoUsd,
+        montoVes: Number((margenBrutoUsd * tasaBcv).toFixed(2))
+      },
+      {
+        concepto: '6.1 GASTOS OPERACIONALES Y ADMINISTRATIVOS',
         nivel: 1,
         esColapsable: true,
-        montoUsd: totalGastosUsd,
-        montoVes: Number((totalGastosUsd * tasaBcv).toFixed(2)),
-        subfilas: gastosAccs.map(a => ({
+        montoUsd: totalGastosOperUsd,
+        montoVes: Number((totalGastosOperUsd * tasaBcv).toFixed(2)),
+        subfilas: gastosOperativosAccs.map(a => ({
           codigo: a.codigo,
           concepto: a.nombre,
           nivel: 2,
@@ -2259,7 +2352,39 @@ export const accountingService = {
         }))
       },
       {
-        concepto: 'RESULTADO NETO DEL EJERCICIO (UTILIDAD / PÉRDIDA)',
+        concepto: 'UTILIDAD OPERATIVA (EBITDA)',
+        nivel: 1,
+        esColapsable: false,
+        montoUsd: utilidadOperativaUsd,
+        montoVes: Number((utilidadOperativaUsd * tasaBcv).toFixed(2))
+      },
+      {
+        concepto: 'RESULTADO FINANCIERO Y DIFERENCIAL CAMBIARIO (VEN-NIF)',
+        nivel: 1,
+        esColapsable: true,
+        montoUsd: resultadoFinancieroNetoUsd,
+        montoVes: Number((resultadoFinancieroNetoUsd * tasaBcv).toFixed(2)),
+        subfilas: [
+          ...ingresosFinancierosAccs.map(a => ({
+            codigo: a.codigo,
+            concepto: `(+) ${a.nombre}`,
+            nivel: 2,
+            esColapsable: false,
+            montoUsd: a.saldoUsd,
+            montoVes: Number((a.saldoUsd * tasaBcv).toFixed(2))
+          })),
+          ...gastosFinancierosAccs.map(a => ({
+            codigo: a.codigo,
+            concepto: `(-) ${a.nombre}`,
+            nivel: 2,
+            esColapsable: false,
+            montoUsd: -a.saldoUsd,
+            montoVes: Number((-a.saldoUsd * tasaBcv).toFixed(2))
+          }))
+        ]
+      },
+      {
+        concepto: 'RESULTADO NETO DEL EJERCICIO (UTILIDAD / PÉRDIDA NETA)',
         nivel: 1,
         esColapsable: false,
         montoUsd: utilidadNetaUsd,
@@ -2290,4 +2415,36 @@ export const accountingService = {
 
     return config
   }
+}
+
+/**
+ * Determina si una factura de proveedor califica para generar Costos en Destino (Landed Costs).
+ * Requiere que la función esté activa a nivel de ajustes del sistema, y que la factura
+ * contenga al menos una línea marcada como costo en destino o con conceptos logísticos / aranceles.
+ */
+export const isInvoiceLandedCostEligible = (
+  invoice?: AccountingInvoice | null,
+  isFeatureEnabled: boolean = true
+): boolean => {
+  if (!invoice || !isFeatureEnabled) return false
+  if (invoice.tipo !== 'SUPPLIER' || invoice.estado === 'CANCELED') return false
+  if (!invoice.lineas || invoice.lineas.length === 0) return false
+
+  return invoice.lineas.some(line => {
+    if (line.isLandedCost) return true
+    const concept = (line.productoOConcepto || '').toLowerCase()
+
+    return (
+      concept.includes('flete') ||
+      concept.includes('arancel') ||
+      concept.includes('aduana') ||
+      concept.includes('desaduanamiento') ||
+      concept.includes('nacionalización') ||
+      concept.includes('nacionalizacion') ||
+      concept.includes('landed cost') ||
+      concept.includes('seguro de carga') ||
+      concept.includes('transporte pesado') ||
+      concept.includes('manejo de carga')
+    )
+  })
 }

@@ -258,7 +258,7 @@ export const FinancialReportsView: React.FC = () => {
               label={
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                   <i className='tabler-chart-pie' />
-                  <span>Estado de Resultados (P&L)</span>
+                  <span>Estado de Resultados</span>
                 </Box>
               }
             />

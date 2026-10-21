@@ -10,6 +10,11 @@ export type ProductInvoicingPolicyOption = 'DEFAULT' | SalesInvoicingPolicy
 export type ProductPurchaseControlOption = 'DEFAULT' | PurchaseControlPolicy
 export type ProductDeliveryPolicyOption = 'DEFAULT' | DeliveryPolicy
 
+export type NegativeStockPolicy = 'FLEXIBLE' | 'BLOCK'
+
+export type LandedCostSplitMethod = 'EQUAL' | 'BY_QUANTITY' | 'BY_COST' | 'BY_WEIGHT' | 'BY_VOLUME'
+export type LandedCostStatus = 'DRAFT' | 'APPLIED' | 'CANCELLED'
+
 export type SENIAT_VATRate = '16' | '8' | '0' | 'EXEMPT'
 
 export type StockMovementType =
@@ -19,6 +24,7 @@ export type StockMovementType =
   | 'ADJUSTMENT_OUT'     // Ajuste negativo (merma / daño / pérdida)
   | 'INITIAL_INVENTORY'  // Carga inicial de inventario
   | 'INTERNAL_TRANSFER'  // Traslado entre almacenes
+  | 'LANDED_COST'        // Prorrateo de Costo en Destino (flete/arancel)
 
 export type AdjustmentReason =
   | 'CONTEO_FISICO'
@@ -81,6 +87,10 @@ export interface ProductTemplate {
   invoicingPolicy?: ProductInvoicingPolicyOption
   purchaseControlPolicy?: ProductPurchaseControlOption
   deliveryPolicy?: ProductDeliveryPolicyOption
+
+  // Costos en Destino (Landed Costs) para servicios
+  isLandedCost?: boolean
+  defaultSplitMethod?: LandedCostSplitMethod
 
   // Variants
   attributes: ProductAttribute[]
@@ -184,10 +194,62 @@ export interface StockMovement {
   cantidad_entrada: number
   cantidad_salida: number
   costo_unitario_usd: number
+  costo_promedio_usd?: number // Costo promedio ponderado resultante
+  valor_movimiento_usd?: number // (entrada o salida) * costo_unitario_usd
+  saldo_valorizado_usd?: number // saldo_resultante * costo_promedio_usd
   saldo_resultante: number
   motivo?: string
   almacen?: string
   usuario_responsable: string
+}
+
+export interface LandedCostCostLine {
+  id: string
+  producto_id: string
+  producto_nombre: string
+  descripcion?: string
+  metodo_reparto: LandedCostSplitMethod
+  monto_usd: number
+}
+
+export interface LandedCostReceiptRef {
+  id: string
+  orden_id: string
+  orden_codigo: string
+  fecha: string
+  tercero_nombre: string
+}
+
+export interface LandedCostValuationAdjustment {
+  id: string
+  linea_costo_id: string
+  producto_id: string
+  producto_nombre: string
+  variante_id: string
+  variante_sku: string
+  cantidad_recibida: number
+  stock_actual: number
+  costo_original_usd: number
+  costo_adicional_usd: number
+  costo_adicional_unitario_usd: number
+  nuevo_costo_usd: number
+}
+
+export interface LandedCostRecord {
+  id: string
+  codigo: string // ej: "CD/2026/0001"
+  fecha: string
+  estado: LandedCostStatus
+  referencia?: string
+  notas?: string
+  recepciones: LandedCostReceiptRef[]
+  costos: LandedCostCostLine[]
+  ajustes_valoracion: LandedCostValuationAdjustment[]
+  total_monto_usd: number
+  asiento_contable_id?: string
+  asiento_contable_numero?: string
+  createdAt: string
+  appliedAt?: string
 }
 
 export interface StockAdjustmentRecord {
@@ -239,6 +301,24 @@ export interface ProductCategory {
   description?: string
   isActive: boolean
   createdAt?: string
+
+  // Cuentas de Propiedad (Estándar Odoo / VEN-NIF)
+  cuentaIngresosId?: string
+  cuentaIngresosCodigo?: string
+  cuentaIngresosNombre?: string
+
+  cuentaGastosId?: string
+  cuentaGastosCodigo?: string
+  cuentaGastosNombre?: string
+
+  // Cuentas de Valoración de Inventario (Estándar Odoo)
+  cuentaValoracionInventarioId?: string
+  cuentaValoracionInventarioCodigo?: string
+  cuentaValoracionInventarioNombre?: string
+
+  cuentaCostosDestinoId?: string
+  cuentaCostosDestinoCodigo?: string
+  cuentaCostosDestinoNombre?: string
 }
 
 export interface WarehouseLocation {

@@ -23,6 +23,18 @@ export const createProductCategory = async (input: {
   name: string
   code?: string
   description?: string
+  cuentaIngresosId?: string
+  cuentaIngresosCodigo?: string
+  cuentaIngresosNombre?: string
+  cuentaGastosId?: string
+  cuentaGastosCodigo?: string
+  cuentaGastosNombre?: string
+  cuentaValoracionInventarioId?: string
+  cuentaValoracionInventarioCodigo?: string
+  cuentaValoracionInventarioNombre?: string
+  cuentaCostosDestinoId?: string
+  cuentaCostosDestinoCodigo?: string
+  cuentaCostosDestinoNombre?: string
 }): Promise<ProductCategory> => {
   const categories = loadStoredCategories()
   const trimmedName = input.name.trim()
@@ -48,7 +60,19 @@ export const createProductCategory = async (input: {
     name: trimmedName,
     description: input.description?.trim() || '',
     isActive: true,
-    createdAt: new Date().toISOString()
+    createdAt: new Date().toISOString(),
+    cuentaIngresosId: input.cuentaIngresosId,
+    cuentaIngresosCodigo: input.cuentaIngresosCodigo,
+    cuentaIngresosNombre: input.cuentaIngresosNombre,
+    cuentaGastosId: input.cuentaGastosId,
+    cuentaGastosCodigo: input.cuentaGastosCodigo,
+    cuentaGastosNombre: input.cuentaGastosNombre,
+    cuentaValoracionInventarioId: input.cuentaValoracionInventarioId,
+    cuentaValoracionInventarioCodigo: input.cuentaValoracionInventarioCodigo,
+    cuentaValoracionInventarioNombre: input.cuentaValoracionInventarioNombre,
+    cuentaCostosDestinoId: input.cuentaCostosDestinoId,
+    cuentaCostosDestinoCodigo: input.cuentaCostosDestinoCodigo,
+    cuentaCostosDestinoNombre: input.cuentaCostosDestinoNombre
   }
 
   const updated = [...categories, newCat]

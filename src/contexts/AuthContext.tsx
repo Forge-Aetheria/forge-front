@@ -78,8 +78,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           })
         }
 
-        // Refrescar usuario en segundo plano sólo si no se tiene en cache y el token es del backend real
-        if (!storedUser && storedSession && !storedSession.accessToken.startsWith('demo_dev_token')) {
+        // Refrescar usuario en segundo plano sólo si no se tiene en cache
+        if (!storedUser && storedSession) {
           authService
             .me()
             .then(freshUser => {

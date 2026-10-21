@@ -308,7 +308,7 @@ export const UserCreateEditDrawer: React.FC<Props> = ({
                 '&:hover': { backgroundColor: '#5B4CDB' }
               }}
             >
-              {submitting ? 'Guardando...' : userToEdit ? 'Guardar Cambios' : 'Crear Usuario'}
+              {submitting ? 'Guardando...' : 'Guardar'}
             </Button>
           </div>
         </form>

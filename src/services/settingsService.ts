@@ -28,7 +28,9 @@ const STORAGE_KEYS = {
 export const DEFAULT_COMMERCIAL_POLICIES: CommercialPoliciesSettings = {
   salesInvoicingPolicyDefault: 'ORDERED',
   purchaseControlPolicyDefault: 'ORDERED',
-  deliveryPolicyDefault: 'PARTIAL'
+  deliveryPolicyDefault: 'PARTIAL',
+  negativeStockPolicy: 'FLEXIBLE',
+  costosEnDestinoActivos: true
 }
 
 // Initial Seeds
@@ -56,7 +58,9 @@ const DEFAULT_COMPANY: CompanySettings = {
   monedaBase: 'USD',
   salesInvoicingPolicyDefault: 'ORDERED',
   purchaseControlPolicyDefault: 'ORDERED',
-  deliveryPolicyDefault: 'PARTIAL'
+  deliveryPolicyDefault: 'PARTIAL',
+  negativeStockPolicy: 'FLEXIBLE',
+  costosEnDestinoActivos: true
 }
 
 const DEFAULT_BCV: BcvRateConfig = {
@@ -160,7 +164,9 @@ const DEFAULT_FISCAL_RULES: FiscalRulesConfig = {
   diasVigenciaCotizacion: 15,
   salesInvoicingPolicyDefault: 'ORDERED',
   purchaseControlPolicyDefault: 'ORDERED',
-  deliveryPolicyDefault: 'PARTIAL'
+  deliveryPolicyDefault: 'PARTIAL',
+  negativeStockPolicy: 'FLEXIBLE',
+  costosEnDestinoActivos: true
 }
 
 // Helpers for localStorage

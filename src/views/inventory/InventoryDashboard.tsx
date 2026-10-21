@@ -96,29 +96,6 @@ const InventoryDashboard = () => {
         <Typography variant='h4' className='font-bold text-[#1E1B2E]'>
           Inventario & Almacén
         </Typography>
-
-        <div className='flex items-center gap-2 flex-wrap'>
-          <Button
-            variant='outlined'
-            size='small'
-            onClick={() => {
-              setPreselectedProduct(null)
-              setAdjustModalOpen(true)
-            }}
-            sx={{
-              textTransform: 'none',
-              borderColor: '#6C5CE7',
-              color: '#6C5CE7',
-              backgroundColor: '#FFFFFF',
-              fontWeight: 600,
-              fontSize: '0.8rem',
-              '&:hover': { backgroundColor: '#F0EEF9' }
-            }}
-            startIcon={<i className='tabler-adjustments-horizontal text-sm' />}
-          >
-            + Ajuste
-          </Button>
-        </div>
       </div>
 
       {/* 4 KPI Operational Cards */}

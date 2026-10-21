@@ -11,7 +11,7 @@ import TextField from '@mui/material/TextField'
 import Autocomplete from '@mui/material/Autocomplete'
 import MenuItem from '@mui/material/MenuItem'
 import IconButton from '@mui/material/IconButton'
-import Chip from '@mui/material/Chip'
+import CustomChip from '@core/components/mui/Chip'
 import Table from '@mui/material/Table'
 import TableBody from '@mui/material/TableBody'
 import TableCell from '@mui/material/TableCell'
@@ -430,7 +430,11 @@ export const CreditNoteFormView: React.FC<Props> = ({
       })
 
       onSaved(res.creditNote)
-      onBack()
+      setToastMessage(
+        postDirectly
+          ? `Nota de crédito ${res.creditNote.numeroFactura} confirmada y publicada con éxito.`
+          : `Borrador de nota de crédito ${res.creditNote.numeroFactura} guardado correctamente.`
+      )
     } catch (err: any) {
       setToastMessage(err.message || 'Error al guardar la nota de crédito')
     }
@@ -443,7 +447,7 @@ export const CreditNoteFormView: React.FC<Props> = ({
       {/* Cabecera Superior de la Vista Completa */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2.5 }}>
-          <Tooltip title='Volver al listado'>
+          <Tooltip title='Volver'>
             <IconButton
               onClick={onBack}
               sx={{
@@ -466,87 +470,58 @@ export const CreditNoteFormView: React.FC<Props> = ({
               <Typography variant='h5' sx={{ fontWeight: 700, color: '#1E293B' }}>
                 {isEditing ? `Nota de Crédito ${numeroFactura}` : `Nueva Nota de Crédito (${isSupplier ? 'Proveedores' : 'Clientes'})`}
               </Typography>
-              <Chip
-                label='NOTA DE CRÉDITO'
-                size='medium'
-                sx={{
-                  fontWeight: 800,
-                  borderRadius: '8px',
-                  backgroundColor: 'rgba(108, 92, 231, 0.15)',
-                  color: '#6C5CE7',
-                  border: '1px solid #6C5CE7',
-                  px: 1
-                }}
+              <CustomChip
+                label='Nota de Crédito'
+                size='small'
+                variant='tonal'
+                color='info'
               />
-              <Chip
+              <CustomChip
                 label={isReadOnly ? 'Publicada' : 'Borrador'}
-                size='medium'
-                sx={{
-                  fontWeight: 700,
-                  borderRadius: '9999px',
-                  backgroundColor: isReadOnly ? 'rgba(16, 185, 129, 0.12)' : 'rgba(148, 163, 184, 0.15)',
-                  color: isReadOnly ? '#10B981' : '#64748B'
-                }}
+                size='small'
+                variant='tonal'
+                color={isReadOnly ? 'primary' : 'secondary'}
               />
             </Box>
-            <Typography variant='body2' sx={{ color: '#64748B' }}>
-              {isSupplier
-                ? 'Emisión de nota de crédito para registro de devoluciones, rebajas o anulación de compras a proveedores'
-                : 'Emisión de documento fiscal de crédito a clientes con doble partida automática en el libro de ventas'}
-            </Typography>
           </Box>
         </Box>
 
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
           {!isReadOnly && (
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-              <Tooltip title='Guardar Borrador'>
-                <IconButton
-                  onClick={() => handleSave(false)}
-                  sx={{
-                    width: 38,
-                    height: 38,
-                    borderRadius: '9999px',
-                    color: '#6B7280',
-                    backgroundColor: '#FFFFFF',
-                    border: '1px solid #E6E4F0',
-                    boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
-                    '&:hover': { color: '#6C5CE7', backgroundColor: '#F0EEF9', borderColor: '#6C5CE7' }
-                  }}
-                >
-                  <i className='tabler-device-floppy text-lg' />
-                </IconButton>
-              </Tooltip>
+            <>
+              <Button
+                variant='tonal'
+                color='secondary'
+                size='small'
+                onClick={onBack}
+                sx={{ borderRadius: '9999px', textTransform: 'none', fontWeight: 600 }}
+              >
+                Cancelar
+              </Button>
 
-              <Tooltip title='Confirmar y Publicar Nota de Crédito'>
-                <IconButton
-                  onClick={() => handleSave(true)}
-                  sx={{
-                    width: 38,
-                    height: 38,
-                    borderRadius: '9999px',
-                    backgroundColor: '#6C5CE7',
-                    color: '#FFFFFF',
-                    boxShadow: '0 4px 12px rgba(108, 92, 231, 0.3)',
-                    '&:hover': { backgroundColor: '#5B4CDB' }
-                  }}
-                >
-                  <i className='tabler-check text-lg' />
-                </IconButton>
-              </Tooltip>
-            </Box>
+              <Button
+                variant='outlined'
+                color='primary'
+                size='small'
+                startIcon={<i className='tabler-device-floppy text-base' />}
+                onClick={() => handleSave(false)}
+                sx={{ borderRadius: '9999px', textTransform: 'none', fontWeight: 600 }}
+              >
+                Guardar
+              </Button>
+
+              <Button
+                variant='contained'
+                color='primary'
+                size='small'
+                startIcon={<i className='tabler-check text-base' />}
+                onClick={() => handleSave(true)}
+                sx={{ borderRadius: '9999px', textTransform: 'none', fontWeight: 600 }}
+              >
+                Publicar
+              </Button>
+            </>
           )}
-
-          <Chip
-            label={`Tasa BCV: ${tasaBcv.toFixed(2)} Bs/USD`}
-            size='medium'
-            sx={{
-              fontWeight: 700,
-              borderRadius: '9999px',
-              backgroundColor: 'rgba(108, 92, 231, 0.1)',
-              color: '#6C5CE7'
-            }}
-          />
         </Box>
       </Box>
 

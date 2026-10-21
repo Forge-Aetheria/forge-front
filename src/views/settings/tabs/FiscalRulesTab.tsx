@@ -13,7 +13,7 @@ import MenuItem from '@mui/material/MenuItem'
 import CircularProgress from '@mui/material/CircularProgress'
 
 import type { FiscalRulesConfig } from '@/types/settingsTypes'
-import type { SalesInvoicingPolicy, PurchaseControlPolicy, DeliveryPolicy } from '@/types/inventoryTypes'
+import type { SalesInvoicingPolicy, PurchaseControlPolicy, DeliveryPolicy, NegativeStockPolicy } from '@/types/inventoryTypes'
 
 interface Props {
   fiscalRules: FiscalRulesConfig
@@ -40,6 +40,12 @@ export const FiscalRulesTab: React.FC<Props> = ({ fiscalRules, onSave }) => {
   const [deliveryPolicyDefault, setDeliveryPolicyDefault] = useState<DeliveryPolicy>(
     fiscalRules.deliveryPolicyDefault || 'PARTIAL'
   )
+  const [negativeStockPolicy, setNegativeStockPolicy] = useState<NegativeStockPolicy>(
+    fiscalRules.negativeStockPolicy || 'FLEXIBLE'
+  )
+  const [costosEnDestinoActivos, setCostosEnDestinoActivos] = useState(
+    fiscalRules.costosEnDestinoActivos !== false
+  )
   const [saving, setSaving] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -57,7 +63,9 @@ export const FiscalRulesTab: React.FC<Props> = ({ fiscalRules, onSave }) => {
         diasVigenciaCotizacion: Number(diasVigencia) || 15,
         salesInvoicingPolicyDefault,
         purchaseControlPolicyDefault,
-        deliveryPolicyDefault
+        deliveryPolicyDefault,
+        negativeStockPolicy,
+        costosEnDestinoActivos
       })
     } finally {
       setSaving(false)
@@ -244,6 +252,70 @@ export const FiscalRulesTab: React.FC<Props> = ({ fiscalRules, onSave }) => {
             </div>
           </div>
 
+          {/* Política de Costeo y Stock Negativo */}
+          <div className='mt-2'>
+            <Typography variant='subtitle2' className='font-bold text-[#1E1B2E] flex items-center gap-1.5'>
+              <i className='tabler-packages text-[#6C5CE7]' /> Valorización y Política de Stock Negativo (Inventario)
+            </Typography>
+            <span className='text-xs text-[#6B7280] block mt-0.5 mb-3'>
+              El método de costeo es Costo Promedio Ponderado Móvil (AVCO) por variante (conforme a VEN-NIF NIC 2). Defina si el almacén permite despachos sin existencia física previa.
+            </span>
+
+            <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
+              <TextField
+                select
+                size='small'
+                label='Política de Stock Negativo'
+                value={negativeStockPolicy}
+                onChange={e => setNegativeStockPolicy(e.target.value as NegativeStockPolicy)}
+                fullWidth
+                helperText='FLEXIBLE: permite despachos y deja el saldo en negativo; BLOQUEO: impide despachos si no hay stock físico'
+                sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px', backgroundColor: '#FAFAFC' } }}
+              >
+                <MenuItem value='FLEXIBLE'>Flexible (Permitir despachos sin stock físico / stock negativo)</MenuItem>
+                <MenuItem value='BLOCK'>Bloqueo Estricto (Impedir despachos si el stock físico es insuficiente)</MenuItem>
+              </TextField>
+
+              <div className='p-3 rounded-xl border border-[#E6E4F0] bg-[#FAFAFC] flex items-center gap-3'>
+                <div className='w-9 h-9 rounded-full bg-[#6C5CE7]/10 flex items-center justify-center shrink-0 text-[#6C5CE7]'>
+                  <i className='tabler-calculator text-lg' />
+                </div>
+                <div>
+                  <span className='text-xs font-bold text-[#1E1B2E] block'>Método de Valorización: Costo Promedio (AVCO)</span>
+                  <span className='text-[11px] text-[#6B7280]'>
+                    Ponderación móvil automática por variante (SKU) al validar recepciones y costos en destino. Prohibido UEPS/LIFO por ley venezolana.
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Módulo de Costos en Destino (Landed Costs) */}
+          <div className='p-4 rounded-2xl border border-[#E6E4F0] bg-[#FAFAFC] flex items-center justify-between flex-wrap gap-3 mt-1'>
+            <div className='max-w-xl'>
+              <span className='font-bold text-sm text-[#1E1B2E] flex items-center gap-1.5'>
+                <i className='tabler-ship text-[#6C5CE7]' /> Costos en Destino (Landed Costs)
+              </span>
+              <span className='text-xs text-[#6B7280] block mt-0.5'>
+                Permite imputar costos adicionales de importación, fletes, aranceles aduanales y seguros directamente al costo promedio ponderado de los productos recibidos en almacén.
+              </span>
+            </div>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={costosEnDestinoActivos}
+                  onChange={e => setCostosEnDestinoActivos(e.target.checked)}
+                  color='primary'
+                />
+              }
+              label={
+                <span className='text-xs font-bold text-[#1E1B2E]'>
+                  {costosEnDestinoActivos ? 'Habilitado' : 'Deshabilitado'}
+                </span>
+              }
+            />
+          </div>
+
           <div className='flex justify-end pt-3'>
             <Button
               type='submit'
@@ -262,7 +334,7 @@ export const FiscalRulesTab: React.FC<Props> = ({ fiscalRules, onSave }) => {
                 '&:hover': { backgroundColor: '#5B4CDB' }
               }}
             >
-              {saving ? 'Guardando...' : 'Guardar Reglas'}
+              {saving ? 'Guardando...' : 'Guardar'}
             </Button>
           </div>
         </form>

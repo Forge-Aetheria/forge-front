@@ -5,7 +5,8 @@ import {
   mockStockAdjustments,
   mockWarehouseOperationOrders,
   mockProductCategories,
-  mockWarehouses
+  mockWarehouses,
+  mockLandedCosts
 } from '@/data/inventory/mockInventoryData'
 import type {
   ProductTemplate,
@@ -14,7 +15,8 @@ import type {
   StockAdjustmentRecord,
   WarehouseOperationOrder,
   ProductCategory,
-  Warehouse
+  Warehouse,
+  LandedCostRecord
 } from '@/types/inventoryTypes'
 
 export const STORAGE_TEMPLATES_KEY = 'forge_inventory_templates_v2'
@@ -23,6 +25,7 @@ export const STORAGE_ADJUSTMENTS_KEY = 'forge_inventory_adjustments_v2'
 export const STORAGE_CATEGORIES_KEY = 'forge_inventory_categories_v1'
 export const STORAGE_WAREHOUSES_KEY = 'forge_inventory_warehouses_v1'
 export const STORAGE_OPERATION_ORDERS_KEY = 'forge_inventory_operation_orders_v1'
+export const STORAGE_LANDED_COSTS_KEY = 'forge_inventory_landed_costs_v1'
 export const DEFAULT_BCV_RATE = 36.5
 
 export const getActiveBcvRate = (): number => {
@@ -122,7 +125,27 @@ export const loadStoredCategories = (): ProductCategory[] => {
 
     if (raw) {
       try {
-        return JSON.parse(raw)
+        const parsed: ProductCategory[] = JSON.parse(raw)
+
+        return parsed.map(c => {
+          const mockMatch = mockProductCategories.find(m => m.id === c.id || m.code === c.code)
+
+          return {
+            ...c,
+            cuentaIngresosId: c.cuentaIngresosId || mockMatch?.cuentaIngresosId || 'acc-410101',
+            cuentaIngresosCodigo: c.cuentaIngresosCodigo || mockMatch?.cuentaIngresosCodigo || '4.1.01.01',
+            cuentaIngresosNombre: c.cuentaIngresosNombre || mockMatch?.cuentaIngresosNombre || 'Ingresos por Venta de Mercancías',
+            cuentaGastosId: c.cuentaGastosId || mockMatch?.cuentaGastosId || 'acc-510101',
+            cuentaGastosCodigo: c.cuentaGastosCodigo || mockMatch?.cuentaGastosCodigo || '5.1.01.01',
+            cuentaGastosNombre: c.cuentaGastosNombre || mockMatch?.cuentaGastosNombre || 'Costo de Ventas de Mercancía',
+            cuentaValoracionInventarioId: c.cuentaValoracionInventarioId || mockMatch?.cuentaValoracionInventarioId || (c.code === 'SRV' ? undefined : 'acc-110301'),
+            cuentaValoracionInventarioCodigo: c.cuentaValoracionInventarioCodigo || mockMatch?.cuentaValoracionInventarioCodigo || (c.code === 'SRV' ? undefined : '1.1.03.01'),
+            cuentaValoracionInventarioNombre: c.cuentaValoracionInventarioNombre || mockMatch?.cuentaValoracionInventarioNombre || (c.code === 'SRV' ? undefined : 'Inventario de Mercancía para la Venta'),
+            cuentaCostosDestinoId: c.cuentaCostosDestinoId || mockMatch?.cuentaCostosDestinoId || (c.code === 'SRV' ? undefined : 'acc-110302'),
+            cuentaCostosDestinoCodigo: c.cuentaCostosDestinoCodigo || mockMatch?.cuentaCostosDestinoCodigo || (c.code === 'SRV' ? undefined : '1.1.03.02'),
+            cuentaCostosDestinoNombre: c.cuentaCostosDestinoNombre || mockMatch?.cuentaCostosDestinoNombre || (c.code === 'SRV' ? undefined : 'Mercancías en Tránsito / Costos en Destino')
+          }
+        })
       } catch {
         // Fallback
       }
@@ -179,5 +202,27 @@ export const loadStoredOperationOrders = (): WarehouseOperationOrder[] => {
 export const saveStoredOperationOrders = (orders: WarehouseOperationOrder[]): void => {
   if (typeof window !== 'undefined') {
     localStorage.setItem(STORAGE_OPERATION_ORDERS_KEY, JSON.stringify(orders))
+  }
+}
+
+export const loadStoredLandedCosts = (): LandedCostRecord[] => {
+  if (typeof window !== 'undefined') {
+    const raw = localStorage.getItem(STORAGE_LANDED_COSTS_KEY)
+
+    if (raw) {
+      try {
+        return JSON.parse(raw)
+      } catch {
+        // Fallback
+      }
+    }
+  }
+
+  return [...mockLandedCosts]
+}
+
+export const saveStoredLandedCosts = (records: LandedCostRecord[]): void => {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(STORAGE_LANDED_COSTS_KEY, JSON.stringify(records))
   }
 }

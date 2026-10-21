@@ -58,6 +58,11 @@ const movementTypeMeta: Record<
     label: 'Transferencia',
     color: 'secondary',
     icon: 'tabler-arrows-left-right'
+  },
+  LANDED_COST: {
+    label: 'Costo en Destino',
+    color: 'info',
+    icon: 'tabler-calculator'
   }
 }
 
@@ -160,16 +165,6 @@ const InventoryKardexView = () => {
           />
         </div>
 
-        <div className='flex items-center gap-2.5 flex-wrap'>
-          <Button
-            variant='contained'
-            color='primary'
-            startIcon={<i className='tabler-adjustments-horizontal' />}
-            onClick={() => setAdjustModalOpen(true)}
-          >
-            Ajustar
-          </Button>
-        </div>
       </div>
 
       {/* Summary Strip */}
@@ -292,6 +287,7 @@ const InventoryKardexView = () => {
                 <MenuItem value='SALE_DELIVERY'>Despacho de Venta (-)</MenuItem>
                 <MenuItem value='ADJUSTMENT_IN'>Ajuste Positivo (+)</MenuItem>
                 <MenuItem value='ADJUSTMENT_OUT'>Ajuste / Merma (-)</MenuItem>
+                <MenuItem value='LANDED_COST'>Costo en Destino (Landed Cost)</MenuItem>
                 <MenuItem value='INITIAL_INVENTORY'>Saldo Inicial</MenuItem>
               </CustomTextField>
             </div>
@@ -347,7 +343,16 @@ const InventoryKardexView = () => {
                     SALDO FÍSICO
                   </TableCell>
                   <TableCell align='right' sx={{ py: 1.5, fontWeight: 700, color: '#6B7280', fontSize: '0.75rem', letterSpacing: '0.05em' }}>
-                    COSTO UNIT.
+                    COSTO TRANS.
+                  </TableCell>
+                  <TableCell align='right' sx={{ py: 1.5, fontWeight: 700, color: '#6C5CE7', fontSize: '0.75rem', letterSpacing: '0.05em' }}>
+                    COSTO PROM.
+                  </TableCell>
+                  <TableCell align='right' sx={{ py: 1.5, fontWeight: 700, color: '#6B7280', fontSize: '0.75rem', letterSpacing: '0.05em' }}>
+                    VALOR MOV. ($)
+                  </TableCell>
+                  <TableCell align='right' sx={{ py: 1.5, fontWeight: 700, color: '#1E1B4B', fontSize: '0.75rem', letterSpacing: '0.05em' }}>
+                    SALDO VALORIZADO ($)
                   </TableCell>
                   <TableCell sx={{ py: 1.5, fontWeight: 700, color: '#6B7280', fontSize: '0.75rem', letterSpacing: '0.05em' }}>
                     RESPONSABLE / MOTIVO
@@ -357,7 +362,7 @@ const InventoryKardexView = () => {
               <TableBody>
                 {filteredMovements.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={10} className='text-center py-10 text-textSecondary'>
+                    <TableCell colSpan={13} className='text-center py-10 text-textSecondary'>
                       No se encontraron movimientos en el Kárdex para los filtros seleccionados.
                     </TableCell>
                   </TableRow>
@@ -368,6 +373,18 @@ const InventoryKardexView = () => {
                       color: 'secondary',
                       icon: 'tabler-circle'
                     }
+
+                    const valMov =
+                      mov.valor_movimiento_usd !== undefined
+                        ? mov.valor_movimiento_usd
+                        : (mov.cantidad_entrada + mov.cantidad_salida) * mov.costo_unitario_usd
+
+                    const avgCost = mov.costo_promedio_usd !== undefined ? mov.costo_promedio_usd : mov.costo_unitario_usd
+
+                    const saldoVal =
+                      mov.saldo_valorizado_usd !== undefined
+                        ? mov.saldo_valorizado_usd
+                        : mov.saldo_resultante * avgCost
 
                     return (
                       <TableRow key={mov.id} hover className='border-b border-[#E6E4F0] last:border-none hover:bg-[#FAF9FF] transition-colors'>
@@ -420,7 +437,16 @@ const InventoryKardexView = () => {
                         <TableCell className='text-right font-mono text-xs text-textSecondary whitespace-nowrap'>
                           ${mov.costo_unitario_usd.toFixed(2)}
                         </TableCell>
-                        <TableCell className='max-w-[230px]'>
+                        <TableCell className='text-right font-mono text-xs font-bold text-[#6C5CE7] whitespace-nowrap bg-[#FAF9FF]'>
+                          ${avgCost.toFixed(2)}
+                        </TableCell>
+                        <TableCell className='text-right font-mono text-xs font-semibold text-[#1E1B4B] whitespace-nowrap'>
+                          ${valMov.toFixed(2)}
+                        </TableCell>
+                        <TableCell className='text-right font-mono text-xs font-bold text-[#1E1B4B] whitespace-nowrap bg-[#F4F3FF]'>
+                          ${saldoVal.toFixed(2)}
+                        </TableCell>
+                        <TableCell className='max-w-[200px]'>
                           <Typography variant='caption' className='font-semibold block text-[#1E1B4B] truncate'>
                             {mov.usuario_responsable}
                           </Typography>

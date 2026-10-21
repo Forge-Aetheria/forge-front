@@ -12,7 +12,7 @@ import IconButton from '@mui/material/IconButton'
 import Tooltip from '@mui/material/Tooltip'
 import CustomChip from '@core/components/mui/Chip'
 import TextField from '@mui/material/TextField'
-import MenuItem from '@mui/material/MenuItem'
+import InputAdornment from '@mui/material/InputAdornment'
 import Table from '@mui/material/Table'
 import TableHead from '@mui/material/TableHead'
 import TableBody from '@mui/material/TableBody'
@@ -32,24 +32,13 @@ import {
   getWarehouses,
   createWarehouse,
   updateWarehouse,
-  deleteWarehouse,
-  addWarehouseLocation,
-  deleteWarehouseLocation
+  deleteWarehouse
 } from '@/services/inventoryService'
-
-const locationTypeMeta: Record<
-  'INTERNAL' | 'TRANSIT' | 'SCRAP',
-  { label: string; color: 'primary' | 'info' | 'warning' }
-> = {
-  INTERNAL: { label: 'Interna / Estantería', color: 'primary' },
-  TRANSIT: { label: 'Recepción / Tránsito', color: 'info' },
-  SCRAP: { label: 'Merma / Cuarentena', color: 'warning' }
-}
 
 const InventoryWarehousesView = () => {
   const [loading, setLoading] = useState(true)
   const [warehouses, setWarehouses] = useState<Warehouse[]>([])
-  const [selectedWarehouseId, setSelectedWarehouseId] = useState<string>('')
+  const [searchWh, setSearchWh] = useState('')
 
   // Warehouse modal state
   const [whDialogOpen, setWhDialogOpen] = useState(false)
@@ -60,12 +49,9 @@ const InventoryWarehousesView = () => {
   const [whManager, setWhManager] = useState('')
   const [whIsDefault, setWhIsDefault] = useState(false)
 
-  // Inline new location row inside selected warehouse
-  const [showNewLocRow, setShowNewLocRow] = useState(false)
-  const [newLocCode, setNewLocCode] = useState('')
-  const [newLocName, setNewLocName] = useState('')
-  const [newLocType, setNewLocType] = useState<'INTERNAL' | 'TRANSIT' | 'SCRAP'>('INTERNAL')
-  const [newLocNotes, setNewLocNotes] = useState('')
+  // Delete confirm dialog
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+  const [warehouseToDelete, setWarehouseToDelete] = useState<Warehouse | null>(null)
 
   const [toast, setToast] = useState<{ open: boolean; message: string; severity: 'success' | 'error' | 'info' }>({
     open: false,
@@ -74,25 +60,34 @@ const InventoryWarehousesView = () => {
   })
 
   const loadData = useCallback(async () => {
-    const whData = await getWarehouses()
+    try {
+      setLoading(true)
+      const whData = await getWarehouses()
 
-    setWarehouses(whData)
-    setSelectedWarehouseId(prev => {
-      if (prev && whData.some(w => w.id === prev)) return prev
-
-      return whData[0]?.id || ''
-    })
-    setLoading(false)
+      setWarehouses(whData)
+    } catch {
+      setToast({ open: true, message: 'Error al consultar los almacenes', severity: 'error' })
+    } finally {
+      setLoading(false)
+    }
   }, [])
 
   useEffect(() => {
     loadData()
   }, [loadData])
 
-  const selectedWarehouse = useMemo(
-    () => warehouses.find(w => w.id === selectedWarehouseId) || warehouses[0] || null,
-    [warehouses, selectedWarehouseId]
-  )
+  const filteredWarehouses = useMemo(() => {
+    if (!searchWh.trim()) return warehouses
+    const q = searchWh.toLowerCase()
+
+    return warehouses.filter(
+      w =>
+        w.name.toLowerCase().includes(q) ||
+        w.code.toLowerCase().includes(q) ||
+        (w.address || '').toLowerCase().includes(q) ||
+        (w.manager || '').toLowerCase().includes(q)
+    )
+  }, [warehouses, searchWh])
 
   const handleOpenNewWarehouse = () => {
     setEditingWarehouse(null)
@@ -115,27 +110,38 @@ const InventoryWarehousesView = () => {
   }
 
   const handleSaveWarehouse = async () => {
+    if (!whName.trim()) {
+      setToast({ open: true, message: 'El nombre del almacén es obligatorio', severity: 'error' })
+
+      return
+    }
+
+    if (!whCode.trim()) {
+      setToast({ open: true, message: 'El código del almacén es obligatorio', severity: 'error' })
+
+      return
+    }
+
     try {
       if (editingWarehouse) {
         await updateWarehouse(editingWarehouse.id, {
-          code: whCode,
-          name: whName,
-          address: whAddress,
-          manager: whManager,
+          code: whCode.trim().toUpperCase(),
+          name: whName.trim(),
+          address: whAddress.trim(),
+          manager: whManager.trim(),
           isDefault: whIsDefault
         })
-        setToast({ open: true, message: `Almacén "${whName}" actualizado`, severity: 'success' })
+        setToast({ open: true, message: `Almacén "${whName}" actualizado exitosamente`, severity: 'success' })
       } else {
         const created = await createWarehouse({
-          code: whCode,
-          name: whName,
-          address: whAddress,
-          manager: whManager,
+          code: whCode.trim().toUpperCase(),
+          name: whName.trim(),
+          address: whAddress.trim(),
+          manager: whManager.trim(),
           isDefault: whIsDefault
         })
 
-        setSelectedWarehouseId(created.id)
-        setToast({ open: true, message: `Almacén "${created.name}" creado`, severity: 'success' })
+        setToast({ open: true, message: `Almacén "${created.name}" registrado exitosamente`, severity: 'success' })
       }
 
       setWhDialogOpen(false)
@@ -147,7 +153,7 @@ const InventoryWarehousesView = () => {
     }
   }
 
-  const handleDeleteWarehouse = async (wh: Warehouse) => {
+  const handleOpenDeleteConfirm = (wh: Warehouse) => {
     if (warehouses.length <= 1) {
       setToast({
         open: true,
@@ -158,52 +164,30 @@ const InventoryWarehousesView = () => {
       return
     }
 
-    await deleteWarehouse(wh.id)
-    await loadData()
-    setToast({ open: true, message: `Almacén "${wh.name}" eliminado`, severity: 'info' })
+    setWarehouseToDelete(wh)
+    setDeleteConfirmOpen(true)
   }
 
-  const handleCreateLocation = async () => {
-    if (!selectedWarehouse) return
+  const handleConfirmDelete = async () => {
+    if (!warehouseToDelete) return
 
     try {
-      const loc = await addWarehouseLocation(selectedWarehouse.id, {
-        code: newLocCode,
-        name: newLocName,
-        type: newLocType,
-        notes: newLocNotes
-      })
-
-      setNewLocCode('')
-      setNewLocName('')
-      setNewLocType('INTERNAL')
-      setNewLocNotes('')
-      setShowNewLocRow(false)
+      await deleteWarehouse(warehouseToDelete.id)
+      setDeleteConfirmOpen(false)
+      setWarehouseToDelete(null)
       await loadData()
-
-      setToast({
-        open: true,
-        message: `Ubicación "${loc.code}" agregada a ${selectedWarehouse.name}`,
-        severity: 'success'
-      })
+      setToast({ open: true, message: `Almacén "${warehouseToDelete.name}" eliminado`, severity: 'info' })
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Error al agregar la ubicación'
+      const msg = err instanceof Error ? err.message : 'Error al eliminar el almacén'
 
       setToast({ open: true, message: msg, severity: 'error' })
     }
   }
 
-  const handleRemoveLocation = async (locationId: string, code: string) => {
-    if (!selectedWarehouse) return
-    await deleteWarehouseLocation(selectedWarehouse.id, locationId)
-    await loadData()
-    setToast({ open: true, message: `Ubicación "${code}" eliminada`, severity: 'info' })
-  }
-
   return (
     <div className='flex flex-col gap-6'>
       {/* Header exclusivo de Almacenes Físicos */}
-      <div className='flex flex-col sm:flex-row sm:items-center justify-between gap-4'>
+      <div className='flex items-center justify-between flex-wrap gap-4'>
         <div className='flex items-center gap-2.5 flex-wrap'>
           <Typography variant='h4' className='font-bold text-[#1E1B2E]'>
             Almacenes Físicos
@@ -219,361 +203,212 @@ const InventoryWarehousesView = () => {
         <div className='flex items-center gap-2.5 flex-wrap'>
           <Button
             variant='contained'
-            color='primary'
-            startIcon={<i className='tabler-plus text-sm' />}
+            startIcon={<i className='tabler-plus text-base' />}
             onClick={handleOpenNewWarehouse}
+            sx={{
+              borderRadius: '9999px',
+              backgroundColor: '#6C5CE7',
+              textTransform: 'none',
+              fontWeight: 600,
+              px: 3.5,
+              '&:hover': { backgroundColor: '#5B4CDB' }
+            }}
           >
             Nuevo
           </Button>
         </div>
       </div>
 
-      {/* Layout Padre-Hijo: Almacenes a la izquierda y Ubicaciones a la derecha */}
+      {/* Tabla Principal de Almacenes */}
       <Card className='border border-[#E6E4F0] shadow-xs rounded-2xl overflow-hidden'>
-        <CardContent className='p-5'>
-          {loading ? (
-            <div className='p-8 text-center text-textSecondary'>Cargando almacenes...</div>
-          ) : (
-            <div className='grid grid-cols-1 lg:grid-cols-12 gap-6'>
-              {/* Columna Izquierda (4 cols): Lista de Almacenes Padre */}
-              <div className='lg:col-span-4 flex flex-col gap-3'>
-                <div className='flex items-center justify-between mb-1'>
-                  <Typography variant='subtitle1' className='font-bold text-[#1E1B4B]'>
-                    Almacenes Físicos
-                  </Typography>
-                  <Button
-                    size='small'
-                    variant='tonal'
-                    color='primary'
-                    className='rounded-full font-semibold text-xs'
-                    startIcon={<i className='tabler-plus text-sm' />}
-                    onClick={handleOpenNewWarehouse}
+        <CardContent className='p-5 border-b border-[#E6E4F0] bg-[#FAFAFE]'>
+          <div className='w-full sm:max-w-lg'>
+            <TextField
+              fullWidth
+              size='small'
+              placeholder='Buscar almacén por código, nombre, dirección o responsable...'
+              value={searchWh}
+              onChange={e => setSearchWh(e.target.value)}
+              slotProps={{
+                input: {
+                  startAdornment: (
+                    <InputAdornment position='start'>
+                      <i className='tabler-search text-[#6B7280]' />
+                    </InputAdornment>
+                  )
+                }
+              }}
+            />
+          </div>
+        </CardContent>
+
+        {/* Toolbar Strip unificado con estándar Foundly */}
+        <div className='flex items-center justify-between flex-wrap gap-3 px-5 py-3 border-b border-[#E6E4F0] bg-[#FAF9FF]'>
+          <div className='flex items-center gap-2.5'>
+            <Typography variant='h6' className='font-semibold text-[#1E1B2E] text-sm'>
+              Almacenes Registrados
+            </Typography>
+            <span className='text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#F3F0FF] text-[#6C5CE7] border border-[#E9D5FF]'>
+              {filteredWarehouses.length} {filteredWarehouses.length === 1 ? 'almacén' : 'almacenes'}
+            </span>
+          </div>
+
+          <Button
+            component={Link}
+            href='/inventory/settings/locations'
+            variant='outlined'
+            size='small'
+            startIcon={<i className='tabler-map-pin text-sm' />}
+            sx={{
+              borderRadius: '9999px',
+              textTransform: 'none',
+              fontWeight: 600,
+              fontSize: '0.8rem',
+              borderColor: '#DCD8EC',
+              color: '#6C5CE7',
+              '&:hover': { borderColor: '#6C5CE7', backgroundColor: '#F4F3FF' }
+            }}
+          >
+            Gestionar Ubicaciones
+          </Button>
+        </div>
+
+        {loading ? (
+          <div className='p-8 text-center text-[#6B7280]'>Cargando almacenes...</div>
+        ) : (
+          <div className='overflow-x-auto'>
+            <Table size='small'>
+              <TableHead className='bg-[#F4F3F8] border-b border-[#E6E4F0]'>
+                <TableRow>
+                  <TableCell
+                    className='text-[11px] uppercase tracking-wider text-[#6B7280] font-bold text-center'
+                    style={{ width: 36, maxWidth: 36, padding: '10px 4px' }}
                   >
-                    Nuevo
-                  </Button>
-                </div>
-
-                {warehouses.map(wh => {
-                  const isSelected = selectedWarehouse?.id === wh.id
-
-                  return (
-                    <div
-                      key={wh.id}
-                      onClick={() => {
-                        setSelectedWarehouseId(wh.id)
-                        setShowNewLocRow(false)
-                      }}
-                      className={`p-4 rounded-2xl border cursor-pointer transition-all ${
-                        isSelected
-                          ? 'border-[#6C5CE7] bg-[#F4F3FF]/60 shadow-xs'
-                          : 'border-[#E6E4F0] bg-[#FFFFFF] hover:bg-[#FAFAFE]'
-                      }`}
-                    >
-                      <div className='flex items-start justify-between gap-2'>
-                        <div>
-                          <div className='flex items-center gap-2 flex-wrap'>
-                            <Typography variant='subtitle2' className='font-bold text-[#1E1B4B]'>
-                              {wh.name}
-                            </Typography>
-                            {wh.isDefault && (
-                              <CustomChip
-                                size='small'
-                                label='Principal'
-                                color='primary'
-                                variant='tonal'
-                              />
-                            )}
-                          </div>
-                          <Typography variant='caption' className='font-mono text-primary font-semibold block mt-0.5'>
-                            Código: {wh.code}
-                          </Typography>
+                    #
+                  </TableCell>
+                  <TableCell className='text-[11px] uppercase tracking-wider text-[#6B7280] font-bold py-2.5' style={{ width: 140 }}>
+                    Código
+                  </TableCell>
+                  <TableCell className='text-[11px] uppercase tracking-wider text-[#6B7280] font-bold py-2.5' style={{ minWidth: 200 }}>
+                    Nombre del Almacén
+                  </TableCell>
+                  <TableCell className='text-[11px] uppercase tracking-wider text-[#6B7280] font-bold py-2.5' style={{ minWidth: 220 }}>
+                    Dirección Física
+                  </TableCell>
+                  <TableCell className='text-[11px] uppercase tracking-wider text-[#6B7280] font-bold py-2.5' style={{ width: 160 }}>
+                    Responsable
+                  </TableCell>
+                  <TableCell className='text-[11px] uppercase tracking-wider text-[#6B7280] font-bold text-center py-2.5' style={{ width: 140 }}>
+                    Ubicaciones
+                  </TableCell>
+                  <TableCell className='text-[11px] uppercase tracking-wider text-[#6B7280] font-bold text-right py-2.5' style={{ width: 100 }}>
+                    Acciones
+                  </TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {filteredWarehouses.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className='text-center py-10 text-[#6B7280]'>
+                      <i className='tabler-building-warehouse text-3xl mb-2 inline-block text-[#9CA3AF]' />
+                      <Typography variant='body2'>
+                        No se encontraron almacenes con el criterio de búsqueda.
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredWarehouses.map((wh, idx) => (
+                    <TableRow key={wh.id} hover className='border-b border-[#E6E4F0] last:border-none'>
+                      <TableCell
+                        className='text-center font-mono text-xs text-[#9CA3AF]'
+                        style={{ width: 36, maxWidth: 36, padding: '8px 4px' }}
+                      >
+                        {idx + 1}
+                      </TableCell>
+                      <TableCell className='py-3'>
+                        <span className='font-mono font-bold text-xs px-2.5 py-1 rounded-md bg-[#F4F3FF] text-[#6C5CE7] border border-[#E9D5FF]'>
+                          {wh.code}
+                        </span>
+                      </TableCell>
+                      <TableCell className='py-3'>
+                        <div className='flex items-center gap-2'>
+                          <span className='font-bold text-sm text-[#1E1B2E]'>
+                            {wh.name}
+                          </span>
+                          {wh.isDefault && (
+                            <CustomChip
+                              size='small'
+                              label='Principal'
+                              color='primary'
+                              variant='tonal'
+                            />
+                          )}
                         </div>
-
-                        <div className='flex items-center gap-0.5' onClick={e => e.stopPropagation()}>
+                      </TableCell>
+                      <TableCell className='py-3'>
+                        {wh.address ? (
+                          <div className='flex items-center gap-1.5 text-xs text-[#6B7280]'>
+                            <i className='tabler-map-pin text-sm text-[#9CA3AF] shrink-0' />
+                            <span>{wh.address}</span>
+                          </div>
+                        ) : (
+                          <span className='text-xs text-[#9CA3AF]'>—</span>
+                        )}
+                      </TableCell>
+                      <TableCell className='py-3'>
+                        <div className='flex items-center gap-1.5 text-xs text-[#1E1B2E] font-medium'>
+                          <i className='tabler-user text-sm text-[#9CA3AF]' />
+                          <span>{wh.manager || 'No asignado'}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell align='center' className='py-3'>
+                        <Tooltip title='Ver ubicaciones en el módulo de ubicaciones'>
+                          <Button
+                            component={Link}
+                            href={`/inventory/settings/locations?warehouseId=${wh.id}`}
+                            size='small'
+                            variant='text'
+                            sx={{
+                              p: 0,
+                              minWidth: 'auto',
+                              textTransform: 'none',
+                              '&:hover': { bgcolor: 'transparent' }
+                            }}
+                          >
+                            <CustomChip
+                              size='small'
+                              label={`${wh.locations.length} ubicaciones`}
+                              color='secondary'
+                              variant='tonal'
+                              className='cursor-pointer'
+                            />
+                          </Button>
+                        </Tooltip>
+                      </TableCell>
+                      <TableCell align='right' className='py-3'>
+                        <div className='flex items-center justify-end gap-1'>
                           <Tooltip title='Editar almacén'>
                             <IconButton size='small' onClick={() => handleOpenEditWarehouse(wh)}>
-                              <i className='tabler-edit text-sm text-textSecondary' />
+                              <i className='tabler-edit text-base text-[#6B7280] hover:text-[#6C5CE7]' />
                             </IconButton>
                           </Tooltip>
                           <Tooltip title='Eliminar almacén'>
-                            <IconButton size='small' color='error' onClick={() => handleDeleteWarehouse(wh)}>
-                              <i className='tabler-trash text-sm' />
+                            <IconButton size='small' color='error' onClick={() => handleOpenDeleteConfirm(wh)}>
+                              <i className='tabler-trash text-base' />
                             </IconButton>
                           </Tooltip>
                         </div>
-                      </div>
-
-                      {wh.address && (
-                        <Typography variant='caption' className='text-textSecondary block mt-2'>
-                          <i className='tabler-map-pin text-xs mr-1' />
-                          {wh.address}
-                        </Typography>
-                      )}
-
-                      <div className='flex items-center justify-between mt-3 pt-2.5 border-t border-[#E6E4F0]'>
-                        <Typography variant='caption' className='text-textSecondary'>
-                          Resp: <strong className='text-[#1E1B4B]'>{wh.manager || 'N/A'}</strong>
-                        </Typography>
-                        <CustomChip
-                          size='small'
-                          label={`${wh.locations.length} ubicaciones`}
-                          color={isSelected ? 'primary' : 'secondary'}
-                          variant='tonal'
-                        />
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-
-              {/* Columna Derecha (8 cols): Ubicaciones Internas del Almacén Seleccionado */}
-              <div className='lg:col-span-8'>
-                {selectedWarehouse ? (
-                  <div className='rounded-2xl border border-[#E6E4F0] bg-[#FFFFFF] overflow-hidden'>
-                    <div className='p-4 bg-[#FAFAFE] border-b border-[#E6E4F0] flex flex-col sm:flex-row sm:items-center justify-between gap-3'>
-                      <div>
-                        <div className='flex items-center gap-2'>
-                          <Typography variant='subtitle1' className='font-bold text-[#1E1B4B]'>
-                            Ubicaciones en {selectedWarehouse.name}
-                          </Typography>
-                          <CustomChip
-                            size='small'
-                            label={selectedWarehouse.code}
-                            color='primary'
-                            variant='tonal'
-                          />
-                        </div>
-                        <Typography variant='caption' className='text-textSecondary'>
-                          Pasillos, estantes, rieles, zonas de recepción o cuarentena dentro de este almacén
-                        </Typography>
-                      </div>
-
-                      <Button
-                        size='small'
-                        variant='contained'
-                        color='primary'
-                        className='rounded-full font-semibold shadow-xs'
-                        startIcon={<i className='tabler-plus text-sm' />}
-                        onClick={() => {
-                          setNewLocCode(`${selectedWarehouse.code.slice(0, 3)}-EST-0${selectedWarehouse.locations.length + 1}`)
-                          setShowNewLocRow(true)
-                        }}
-                      >
-                        Nuevo
-                      </Button>
-                    </div>
-
-                    <div className='overflow-x-auto'>
-                      <Table size='small'>
-                        <TableHead className='bg-[#F8F7FA] border-b border-[#E6E4F0]'>
-                          <TableRow>
-                            <TableCell
-                              className='font-semibold text-xs uppercase text-textSecondary text-center'
-                              style={{ width: 28, maxWidth: 28, padding: '8px 4px' }}
-                            >
-                              #
-                            </TableCell>
-                            <TableCell className='font-semibold text-xs uppercase text-textSecondary' style={{ width: 155 }}>
-                              Código Ubicación
-                            </TableCell>
-                            <TableCell className='font-semibold text-xs uppercase text-textSecondary'>
-                              Nombre / Pasillo / Estante
-                            </TableCell>
-                            <TableCell className='font-semibold text-xs uppercase text-textSecondary' style={{ width: 175 }}>
-                              Tipo de Zona
-                            </TableCell>
-                            <TableCell className='font-semibold text-xs uppercase text-textSecondary'>
-                              Notas
-                            </TableCell>
-                            <TableCell className='font-semibold text-xs uppercase text-textSecondary text-right'>
-                              Acciones
-                            </TableCell>
-                          </TableRow>
-                        </TableHead>
-                        <TableBody>
-                          {/* Inline New Location Row */}
-                          {showNewLocRow && (
-                            <TableRow className='bg-[#F4F3FF]/70 border-b-2 border-[#6C5CE7]/30'>
-                              <TableCell
-                                className='text-center'
-                                style={{ width: 28, maxWidth: 28, padding: '6px 4px' }}
-                              >
-                                <span className='inline-block w-2 h-2 rounded-full bg-[#6C5CE7]' />
-                              </TableCell>
-                              <TableCell>
-                                <TextField
-                                  size='small'
-                                  placeholder='PAS-A-01'
-                                  value={newLocCode}
-                                  onChange={e => setNewLocCode(e.target.value.toUpperCase())}
-                                  sx={{
-                                    '& .MuiOutlinedInput-root': {
-                                      backgroundColor: '#FFFFFF',
-                                      borderRadius: '10px',
-                                      fontFamily: 'monospace',
-                                      fontSize: '0.78rem'
-                                    }
-                                  }}
-                                />
-                              </TableCell>
-                              <TableCell>
-                                <TextField
-                                  size='small'
-                                  fullWidth
-                                  autoFocus
-                                  placeholder='Ej. Pasillo C - Estante 2'
-                                  value={newLocName}
-                                  onChange={e => setNewLocName(e.target.value)}
-                                  onKeyDown={e => {
-                                    if (e.key === 'Enter') {
-                                      e.preventDefault()
-                                      handleCreateLocation()
-                                    }
-                                  }}
-                                  sx={{
-                                    '& .MuiOutlinedInput-root': {
-                                      backgroundColor: '#FFFFFF',
-                                      borderRadius: '10px',
-                                      fontSize: '0.8rem'
-                                    }
-                                  }}
-                                />
-                              </TableCell>
-                              <TableCell>
-                                <TextField
-                                  select
-                                  size='small'
-                                  fullWidth
-                                  value={newLocType}
-                                  onChange={e =>
-                                    setNewLocType(e.target.value as 'INTERNAL' | 'TRANSIT' | 'SCRAP')
-                                  }
-                                  sx={{
-                                    '& .MuiOutlinedInput-root': {
-                                      backgroundColor: '#FFFFFF',
-                                      borderRadius: '10px',
-                                      fontSize: '0.78rem'
-                                    }
-                                  }}
-                                >
-                                  <MenuItem value='INTERNAL'>Interna / Estantería</MenuItem>
-                                  <MenuItem value='TRANSIT'>Recepción / Tránsito</MenuItem>
-                                  <MenuItem value='SCRAP'>Merma / Cuarentena</MenuItem>
-                                </TextField>
-                              </TableCell>
-                              <TableCell>
-                                <TextField
-                                  size='small'
-                                  fullWidth
-                                  placeholder='Nota opcional...'
-                                  value={newLocNotes}
-                                  onChange={e => setNewLocNotes(e.target.value)}
-                                  onKeyDown={e => {
-                                    if (e.key === 'Enter') {
-                                      e.preventDefault()
-                                      handleCreateLocation()
-                                    }
-                                  }}
-                                  sx={{
-                                    '& .MuiOutlinedInput-root': {
-                                      backgroundColor: '#FFFFFF',
-                                      borderRadius: '10px',
-                                      fontSize: '0.78rem'
-                                    }
-                                  }}
-                                />
-                              </TableCell>
-                              <TableCell className='text-right whitespace-nowrap'>
-                                <div className='flex items-center justify-end gap-1'>
-                                  <IconButton
-                                    size='small'
-                                    onClick={handleCreateLocation}
-                                    sx={{
-                                      backgroundColor: '#6C5CE7',
-                                      color: '#FFFFFF',
-                                      '&:hover': { backgroundColor: '#5A4AD1' }
-                                    }}
-                                  >
-                                    <i className='tabler-check text-base' />
-                                  </IconButton>
-                                  <IconButton size='small' color='error' onClick={() => setShowNewLocRow(false)}>
-                                    <i className='tabler-x text-base' />
-                                  </IconButton>
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          )}
-
-                          {selectedWarehouse.locations.length === 0 ? (
-                            <TableRow>
-                              <TableCell colSpan={6} className='text-center py-8 text-textSecondary'>
-                                Este almacén aún no tiene ubicaciones internas registradas.
-                              </TableCell>
-                            </TableRow>
-                          ) : (
-                            selectedWarehouse.locations.map((loc, index) => {
-                              const typeInfo = locationTypeMeta[loc.type] || locationTypeMeta.INTERNAL
-
-                              return (
-                                <TableRow key={loc.id} hover className='border-b border-[#E6E4F0] last:border-none'>
-                                  <TableCell
-                                    className='text-center font-mono text-xs text-textSecondary'
-                                    style={{ width: 28, maxWidth: 28, padding: '6px 4px' }}
-                                  >
-                                    {index + 1}
-                                  </TableCell>
-                                  <TableCell className='font-mono font-bold text-xs text-primary whitespace-nowrap'>
-                                    {loc.code}
-                                  </TableCell>
-                                  <TableCell>
-                                    <Typography variant='body2' className='font-semibold text-[#1E1B4B]'>
-                                      {loc.name}
-                                    </Typography>
-                                  </TableCell>
-                                  <TableCell className='whitespace-nowrap'>
-                                    <CustomChip
-                                      size='small'
-                                      label={typeInfo.label}
-                                      color={typeInfo.color}
-                                      variant='tonal'
-                                    />
-                                  </TableCell>
-                                  <TableCell>
-                                    <Typography variant='caption' className='text-textSecondary'>
-                                      {loc.notes || '—'}
-                                    </Typography>
-                                  </TableCell>
-                                  <TableCell className='text-right'>
-                                    <Tooltip title='Eliminar ubicación'>
-                                      <IconButton
-                                        size='small'
-                                        color='error'
-                                        onClick={() => handleRemoveLocation(loc.id, loc.code)}
-                                      >
-                                        <i className='tabler-trash text-base' />
-                                      </IconButton>
-                                    </Tooltip>
-                                  </TableCell>
-                                </TableRow>
-                              )
-                            })
-                          )}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  </div>
-                ) : (
-                  <div className='p-8 text-center text-textSecondary border border-[#E6E4F0] rounded-2xl'>
-                    Seleccione un almacén a la izquierda para gestionar sus ubicaciones.
-                  </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
                 )}
-              </div>
-            </div>
-          )}
-        </CardContent>
+              </TableBody>
+            </Table>
+          </div>
+        )}
       </Card>
 
-      {/* Modal para Crear / Editar Almacén Padre */}
+      {/* Modal para Crear / Editar Almacén */}
       <Dialog
         open={whDialogOpen}
         onClose={() => setWhDialogOpen(false)}
@@ -581,7 +416,7 @@ const InventoryWarehousesView = () => {
         fullWidth
         PaperProps={{ sx: { borderRadius: '20px' } }}
       >
-        <DialogTitle className='font-bold text-[#1E1B4B] border-b border-[#E6E4F0]'>
+        <DialogTitle className='font-bold text-[#1E1B2E] border-b border-[#E6E4F0]'>
           {editingWarehouse ? 'Editar Almacén' : 'Nuevo Almacén Físico'}
         </DialogTitle>
         <DialogContent className='pt-5 flex flex-col gap-4'>
@@ -620,14 +455,15 @@ const InventoryWarehousesView = () => {
           />
           <FormControlLabel
             control={<Checkbox checked={whIsDefault} onChange={e => setWhIsDefault(e.target.checked)} />}
-            label={<span className='text-sm font-medium text-[#1E1B4B]'>Establecer como Almacén Principal por defecto</span>}
+            label={<span className='text-sm font-medium text-[#1E1B2E]'>Establecer como Almacén Principal por defecto</span>}
           />
         </DialogContent>
         <DialogActions className='p-4 border-t border-[#E6E4F0]'>
           <Button
-            variant='tonal'
+            variant='outlined'
             color='secondary'
-            className='rounded-full font-semibold'
+            size='small'
+            sx={{ borderRadius: '9999px', textTransform: 'none', fontWeight: 600, px: 2.5 }}
             onClick={() => setWhDialogOpen(false)}
           >
             Cancelar
@@ -635,10 +471,57 @@ const InventoryWarehousesView = () => {
           <Button
             variant='contained'
             color='primary'
-            className='rounded-full font-semibold'
+            size='small'
+            sx={{
+              borderRadius: '9999px',
+              backgroundColor: '#6C5CE7',
+              textTransform: 'none',
+              fontWeight: 600,
+              px: 3,
+              '&:hover': { backgroundColor: '#5B4CDB' }
+            }}
             onClick={handleSaveWarehouse}
           >
             Guardar Almacén
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Diálogo de Confirmación de Eliminación */}
+      <Dialog
+        open={deleteConfirmOpen}
+        onClose={() => setDeleteConfirmOpen(false)}
+        maxWidth='xs'
+        fullWidth
+        PaperProps={{ sx: { borderRadius: '20px' } }}
+      >
+        <DialogTitle className='font-bold text-[#1E1B2E] border-b border-[#E6E4F0]'>
+          ¿Eliminar almacén?
+        </DialogTitle>
+        <DialogContent className='pt-4'>
+          <Typography variant='body2' className='text-[#6B7280]'>
+            ¿Está seguro de que desea eliminar el almacén{' '}
+            <strong>{warehouseToDelete?.name}</strong> ({warehouseToDelete?.code})?
+          </Typography>
+        </DialogContent>
+        <DialogActions className='p-4 border-t border-[#E6E4F0]'>
+          <Button
+            variant='outlined'
+            color='secondary'
+            size='small'
+            sx={{ borderRadius: '9999px', textTransform: 'none', fontWeight: 600 }}
+            onClick={() => setDeleteConfirmOpen(false)}
+          >
+            Cancelar
+          </Button>
+          <Button
+            variant='contained'
+            color='error'
+            size='small'
+            sx={{ borderRadius: '9999px', textTransform: 'none', fontWeight: 600 }}
+            onClick={handleConfirmDelete}
+          >
+            Sí, Eliminar
           </Button>
         </DialogActions>
       </Dialog>

@@ -22,9 +22,10 @@ import Tooltip from '@mui/material/Tooltip'
 import Snackbar from '@mui/material/Snackbar'
 import Alert from '@mui/material/Alert'
 import Skeleton from '@mui/material/Skeleton'
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useRouter } from 'next/navigation'
 
-import { accountingService } from '@/services/accountingService'
+import { accountingService, isInvoiceLandedCostEligible } from '@/services/accountingService'
+import { settingsService } from '@/services/settingsService'
 import type { Account, AccountingInvoice, InvoiceAccountingType, InvoiceStatus } from '@/types/accountingTypes'
 import { InvoiceFormView } from './InvoiceFormView'
 import { CreditNoteFormView } from '../credit-notes/CreditNoteFormView'
@@ -32,6 +33,7 @@ import { CancelInvoiceModal } from './components/CancelInvoiceModal'
 import { CreateCreditNoteModal } from './components/CreateCreditNoteModal'
 
 export const InvoicesListView: React.FC = () => {
+  const router = useRouter()
   const searchParams = useSearchParams()
   const initialType = searchParams.get('type') as InvoiceAccountingType | null
   const createFromQuote = searchParams.get('create_from_quote')
@@ -39,11 +41,12 @@ export const InvoicesListView: React.FC = () => {
 
   const [invoices, setInvoices] = useState<AccountingInvoice[]>([])
   const [accounts, setAccounts] = useState<Account[]>([])
+  const [costosEnDestinoActivos, setCostosEnDestinoActivos] = useState(true)
   const [loading, setLoading] = useState(true)
 
   // Filters
   const [searchTerm, setSearchTerm] = useState('')
-  const [typeFilter, setTypeFilter] = useState<'ALL' | InvoiceAccountingType>(initialType || 'ALL')
+  const [typeFilter, setTypeFilter] = useState<'ALL' | InvoiceAccountingType>(initialType || 'SUPPLIER')
   const [statusFilter, setStatusFilter] = useState<'ALL' | InvoiceStatus>('ALL')
   const [docTypeFilter, setDocTypeFilter] = useState<string>('ALL')
   const [page, setPage] = useState(0)
@@ -58,6 +61,8 @@ export const InvoicesListView: React.FC = () => {
 
     if (qType) {
       setTypeFilter(qType)
+    } else if (initialType) {
+      setTypeFilter(initialType)
     }
   }, [searchParams])
 
@@ -80,13 +85,17 @@ export const InvoicesListView: React.FC = () => {
   const loadData = async () => {
     try {
       setLoading(true)
-      const [invList, accList] = await Promise.all([
+      const [invList, accList, fiscalRules] = await Promise.all([
         accountingService.getInvoices(),
-        accountingService.getAccounts()
+        accountingService.getAccounts(),
+        settingsService.getFiscalRules().catch(() => null)
       ])
 
       setInvoices(invList)
       setAccounts(accList)
+      if (fiscalRules && 'costosEnDestinoActivos' in fiscalRules) {
+        setCostosEnDestinoActivos(fiscalRules.costosEnDestinoActivos !== false)
+      }
     } finally {
       setLoading(false)
     }
@@ -99,6 +108,8 @@ export const InvoicesListView: React.FC = () => {
   // Filtered invoices
   const filteredInvoices = useMemo(() => {
     return invoices.filter(inv => {
+      // Las notas de crédito tienen su propio apartado exclusivo (/accounting/credit-notes)
+      if (inv.tipoDocumento === 'NOTA_CREDITO') return false;
       const matchSearch =
         inv.numeroFactura.toLowerCase().includes(searchTerm.toLowerCase()) ||
         inv.contactoNombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -356,17 +367,7 @@ export const InvoicesListView: React.FC = () => {
             }}
           />
 
-          <TextField
-            select
-            size='small'
-            value={typeFilter}
-            onChange={e => setTypeFilter(e.target.value as any)}
-            sx={{ width: 200 }}
-          >
-            <MenuItem value='ALL'>Todos los tipos</MenuItem>
-            <MenuItem value='CUSTOMER'>Clientes (CxC)</MenuItem>
-            <MenuItem value='SUPPLIER'>Proveedores (CxP)</MenuItem>
-          </TextField>
+          
 
           <TextField
             select
@@ -392,7 +393,6 @@ export const InvoicesListView: React.FC = () => {
           >
             <MenuItem value='ALL'>Todos los docs</MenuItem>
             <MenuItem value='FACTURA'>Facturas</MenuItem>
-            <MenuItem value='NOTA_CREDITO'>Notas de Crédito</MenuItem>
             <MenuItem value='NOTA_ENTREGA'>Notas de Entrega</MenuItem>
             <MenuItem value='RECIBO'>Recibos</MenuItem>
           </TextField>
@@ -590,6 +590,19 @@ export const InvoicesListView: React.FC = () => {
                             <i className='tabler-eye text-base' />
                           </IconButton>
                         </Tooltip>
+
+                        {/* Acción rápida Crear Costo en Destino si es Factura de Proveedor con ítems de costo en destino */}
+                        {isInvoiceLandedCostEligible(inv, costosEnDestinoActivos) && (
+                          <Tooltip title='Crear Costo en Destino'>
+                            <IconButton
+                              size='small'
+                              onClick={() => router.push(`/inventory/operations/landed-costs/create?invoiceId=${inv.id}`)}
+                              sx={{ color: '#10B981', '&:hover': { backgroundColor: 'rgba(16, 185, 129, 0.08)' } }}
+                            >
+                              <i className='tabler-calculator text-base' />
+                            </IconButton>
+                          </Tooltip>
+                        )}
 
                         {/* Acción rápida Emitir Nota de Crédito */}
                         {inv.estado !== 'DRAFT' && inv.estado !== 'CANCELED' && inv.tipoDocumento !== 'NOTA_CREDITO' && (

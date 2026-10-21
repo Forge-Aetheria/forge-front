@@ -13,6 +13,11 @@ import {
   loadStoredMovements,
   saveStoredMovements
 } from './inventoryStorage'
+import {
+  calculateWeightedAverageCost,
+  recalculateTemplateStandardCost,
+  getSystemNegativeStockPolicy
+} from './costingService'
 import { salesQuotesService } from '@/services/salesQuotesService'
 import { purchasesService } from '@/services/purchasesService'
 
@@ -141,7 +146,10 @@ export const validateWarehouseOperationOrder = async (
     }
   })
 
-  // First check stock availability if DELIVERY of storable items
+  // Get active system negative stock policy
+  const negativeStockPolicy = await getSystemNegativeStockPolicy()
+
+  // First check stock availability if DELIVERY of storable items and policy is BLOCK
   if (order.tipo === 'DELIVERY') {
     for (const line of updatedLines) {
       if (line.cantidad_procesada <= 0) continue
@@ -149,9 +157,9 @@ export const validateWarehouseOperationOrder = async (
       const variant = tpl?.variants.find(v => v.id === line.variante_id)
 
       if (tpl && tpl.productType === 'storable' && variant) {
-        if (variant.physicalStock < line.cantidad_procesada) {
+        if (negativeStockPolicy === 'BLOCK' && variant.physicalStock < line.cantidad_procesada) {
           throw new Error(
-            `Stock físico insuficiente para ${line.producto_nombre} (${line.variante_sku}). Disponible en almacén: ${variant.physicalStock} ${line.uom_code}.`
+            `Stock físico insuficiente para ${line.producto_nombre} (${line.variante_sku}). Disponible en almacén: ${variant.physicalStock} ${line.uom_code}. Política activa: Bloqueo Estricto de Stock Negativo.`
           )
         }
       }
@@ -174,22 +182,42 @@ export const validateWarehouseOperationOrder = async (
     const variant = tpl.variants[vIdx]
     let newPhysical = variant.physicalStock
     let newReserved = variant.reservedStock
+    let newAvgCost = variant.costPrice || tpl.standardCost || 0
+    const lineUnitCost = line.costo_unitario_usd || variant.costPrice || tpl.standardCost || 0
 
     if (order.tipo === 'RECEIPT') {
+      // Recalcular Costo Promedio Ponderado Móvil (AVCO) de la variante
+      newAvgCost = calculateWeightedAverageCost(
+        variant.physicalStock,
+        variant.costPrice || 0,
+        line.cantidad_procesada,
+        lineUnitCost
+      )
       newPhysical = variant.physicalStock + line.cantidad_procesada
     } else if (order.tipo === 'DELIVERY') {
-      newPhysical = Math.max(0, variant.physicalStock - line.cantidad_procesada)
+      if (negativeStockPolicy === 'BLOCK') {
+        newPhysical = Math.max(0, variant.physicalStock - line.cantidad_procesada)
+      } else {
+        // En modo flexible, el stock físico puede ser negativo
+        newPhysical = variant.physicalStock - line.cantidad_procesada
+      }
       newReserved = Math.max(0, variant.reservedStock - line.cantidad_procesada)
+      // En despachos el costo promedio de las existencias restantes no cambia
     }
 
-    const newAvailable = Math.max(0, newPhysical - newReserved)
+    const newAvailable = newPhysical - newReserved
 
+    // Actualizar variante con nuevo stock y nuevo costo promedio
     tpl.variants[vIdx] = {
       ...variant,
+      costPrice: newAvgCost,
       physicalStock: newPhysical,
       reservedStock: newReserved,
       availableStock: newAvailable
     }
+
+    // Recalcular costo estándar del producto padre ponderado por existencias
+    tpl.standardCost = recalculateTemplateStandardCost(tpl.variants)
     tpl.updatedAt = now
     templates[tIdx] = tpl
 
@@ -199,6 +227,19 @@ export const validateWarehouseOperationOrder = async (
         : order.tipo === 'DELIVERY'
         ? `${order.almacen_origen_nombre}${order.ubicacion_origen_nombre ? ` (${order.ubicacion_origen_nombre.split('·')[0].trim()})` : ''}`
         : `${order.almacen_origen_nombre} → ${order.almacen_destino_nombre}`
+
+    const qtyEntrada =
+      order.tipo === 'RECEIPT' || order.tipo === 'INTERNAL_TRANSFER'
+        ? line.cantidad_procesada
+        : 0
+    const qtySalida =
+      order.tipo === 'DELIVERY' || order.tipo === 'INTERNAL_TRANSFER'
+        ? line.cantidad_procesada
+        : 0
+    const unitCost = order.tipo === 'RECEIPT' ? lineUnitCost : (variant.costPrice || lineUnitCost)
+    const movQty = qtyEntrada > 0 ? qtyEntrada : qtySalida
+    const movVal = Number((movQty * unitCost).toFixed(2))
+    const saldoVal = Number((newPhysical * newAvgCost).toFixed(2))
 
     const mov: StockMovement = {
       id: `mov-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
@@ -215,15 +256,12 @@ export const validateWarehouseOperationOrder = async (
           ? 'SALE_DELIVERY'
           : 'INTERNAL_TRANSFER',
       documento_referencia: order.codigo,
-      cantidad_entrada:
-        order.tipo === 'RECEIPT' || order.tipo === 'INTERNAL_TRANSFER'
-          ? line.cantidad_procesada
-          : 0,
-      cantidad_salida:
-        order.tipo === 'DELIVERY' || order.tipo === 'INTERNAL_TRANSFER'
-          ? line.cantidad_procesada
-          : 0,
-      costo_unitario_usd: line.costo_unitario_usd || variant.costPrice || tpl.standardCost,
+      cantidad_entrada: qtyEntrada,
+      cantidad_salida: qtySalida,
+      costo_unitario_usd: unitCost,
+      costo_promedio_usd: newAvgCost,
+      valor_movimiento_usd: movVal,
+      saldo_valorizado_usd: saldoVal,
       saldo_resultante: newPhysical,
       motivo:
         order.tipo === 'RECEIPT'

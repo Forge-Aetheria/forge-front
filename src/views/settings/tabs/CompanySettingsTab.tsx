@@ -373,7 +373,7 @@ export const CompanySettingsTab: React.FC<Props> = ({ company, onSave }) => {
                 px: 2.5
               }}
             >
-              + Agregar Cuenta
+              Agregar Cuenta
             </Button>
           </div>
 
@@ -500,7 +500,7 @@ export const CompanySettingsTab: React.FC<Props> = ({ company, onSave }) => {
               '&:hover': { backgroundColor: '#5B4CDB' }
             }}
           >
-            {saving ? 'Guardando...' : 'Guardar Empresa'}
+            {saving ? 'Guardando...' : 'Guardar'}
           </Button>
         </div>
       </form>

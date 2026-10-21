@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useMemo } from 'react'
+import { useRouter } from 'next/navigation'
 import Dialog from '@mui/material/Dialog'
 import DialogTitle from '@mui/material/DialogTitle'
 import DialogContent from '@mui/material/DialogContent'
@@ -22,7 +23,8 @@ import TableHead from '@mui/material/TableHead'
 import TableRow from '@mui/material/TableRow'
 import Tooltip from '@mui/material/Tooltip'
 
-import { accountingService } from '@/services/accountingService'
+import { accountingService, isInvoiceLandedCostEligible } from '@/services/accountingService'
+import { settingsService } from '@/services/settingsService'
 import type {
   Account,
   AccountingInvoice,
@@ -59,6 +61,7 @@ export const InvoiceDetailModal: React.FC<Props> = ({
   accounts,
   defaultTasaBcv = 54.00
 }) => {
+  const router = useRouter()
   const isEditing = Boolean(invoice)
   const isReadOnly = invoice?.estado === 'POSTED' || invoice?.estado === 'PAID'
 
@@ -71,6 +74,16 @@ export const InvoiceDetailModal: React.FC<Props> = ({
   const [fechaVencimiento, setFechaVencimiento] = useState(
     invoice?.fechaVencimiento || new Date(Date.now() + 15 * 86400000).toISOString().split('T')[0]
   )
+  const [costosEnDestinoActivos, setCostosEnDestinoActivos] = useState<boolean>(true)
+
+  useEffect(() => {
+    settingsService
+      .getFiscalRules()
+      .then(rules => {
+        setCostosEnDestinoActivos(rules.costosEnDestinoActivos !== false)
+      })
+      .catch(() => {})
+  }, [])
 
   const [lineas, setLineas] = useState<InvoiceLine[]>(
     invoice?.lineas || [
@@ -612,6 +625,29 @@ export const InvoiceDetailModal: React.FC<Props> = ({
       </DialogContent>
 
       <DialogActions sx={{ p: 5, pt: 3, borderTop: '1px solid #E6E4F0', gap: 2 }}>
+        {invoice && isInvoiceLandedCostEligible(invoice, costosEnDestinoActivos) && (
+          <Button
+            variant='outlined'
+            onClick={() => {
+              onClose()
+              router.push(`/inventory/operations/landed-costs/create?invoiceId=${invoice.id}`)
+            }}
+            startIcon={<i className='tabler-calculator text-base' />}
+            sx={{
+              borderRadius: '9999px',
+              borderColor: '#6C5CE7',
+              color: '#6C5CE7',
+              textTransform: 'none',
+              fontWeight: 600,
+              px: 3.5,
+              mr: 'auto',
+              '&:hover': { borderColor: '#5b4bc4', backgroundColor: '#F0EEF9' }
+            }}
+          >
+            Crear Costo en Destino
+          </Button>
+        )}
+
         <Button
           variant='outlined'
           onClick={onClose}

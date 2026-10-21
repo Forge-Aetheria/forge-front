@@ -16,7 +16,6 @@ import {
   setFiscalConfigEnabled
 } from '@/services/inventoryService'
 import InventoryTable from './InventoryTable'
-import ProductFormDrawer from './components/ProductFormDrawer'
 import StockAdjustmentModal from './components/StockAdjustmentModal'
 
 const InventoryCatalogView = () => {
@@ -25,9 +24,7 @@ const InventoryCatalogView = () => {
   const [fiscalEnabled, setFiscalEnabled] = useState<boolean>(true)
   const [loading, setLoading] = useState(true)
 
-  // Drawers & Modals
-  const [formOpen, setFormOpen] = useState(false)
-  const [editingProduct, setEditingProduct] = useState<ProductTemplate | null>(null)
+  // Modals
   const [adjustModalOpen, setAdjustModalOpen] = useState(false)
   const [adjustingProduct, setAdjustingProduct] = useState<ProductTemplate | null>(null)
 
@@ -56,11 +53,6 @@ const InventoryCatalogView = () => {
     setFiscalConfigEnabled(enabled)
   }
 
-  const handleOpenCreate = () => {
-    setEditingProduct(null)
-    setFormOpen(true)
-  }
-
   const handleOpenEdit = (product: ProductTemplate) => {
     router.push(`/inventory/products/${product.id}`)
   }
@@ -76,15 +68,24 @@ const InventoryCatalogView = () => {
       <div className='flex items-center justify-between flex-wrap gap-4'>
         <div>
           <Typography variant='h4' className='font-bold text-[#1E1B2E]'>
-            Catálogo Maestro de Productos y Servicios
+            Productos
           </Typography>
         </div>
 
         <div className='flex items-center gap-2.5 flex-wrap'>
           <Button
+            component={Link}
+            href='/inventory/products/create'
             variant='contained'
-            onClick={handleOpenCreate}
             startIcon={<i className='tabler-plus text-base' />}
+            sx={{
+              borderRadius: '9999px',
+              backgroundColor: '#6C5CE7',
+              textTransform: 'none',
+              fontWeight: 600,
+              px: 3.5,
+              '&:hover': { backgroundColor: '#5B4CDB' }
+            }}
           >
             Nuevo
           </Button>
@@ -106,24 +107,6 @@ const InventoryCatalogView = () => {
           onAdjustStock={handleOpenAdjust}
         />
       )}
-
-      {/* Create / Edit Drawer */}
-      <ProductFormDrawer
-        open={formOpen}
-        onClose={() => setFormOpen(false)}
-        initialProduct={editingProduct}
-        fiscalEnabled={fiscalEnabled}
-        onSuccess={saved => {
-          loadCatalog()
-          setToast({
-            open: true,
-            message: editingProduct
-              ? `Artículo "${saved.name}" actualizado exitosamente`
-              : `Producto "${saved.name}" registrado exitosamente en el catálogo`,
-            severity: 'success'
-          })
-        }}
-      />
 
       {/* Stock Adjustment Modal */}
       <StockAdjustmentModal

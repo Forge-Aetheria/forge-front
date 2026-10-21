@@ -9,7 +9,7 @@ import IconButton from '@mui/material/IconButton'
 import Tooltip from '@mui/material/Tooltip'
 import TextField from '@mui/material/TextField'
 import MenuItem from '@mui/material/MenuItem'
-import Chip from '@mui/material/Chip'
+import CustomChip from '@core/components/mui/Chip'
 import Grid from '@mui/material/Grid'
 import Autocomplete from '@mui/material/Autocomplete'
 import Alert from '@mui/material/Alert'
@@ -221,7 +221,7 @@ export const JournalFormView: React.FC<Props> = ({
       {/* 1. BARRA SUPERIOR DE ACCIONES */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2.5 }}>
-          <Tooltip title='Volver a diarios contables'>
+          <Tooltip title='Volver'>
             <IconButton
               onClick={onBack}
               sx={{
@@ -244,76 +244,62 @@ export const JournalFormView: React.FC<Props> = ({
               <Typography variant='h5' sx={{ fontWeight: 800, color: '#1E293B' }}>
                 {isEditing ? `Editar Diario: ${journal?.nombre}` : 'Nuevo Diario Contable'}
               </Typography>
-              <Chip
+              <CustomChip
                 label={isEditing ? 'Edición' : 'Nuevo Libro'}
                 size='small'
-                sx={{
-                  fontWeight: 800,
-                  fontSize: '0.75rem',
-                  backgroundColor: 'rgba(108, 92, 231, 0.12)',
-                  color: '#6C5CE7'
-                }}
+                variant='tonal'
+                color='primary'
               />
-              <Chip
+              <CustomChip
                 label={tipo === 'BANCO' ? `Banco (${moneda})` : tipo}
                 size='small'
-                sx={{
-                  fontWeight: 700,
-                  fontSize: '0.72rem',
-                  backgroundColor: '#F1F5F9',
-                  color: '#475569'
-                }}
+                variant='tonal'
+                color='secondary'
               />
             </Box>
-            <Typography variant='caption' sx={{ color: '#64748B' }}>
-              Configuración de libro auxiliar con cuenta puente del PUC, moneda operativa e imputación
-            </Typography>
+            
           </Box>
         </Box>
 
-        {/* Botones de Cabecera (Minimalista) */}
+        {/* Botones de Cabecera */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
           <Button
-            variant='outlined'
+            variant='tonal'
+            color='secondary'
+            size='small'
             onClick={onBack}
             disabled={submitting}
             sx={{
               borderRadius: '9999px',
-              borderColor: '#CBD5E1',
-              color: '#64748B',
               fontWeight: 600,
-              textTransform: 'none',
-              px: 2.5,
-              height: 38
+              textTransform: 'none'
             }}
           >
             Cancelar
           </Button>
 
-          <Tooltip title={isEditing ? 'Guardar Cambios' : 'Crear Diario Contable'}>
-            <span>
-              <IconButton
-                onClick={handleSave}
-                disabled={submitting || !nombre.trim() || !codigo.trim()}
-                sx={{
-                  width: 38,
-                  height: 38,
-                  borderRadius: '9999px',
-                  backgroundColor: '#6C5CE7',
-                  color: '#FFFFFF',
-                  boxShadow: '0 4px 12px rgba(108, 92, 231, 0.3)',
-                  '&:hover': { backgroundColor: '#5B4CDB' },
-                  '&:disabled': { backgroundColor: '#E2E8F0', color: '#94A3B8' }
-                }}
-              >
-                {submitting ? (
-                  <CircularProgress size={18} color='inherit' />
-                ) : (
-                  <i className='tabler-device-floppy text-lg' />
-                )}
-              </IconButton>
-            </span>
-          </Tooltip>
+          <Button
+            variant='contained'
+            color='primary'
+            size='small'
+            onClick={handleSave}
+            disabled={submitting || !nombre.trim() || !codigo.trim()}
+            startIcon={
+              submitting ? (
+                <CircularProgress size={16} color='inherit' />
+              ) : (
+                <i className='tabler-device-floppy text-base' />
+              )
+            }
+            sx={{
+              borderRadius: '9999px',
+              fontWeight: 600,
+              textTransform: 'none',
+              px: 3
+            }}
+          >
+            Guardar
+          </Button>
         </Box>
       </Box>
 
@@ -481,17 +467,7 @@ export const JournalFormView: React.FC<Props> = ({
                         {opt.nombre}
                       </Typography>
                     </Box>
-                    <Chip
-                      label={opt.tipoCuentaNombre || opt.tipo}
-                      size='small'
-                      sx={{
-                        height: 20,
-                        fontSize: '0.68rem',
-                        fontWeight: 700,
-                        backgroundColor: '#F1F5F9',
-                        color: '#64748B'
-                      }}
-                    />
+                    <CustomChip label={opt.tipoCuentaNombre || opt.tipo} size='small' variant='tonal' color='secondary' />
                   </Box>
                 </li>
               )}

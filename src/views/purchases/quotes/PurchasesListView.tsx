@@ -215,7 +215,7 @@ export const PurchasesListView: React.FC = () => {
             <Typography variant='h4' className='font-bold text-[#1E1B2E]'>
               Compras y Abastecimiento
             </Typography>
-            {bcvRate && <BcvRateBadge rate={bcvRate} onRefresh={loadData} />}
+            
           </div>
         </div>
 

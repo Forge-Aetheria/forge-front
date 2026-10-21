@@ -512,7 +512,7 @@ export const AccountCreateEditDrawer: React.FC<Props> = ({
             '&:hover': { backgroundColor: '#5b4bc4' }
           }}
         >
-          {submitting ? 'Guardando...' : isEditing ? 'Guardar Cambios' : 'Crear Cuenta'}
+          {submitting ? 'Guardando...' : 'Guardar'}
         </Button>
       </Box>
     </Drawer>

@@ -333,7 +333,7 @@ export const PurchaseDetailView: React.FC<Props> = ({ id }) => {
       <div className='flex items-center justify-between gap-4 flex-wrap'>
         {/* Izquierda: Volver + Correlativo + Estado + Tasa BCV */}
         <div className='flex items-center gap-3 flex-wrap'>
-          <Tooltip title='Volver al listado'>
+          <Tooltip title='Volver'>
             <Button
               component={Link}
               href='/purchases/quotes'
@@ -361,12 +361,7 @@ export const PurchaseDetailView: React.FC<Props> = ({ id }) => {
                 {displayCorrelativo}
               </Typography>
               <PurchaseStatusChip status={quote.estado} size='medium' />
-              {activeBcvRate && (
-                <BcvRateBadge
-                  rate={activeBcvRate}
-                  onRefresh={handleSimulateBcvVariation}
-                />
-              )}
+              
               {quote.almacen_operacion_codigo && (
                 <Tooltip title="Ver Orden de Recepción en Almacén" arrow>
                   <Link href="/inventory/operations/receipts">
@@ -514,43 +509,35 @@ export const PurchaseDetailView: React.FC<Props> = ({ id }) => {
             </Button>
           )}
 
-          {/* HU5: Botón Generar Orden de Compra (Estrictamente habilitado WHILE estado === 'APPROVED') */}
-          <Tooltip
-            title={
-              quote.estado === 'APPROVED'
-                ? 'Emitir Orden de Compra en firme (OC-2026-XXXX) y notificar stock en tránsito'
-                : 'Solo habilitado cuando el presupuesto se encuentra en estado APROBADO'
-            }
-            arrow
-          >
-            <span>
-              <Button
-                variant='contained'
-                disabled={quote.estado !== 'APPROVED' || isConverting}
-                onClick={handleConvertToPurchaseOrder}
-                sx={{
-                  borderRadius: '9999px',
-                  backgroundColor: '#6C5CE7',
-                  color: '#FFFFFF',
-                  textTransform: 'none',
-                  fontWeight: 600,
-                  px: 2.5,
-                  boxShadow:
-                    quote.estado === 'APPROVED' ? '0 4px 14px rgba(108, 92, 231, 0.35)' : 'none',
-                  '&:hover': { backgroundColor: '#5B4CDB' }
-                }}
-                startIcon={
-                  isConverting ? (
-                    <CircularProgress size={16} color='inherit' />
-                  ) : (
-                    <i className='tabler-shopping-bag-check text-base' />
-                  )
-                }
-              >
-                {isConverting ? 'Generando OC...' : 'Generar Orden de Compra'}
-              </Button>
-            </span>
-          </Tooltip>
+          {/* HU5: Botón Generar Orden (Estrictamente habilitado si estado === 'APPROVED') */}
+          {quote.estado === 'APPROVED' && (
+            <Button
+              variant='contained'
+              disabled={isConverting}
+              onClick={handleConvertToPurchaseOrder}
+              sx={{
+                borderRadius: '9999px',
+                backgroundColor: '#6C5CE7',
+                color: '#FFFFFF',
+                textTransform: 'none',
+                fontWeight: 600,
+                fontSize: '0.85rem',
+                px: 3,
+                py: 0.8,
+                boxShadow: '0 4px 14px rgba(108, 92, 231, 0.35)',
+                '&:hover': { backgroundColor: '#5B4CDB' }
+              }}
+              startIcon={
+                isConverting ? (
+                  <CircularProgress size={16} color='inherit' />
+                ) : (
+                  <i className='tabler-shopping-bag-check text-base' />
+                )
+              }
+            >
+              {isConverting ? 'Generando OC...' : 'Generar Orden'}
+            </Button>
+          )}
 
           {/* Interconexión Recepción de Mercancía en Almacén (SPEC-009) */}
           {quote.estado === 'PURCHASE_ORDER' && physicalLinesCount > 0 && (
@@ -565,7 +552,9 @@ export const PurchaseDetailView: React.FC<Props> = ({ id }) => {
                 color: '#FFFFFF',
                 textTransform: 'none',
                 fontWeight: 600,
-                fontSize: '0.8rem',
+                fontSize: '0.85rem',
+                px: 3,
+                py: 0.8,
                 boxShadow: '0 4px 14px rgba(2, 132, 199, 0.3)',
                 '&:hover': { backgroundColor: '#0369A1' }
               }}
@@ -581,7 +570,7 @@ export const PurchaseDetailView: React.FC<Props> = ({ id }) => {
                 ? 'Generando Recepción...'
                 : quote.almacen_operacion_codigo
                 ? 'Generar Recepción Adicional'
-                : 'Recibir Productos'}
+                : 'Recibir'}
             </Button>
           )}
 
@@ -597,13 +586,15 @@ export const PurchaseDetailView: React.FC<Props> = ({ id }) => {
                 color: '#FFFFFF',
                 textTransform: 'none',
                 fontWeight: 600,
-                fontSize: '0.8rem',
+                fontSize: '0.85rem',
+                px: 3,
+                py: 0.8,
                 boxShadow: '0 4px 14px rgba(16, 185, 129, 0.3)',
                 '&:hover': { backgroundColor: '#059669' }
               }}
               startIcon={<i className='tabler-receipt text-base' />}
             >
-              Crear Factura de Proveedor
+              Facturar
             </Button>
           )}
 
@@ -618,6 +609,9 @@ export const PurchaseDetailView: React.FC<Props> = ({ id }) => {
                 color: '#EF4444',
                 textTransform: 'none',
                 fontWeight: 600,
+                fontSize: '0.85rem',
+                px: 3,
+                py: 0.8,
                 '&:hover': {
                   borderColor: '#EF4444',
                   backgroundColor: '#FEF2F2'

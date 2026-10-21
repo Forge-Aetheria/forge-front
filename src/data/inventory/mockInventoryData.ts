@@ -5,7 +5,8 @@ import type {
   StockAdjustmentRecord,
   WarehouseOperationOrder,
   ProductCategory,
-  Warehouse
+  Warehouse,
+  LandedCostRecord
 } from '@/types/inventoryTypes'
 
 export const defaultFiscalConfig: FiscalConfig = {
@@ -326,6 +327,78 @@ export const mockProductTemplates: ProductTemplate[] = [
         sku: 'SRV-MNT-006',
         combinationValues: [],
         costPrice: 60.0,
+        priceExtra: 0,
+        physicalStock: 0,
+        reservedStock: 0,
+        availableStock: 0
+      }
+    ]
+  },
+  {
+    id: 'prod-srv-flete',
+    name: 'Flete y Transporte de Carga Nacional e Internacional',
+    defaultCode: 'SRV-FLT-001',
+    productType: 'service',
+    uomCode: 'servicio',
+    categoryName: 'Costos de Importación',
+    tags: ['Logística', 'Flete', 'Landed Cost'],
+    canBeSold: false,
+    canBePurchased: true,
+    isLandedCost: true,
+    defaultSplitMethod: 'BY_QUANTITY',
+    basePrice: 0,
+    standardCost: 1200.0,
+    targetMargin: 0,
+    vatRate: '16',
+    applyISLR: true,
+    invoicingPolicy: 'ORDERED',
+    purchaseControlPolicy: 'ORDERED',
+    createdAt: '2026-10-01T10:00:00Z',
+    updatedAt: '2026-10-18T10:00:00Z',
+    attributes: [],
+    variants: [
+      {
+        id: 'var-srv-flt-001',
+        templateId: 'prod-srv-flete',
+        sku: 'SRV-FLT-001',
+        combinationValues: [],
+        costPrice: 1200.0,
+        priceExtra: 0,
+        physicalStock: 0,
+        reservedStock: 0,
+        availableStock: 0
+      }
+    ]
+  },
+  {
+    id: 'prod-srv-arancel',
+    name: 'Gastos de Desaduanamiento y Aranceles',
+    defaultCode: 'SRV-ARA-002',
+    productType: 'service',
+    uomCode: 'servicio',
+    categoryName: 'Costos de Importación',
+    tags: ['Aduana', 'Aranceles', 'SENIAT', 'Landed Cost'],
+    canBeSold: false,
+    canBePurchased: true,
+    isLandedCost: true,
+    defaultSplitMethod: 'BY_COST',
+    basePrice: 0,
+    standardCost: 450.0,
+    targetMargin: 0,
+    vatRate: '0',
+    applyISLR: false,
+    invoicingPolicy: 'ORDERED',
+    purchaseControlPolicy: 'ORDERED',
+    createdAt: '2026-10-01T10:00:00Z',
+    updatedAt: '2026-10-18T10:00:00Z',
+    attributes: [],
+    variants: [
+      {
+        id: 'var-srv-ara-002',
+        templateId: 'prod-srv-arancel',
+        sku: 'SRV-ARA-002',
+        combinationValues: [],
+        costPrice: 450.0,
         priceExtra: 0,
         physicalStock: 0,
         reservedStock: 0,
@@ -824,7 +897,19 @@ export const mockProductCategories: ProductCategory[] = [
     name: 'Textil & Indumentaria',
     description: 'Uniformes corporativos, dotación textil, camisas, pantalones y calzado industrial',
     isActive: true,
-    createdAt: '2026-09-01T10:00:00Z'
+    createdAt: '2026-09-01T10:00:00Z',
+    cuentaIngresosId: 'acc-410101',
+    cuentaIngresosCodigo: '4.1.01.01',
+    cuentaIngresosNombre: 'Ingresos por Venta de Mercancías',
+    cuentaGastosId: 'acc-510101',
+    cuentaGastosCodigo: '5.1.01.01',
+    cuentaGastosNombre: 'Costo de Ventas de Mercancía',
+    cuentaValoracionInventarioId: 'acc-110301',
+    cuentaValoracionInventarioCodigo: '1.1.03.01',
+    cuentaValoracionInventarioNombre: 'Inventario de Mercancía para la Venta',
+    cuentaCostosDestinoId: 'acc-110302',
+    cuentaCostosDestinoCodigo: '1.1.03.02',
+    cuentaCostosDestinoNombre: 'Mercancías en Tránsito / Costos en Destino'
   },
   {
     id: 'cat-002',
@@ -832,7 +917,19 @@ export const mockProductCategories: ProductCategory[] = [
     name: 'Herramientas & Maquinaria',
     description: 'Herramientas eléctricas, manuales, discos de corte, taladros y repuestos mecánicos',
     isActive: true,
-    createdAt: '2026-09-01T10:05:00Z'
+    createdAt: '2026-09-01T10:05:00Z',
+    cuentaIngresosId: 'acc-410101',
+    cuentaIngresosCodigo: '4.1.01.01',
+    cuentaIngresosNombre: 'Ingresos por Venta de Mercancías',
+    cuentaGastosId: 'acc-510101',
+    cuentaGastosCodigo: '5.1.01.01',
+    cuentaGastosNombre: 'Costo de Ventas de Mercancía',
+    cuentaValoracionInventarioId: 'acc-110301',
+    cuentaValoracionInventarioCodigo: '1.1.03.01',
+    cuentaValoracionInventarioNombre: 'Inventario de Mercancía para la Venta',
+    cuentaCostosDestinoId: 'acc-110302',
+    cuentaCostosDestinoCodigo: '1.1.03.02',
+    cuentaCostosDestinoNombre: 'Mercancías en Tránsito / Costos en Destino'
   },
   {
     id: 'cat-003',
@@ -840,7 +937,19 @@ export const mockProductCategories: ProductCategory[] = [
     name: 'Químicos & Fluidos',
     description: 'Solventes industriales, desengrasantes, aceites lubricantes y pinturas',
     isActive: true,
-    createdAt: '2026-09-01T10:10:00Z'
+    createdAt: '2026-09-01T10:10:00Z',
+    cuentaIngresosId: 'acc-410101',
+    cuentaIngresosCodigo: '4.1.01.01',
+    cuentaIngresosNombre: 'Ingresos por Venta de Mercancías',
+    cuentaGastosId: 'acc-510101',
+    cuentaGastosCodigo: '5.1.01.01',
+    cuentaGastosNombre: 'Costo de Ventas de Mercancía',
+    cuentaValoracionInventarioId: 'acc-110301',
+    cuentaValoracionInventarioCodigo: '1.1.03.01',
+    cuentaValoracionInventarioNombre: 'Inventario de Mercancía para la Venta',
+    cuentaCostosDestinoId: 'acc-110302',
+    cuentaCostosDestinoCodigo: '1.1.03.02',
+    cuentaCostosDestinoNombre: 'Mercancías en Tránsito / Costos en Destino'
   },
   {
     id: 'cat-004',
@@ -848,7 +957,19 @@ export const mockProductCategories: ProductCategory[] = [
     name: 'Papelería & Oficina',
     description: 'Resmas de papel, tóners, carpetas y suministros administrativos consumibles',
     isActive: true,
-    createdAt: '2026-09-01T10:15:00Z'
+    createdAt: '2026-09-01T10:15:00Z',
+    cuentaIngresosId: 'acc-410101',
+    cuentaIngresosCodigo: '4.1.01.01',
+    cuentaIngresosNombre: 'Ingresos por Venta de Mercancías',
+    cuentaGastosId: 'acc-510101',
+    cuentaGastosCodigo: '5.1.01.01',
+    cuentaGastosNombre: 'Costo de Ventas de Mercancía',
+    cuentaValoracionInventarioId: 'acc-110301',
+    cuentaValoracionInventarioCodigo: '1.1.03.01',
+    cuentaValoracionInventarioNombre: 'Inventario de Mercancía para la Venta',
+    cuentaCostosDestinoId: 'acc-110302',
+    cuentaCostosDestinoCodigo: '1.1.03.02',
+    cuentaCostosDestinoNombre: 'Mercancías en Tránsito / Costos en Destino'
   },
   {
     id: 'cat-005',
@@ -856,7 +977,19 @@ export const mockProductCategories: ProductCategory[] = [
     name: 'Alimentos & Bebidas',
     description: 'Café en grano, insumos de comedor y productos de consumo perecederos',
     isActive: true,
-    createdAt: '2026-09-01T10:20:00Z'
+    createdAt: '2026-09-01T10:20:00Z',
+    cuentaIngresosId: 'acc-410101',
+    cuentaIngresosCodigo: '4.1.01.01',
+    cuentaIngresosNombre: 'Ingresos por Venta de Mercancías',
+    cuentaGastosId: 'acc-510101',
+    cuentaGastosCodigo: '5.1.01.01',
+    cuentaGastosNombre: 'Costo de Ventas de Mercancía',
+    cuentaValoracionInventarioId: 'acc-110301',
+    cuentaValoracionInventarioCodigo: '1.1.03.01',
+    cuentaValoracionInventarioNombre: 'Inventario de Mercancía para la Venta',
+    cuentaCostosDestinoId: 'acc-110302',
+    cuentaCostosDestinoCodigo: '1.1.03.02',
+    cuentaCostosDestinoNombre: 'Mercancías en Tránsito / Costos en Destino'
   },
   {
     id: 'cat-006',
@@ -864,7 +997,19 @@ export const mockProductCategories: ProductCategory[] = [
     name: 'Tecnología & Electrónica',
     description: 'Equipos de cómputo, lectores de código de barras, impresoras fiscales y redes',
     isActive: true,
-    createdAt: '2026-09-01T10:25:00Z'
+    createdAt: '2026-09-01T10:25:00Z',
+    cuentaIngresosId: 'acc-410101',
+    cuentaIngresosCodigo: '4.1.01.01',
+    cuentaIngresosNombre: 'Ingresos por Venta de Mercancías',
+    cuentaGastosId: 'acc-510101',
+    cuentaGastosCodigo: '5.1.01.01',
+    cuentaGastosNombre: 'Costo de Ventas de Mercancía',
+    cuentaValoracionInventarioId: 'acc-110301',
+    cuentaValoracionInventarioCodigo: '1.1.03.01',
+    cuentaValoracionInventarioNombre: 'Inventario de Mercancía para la Venta',
+    cuentaCostosDestinoId: 'acc-110302',
+    cuentaCostosDestinoCodigo: '1.1.03.02',
+    cuentaCostosDestinoNombre: 'Mercancías en Tránsito / Costos en Destino'
   },
   {
     id: 'cat-007',
@@ -872,7 +1017,13 @@ export const mockProductCategories: ProductCategory[] = [
     name: 'Servicios Profesionales',
     description: 'Mano de obra especializada, mantenimiento técnico, instalaciones y consultoría',
     isActive: true,
-    createdAt: '2026-09-01T10:30:00Z'
+    createdAt: '2026-09-01T10:30:00Z',
+    cuentaIngresosId: 'acc-410102',
+    cuentaIngresosCodigo: '4.1.01.02',
+    cuentaIngresosNombre: 'Ingresos por Fletes y Servicios Logísticos',
+    cuentaGastosId: 'acc-610101',
+    cuentaGastosCodigo: '6.1.01.01',
+    cuentaGastosNombre: 'Sueldos y Salarios del Personal'
   }
 ]
 
@@ -965,4 +1116,78 @@ export const mockWarehouses: Warehouse[] = [
     ]
   }
 ]
+
+export const mockLandedCosts: LandedCostRecord[] = [
+  {
+    id: 'lc-001',
+    codigo: 'CD/2026/0001',
+    fecha: '2026-10-18T10:30:00Z',
+    estado: 'APPLIED',
+    referencia: 'BL-99201-MSC (Importación Contenedor Textil)',
+    notas: 'Flete marítimo y nacionalización aduanal de bobinas y textiles importados.',
+    recepciones: [
+      {
+        id: 'lcr-01',
+        orden_id: 'op-rec-001',
+        orden_codigo: 'IN/2026/0091',
+        fecha: '2026-10-15T09:30:00Z',
+        tercero_nombre: 'Importadora Textil Andina C.A.'
+      }
+    ],
+    costos: [
+      {
+        id: 'lcc-01',
+        producto_id: 'prod-srv-flete',
+        producto_nombre: 'Flete y Transporte de Carga Nacional e Internacional',
+        descripcion: 'Flete terrestre y marítimo',
+        metodo_reparto: 'BY_QUANTITY',
+        monto_usd: 120.00
+      },
+      {
+        id: 'lcc-02',
+        producto_id: 'prod-srv-arancel',
+        producto_nombre: 'Gastos de Desaduanamiento y Aranceles',
+        descripcion: 'Trámite aduanal SENIAT Puerto Cabello',
+        metodo_reparto: 'BY_COST',
+        monto_usd: 80.00
+      }
+    ],
+    ajustes_valoracion: [
+      {
+        id: 'lca-01',
+        linea_costo_id: 'lcc-01',
+        producto_id: 'prod-001',
+        producto_nombre: 'Camisa Polo Algodón Pima',
+        variante_id: 'var-001',
+        variante_sku: 'TEX-POL-001-M-BLU',
+        cantidad_recibida: 30,
+        stock_actual: 25,
+        costo_original_usd: 11.50,
+        costo_adicional_usd: 120.00,
+        costo_adicional_unitario_usd: 4.00,
+        nuevo_costo_usd: 15.50
+      },
+      {
+        id: 'lca-02',
+        linea_costo_id: 'lcc-02',
+        producto_id: 'prod-001',
+        producto_nombre: 'Camisa Polo Algodón Pima',
+        variante_id: 'var-002',
+        variante_sku: 'TEX-POL-001-L-BLU',
+        cantidad_recibida: 20,
+        stock_actual: 15,
+        costo_original_usd: 12.00,
+        costo_adicional_usd: 80.00,
+        costo_adicional_unitario_usd: 4.00,
+        nuevo_costo_usd: 16.00
+      }
+    ],
+    total_monto_usd: 200.00,
+    asiento_contable_id: 'as-lc-001',
+    asiento_contable_numero: 'AS-2026-00045',
+    createdAt: '2026-10-18T10:30:00Z',
+    appliedAt: '2026-10-18T11:15:00Z'
+  }
+]
+
 

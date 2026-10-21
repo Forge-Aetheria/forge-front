@@ -211,7 +211,7 @@ export const BcvSettingsTab: React.FC<Props> = ({
                         '&:hover': { backgroundColor: '#5B4CDB' }
                       }}
                     >
-                      {saving ? 'Aplicando...' : 'Aplicar Tasa Manual'}
+                      {saving ? 'Aplicando...' : 'Aplicar'}
                     </Button>
                   </div>
                 </form>

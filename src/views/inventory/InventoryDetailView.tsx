@@ -25,6 +25,7 @@ import TableCell from '@mui/material/TableCell'
 import MenuItem from '@mui/material/MenuItem'
 import FormControlLabel from '@mui/material/FormControlLabel'
 import Checkbox from '@mui/material/Checkbox'
+import Switch from '@mui/material/Switch'
 import Dialog from '@mui/material/Dialog'
 import DialogTitle from '@mui/material/DialogTitle'
 import DialogContent from '@mui/material/DialogContent'
@@ -42,7 +43,8 @@ import type {
   StockMovement,
   ProductInvoicingPolicyOption,
   ProductPurchaseControlOption,
-  ProductDeliveryPolicyOption
+  ProductDeliveryPolicyOption,
+  LandedCostSplitMethod
 } from '@/types/inventoryTypes'
 import {
   getInventoryTemplates,
@@ -56,7 +58,8 @@ import {
   getFiscalConfig,
   getActiveBcvRate,
   getProductCategories,
-  createProductCategory
+  createProductCategory,
+  createProductTemplate
 } from '@/services/inventoryService'
 import StockAdjustmentModal from './components/StockAdjustmentModal'
 
@@ -86,6 +89,7 @@ const DEFAULT_UOMS = [
 
 const InventoryDetailView: React.FC<Props> = ({ id }) => {
   const router = useRouter()
+  const isCreate = id === 'create' || id === 'new'
 
   const [allTemplates, setAllTemplates] = useState<ProductTemplate[]>([])
   const [template, setTemplate] = useState<ProductTemplate | null>(null)
@@ -123,6 +127,10 @@ const InventoryDetailView: React.FC<Props> = ({ id }) => {
   const [purchaseControlPolicy, setPurchaseControlPolicy] = useState<ProductPurchaseControlOption>('DEFAULT')
   const [deliveryPolicy, setDeliveryPolicy] = useState<ProductDeliveryPolicyOption>('DEFAULT')
 
+  // Landed Cost Configuration (for services)
+  const [isLandedCost, setIsLandedCost] = useState(false)
+  const [defaultSplitMethod, setDefaultSplitMethod] = useState<LandedCostSplitMethod>('BY_QUANTITY')
+
   // Logística (Informativo)
   const [weight, setWeight] = useState<number>(0)
   const [volume, setVolume] = useState<number>(0)
@@ -141,6 +149,81 @@ const InventoryDetailView: React.FC<Props> = ({ id }) => {
   const loadData = useCallback(async () => {
     try {
       setLoading(true)
+
+      if (isCreate) {
+        const [allData, catsData] = await Promise.all([
+          getInventoryTemplates(),
+          getProductCategories()
+        ])
+
+        const fiscal = getFiscalConfig()
+
+        setAllTemplates(allData)
+        setMovements([])
+        setFiscalEnabled(fiscal.enabled)
+
+        if (catsData.length > 0) {
+          setCategoryOptions(catsData.map(c => c.name))
+          setCategoryName(catsData[0].name)
+        }
+
+        const nextNum = String(allData.length + 1).padStart(3, '0')
+        const initialSku = `ART-${nextNum}`
+
+        setName('')
+        setDefaultCode(initialSku)
+        setBarcode('')
+        setProductType('storable')
+        setUomCode('un')
+        setMinStock(5)
+        setCanBeSold(true)
+        setCanBePurchased(true)
+        setStandardCost(10)
+        setTargetMargin(30)
+        setBasePrice(14.29)
+        setVatRate('16')
+        setApplyISLR(false)
+        setTagsText('')
+        setNotes('')
+        setInvoicingPolicy('DEFAULT')
+        setPurchaseControlPolicy('DEFAULT')
+        setDeliveryPolicy('DEFAULT')
+        setWeight(0)
+        setVolume(0)
+        setVariants([
+          {
+            id: 'var-single',
+            templateId: '',
+            sku: initialSku,
+            barcode: '',
+            combinationValues: [],
+            costPrice: 10,
+            priceExtra: 0,
+            physicalStock: 0,
+            reservedStock: 0,
+            availableStock: 0
+          }
+        ])
+        setTemplate({
+          id: 'new',
+          name: '',
+          defaultCode: initialSku,
+          productType: 'storable',
+          uomCode: 'un',
+          categoryName: catsData[0]?.name || 'Herramientas & Maquinaria',
+          tags: [],
+          canBeSold: true,
+          canBePurchased: true,
+          basePrice: 14.29,
+          standardCost: 10,
+          targetMargin: 30,
+          attributes: [],
+          variants: []
+        } as ProductTemplate)
+
+        return
+      }
+
       const [allData, itemData, movData, catsData] = await Promise.all([
         getInventoryTemplates(),
         getInventoryTemplateById(id),
@@ -181,15 +264,17 @@ const InventoryDetailView: React.FC<Props> = ({ id }) => {
         setInvoicingPolicy(itemData.invoicingPolicy || 'DEFAULT')
         setPurchaseControlPolicy(itemData.purchaseControlPolicy || 'DEFAULT')
         setDeliveryPolicy(itemData.deliveryPolicy || 'DEFAULT')
+        setIsLandedCost(Boolean(itemData.isLandedCost))
+        setDefaultSplitMethod(itemData.defaultSplitMethod || 'BY_QUANTITY')
         setWeight(itemData.weight ?? 0)
         setVolume(itemData.volume ?? 0)
       }
     } catch {
-      setToast({ open: true, message: 'Error al cargar el artículo', severity: 'error' })
+      setToast({ open: true, message: isCreate ? 'Error al inicializar nuevo artículo' : 'Error al cargar el artículo', severity: 'error' })
     } finally {
       setLoading(false)
     }
-  }, [id])
+  }, [id, isCreate])
 
   useEffect(() => {
     loadData()
@@ -234,6 +319,31 @@ const InventoryDetailView: React.FC<Props> = ({ id }) => {
     )
   }
 
+  const handleAddVariant = () => {
+    const masterSku = defaultCode.trim().toUpperCase() || 'SKU'
+    const newSku = variants.length === 0 ? masterSku : `${masterSku}-VAR-${variants.length + 1}`
+
+    setVariants(prev => [
+      ...prev,
+      {
+        id: `var-${Date.now()}-${prev.length + 1}`,
+        templateId: isCreate ? '' : id,
+        sku: newSku,
+        barcode: '',
+        combinationValues: [],
+        costPrice: standardCost,
+        priceExtra: 0,
+        physicalStock: productType === 'service' ? 0 : 0,
+        reservedStock: 0,
+        availableStock: 0
+      }
+    ])
+  }
+
+  const handleRemoveVariant = (index: number) => {
+    setVariants(prev => prev.filter((_, idx) => idx !== index))
+  }
+
   const handleSaveChanges = async () => {
     if (!name.trim()) {
       setToast({ open: true, message: 'El nombre del artículo es obligatorio', severity: 'error' })
@@ -265,6 +375,64 @@ const InventoryDetailView: React.FC<Props> = ({ id }) => {
         .map(t => t.trim())
         .filter(Boolean)
 
+      if (isCreate) {
+        const payload: Omit<ProductTemplate, 'id' | 'createdAt' | 'updatedAt'> = {
+          name: name.trim(),
+          defaultCode: defaultCode.trim().toUpperCase(),
+          barcode: barcode.trim() || undefined,
+          productType,
+          categoryName,
+          uomCode,
+          minStock: productType === 'service' ? 0 : minStock,
+          canBeSold,
+          canBePurchased,
+          standardCost,
+          basePrice,
+          targetMargin,
+          notes: notes.trim() || undefined,
+          vatRate,
+          applyISLR,
+          tags: parsedTags,
+          attributes: [],
+          variants:
+            variants.length > 0
+              ? variants.map(v => ({
+                  ...v,
+                  sku: v.sku.trim().toUpperCase() || defaultCode.trim().toUpperCase()
+                }))
+              : [
+                  {
+                    id: `var-${Date.now()}-1`,
+                    templateId: '',
+                    sku: defaultCode.trim().toUpperCase(),
+                    barcode: barcode.trim() || undefined,
+                    combinationValues: [],
+                    costPrice: standardCost,
+                    priceExtra: 0,
+                    physicalStock: 0,
+                    reservedStock: 0,
+                    availableStock: 0
+                  }
+                ],
+          invoicingPolicy: invoicingPolicy === 'DEFAULT' ? undefined : invoicingPolicy,
+          purchaseControlPolicy: purchaseControlPolicy === 'DEFAULT' ? undefined : purchaseControlPolicy,
+          deliveryPolicy: deliveryPolicy === 'DEFAULT' ? undefined : deliveryPolicy,
+          isLandedCost: productType === 'service' ? isLandedCost : false,
+          defaultSplitMethod: productType === 'service' && isLandedCost ? defaultSplitMethod : undefined,
+          weight: weight > 0 ? weight : undefined,
+          volume: volume > 0 ? volume : undefined
+        }
+
+        const created = await createProductTemplate(payload)
+
+        setToast({ open: true, message: '¡Artículo registrado exitosamente en el catálogo!', severity: 'success' })
+        setTimeout(() => {
+          router.push(`/inventory/products/${created.id}`)
+        }, 500)
+
+        return
+      }
+
       const updated = await updateProductTemplate(id, {
         name: name.trim(),
         defaultCode: defaultCode.trim().toUpperCase(),
@@ -286,6 +454,8 @@ const InventoryDetailView: React.FC<Props> = ({ id }) => {
         invoicingPolicy: invoicingPolicy === 'DEFAULT' ? undefined : invoicingPolicy,
         purchaseControlPolicy: purchaseControlPolicy === 'DEFAULT' ? undefined : purchaseControlPolicy,
         deliveryPolicy: deliveryPolicy === 'DEFAULT' ? undefined : deliveryPolicy,
+        isLandedCost: productType === 'service' ? isLandedCost : false,
+        defaultSplitMethod: productType === 'service' && isLandedCost ? defaultSplitMethod : undefined,
         weight: weight > 0 ? weight : undefined,
         volume: volume > 0 ? volume : undefined
       })
@@ -293,7 +463,7 @@ const InventoryDetailView: React.FC<Props> = ({ id }) => {
       setTemplate(updated)
       setToast({ open: true, message: 'Artículo actualizado exitosamente', severity: 'success' })
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Error al actualizar el artículo'
+      const message = err instanceof Error ? err.message : 'Error al guardar el artículo'
 
       setToast({ open: true, message, severity: 'error' })
     } finally {
@@ -302,6 +472,8 @@ const InventoryDetailView: React.FC<Props> = ({ id }) => {
   }
 
   const handleConfirmDelete = async () => {
+    if (isCreate) return
+
     try {
       await deleteProductTemplate(id)
       setToast({ open: true, message: 'Artículo eliminado exitosamente', severity: 'success' })
@@ -323,7 +495,7 @@ const InventoryDetailView: React.FC<Props> = ({ id }) => {
     )
   }
 
-  if (!template) {
+  if (!isCreate && !template) {
     return (
       <Card className='p-8 flex flex-col items-center justify-center text-center max-w-xl mx-auto rounded-2xl border border-[#E6E4F0]'>
         <i className='tabler-package-off text-5xl text-[#EF4444] mb-3' />
@@ -377,7 +549,7 @@ const InventoryDetailView: React.FC<Props> = ({ id }) => {
       <div className='flex items-center justify-between gap-4 flex-wrap sm:flex-nowrap'>
         {/* Izquierda: Botón Volver + Título limpio */}
         <div className='flex items-center gap-3 min-w-0 flex-1'>
-          <Tooltip title='Volver al catálogo'>
+          <Tooltip title='Volver al Catálogo'>
             <Button
               component={Link}
               href='/inventory/products'
@@ -399,9 +571,9 @@ const InventoryDetailView: React.FC<Props> = ({ id }) => {
             </Button>
           </Tooltip>
           <div className='min-w-0 flex-1'>
-            <Tooltip title={name || 'Artículo'}>
+            <Tooltip title={isCreate ? 'Nuevo Artículo o Servicio' : (name || 'Artículo')}>
               <Typography variant='h4' className='font-bold text-textPrimary truncate'>
-                {name || 'Artículo'}
+                {isCreate ? 'Nuevo Artículo o Servicio' : (name || 'Artículo')}
               </Typography>
             </Tooltip>
           </div>
@@ -409,7 +581,7 @@ const InventoryDetailView: React.FC<Props> = ({ id }) => {
 
         {/* Derecha: Paginador secuencial + Cancelar + Guardar Cambios + Eliminar */}
         <div className='flex items-center gap-2.5 shrink-0'>
-          {totalTemplates > 0 && (
+          {!isCreate && totalTemplates > 0 && (
             <div className='flex items-center gap-1 bg-[var(--mui-palette-action-hover)] px-2 py-0.5 rounded-lg border border-[var(--mui-palette-divider)] shrink-0'>
               <Tooltip title={prevTemplate ? `Anterior: ${prevTemplate.name}` : 'Primer artículo'}>
                 <span>
@@ -451,6 +623,12 @@ const InventoryDetailView: React.FC<Props> = ({ id }) => {
             color='secondary'
             size='small'
             className='shrink-0'
+            sx={{
+              borderRadius: '9999px',
+              textTransform: 'none',
+              fontWeight: 600,
+              px: 2.5
+            }}
           >
             Cancelar
           </Button>
@@ -462,22 +640,32 @@ const InventoryDetailView: React.FC<Props> = ({ id }) => {
             size='small'
             onClick={handleSaveChanges}
             disabled={saving}
+            sx={{
+              borderRadius: '9999px',
+              backgroundColor: '#6C5CE7',
+              textTransform: 'none',
+              fontWeight: 600,
+              px: 3,
+              '&:hover': { backgroundColor: '#5B4CDB' }
+            }}
             startIcon={<i className={saving ? 'tabler-loader-2 animate-spin text-base' : 'tabler-device-floppy text-base'} />}
           >
-            {saving ? 'Guardando...' : 'Guardar'}
+            {saving ? 'Guardando...' : isCreate ? 'Crear Artículo' : 'Guardar'}
           </Button>
 
-          {/* Eliminar */}
-          <Tooltip title='Eliminar artículo'>
-            <IconButton
-              size='small'
-              color='error'
-              onClick={() => setDeleteConfirmOpen(true)}
-              className='shrink-0'
-            >
-              <i className='tabler-trash text-lg' />
-            </IconButton>
-          </Tooltip>
+          {/* Eliminar (solo en edición) */}
+          {!isCreate && (
+            <Tooltip title='Eliminar artículo'>
+              <IconButton
+                size='small'
+                color='error'
+                onClick={() => setDeleteConfirmOpen(true)}
+                className='shrink-0'
+              >
+                <i className='tabler-trash text-lg' />
+              </IconButton>
+            </Tooltip>
+          )}
         </div>
       </div>
 
@@ -593,16 +781,6 @@ const InventoryDetailView: React.FC<Props> = ({ id }) => {
                     <Typography variant='subtitle1' className='font-bold text-[#1E1B2E]'>
                       Existencias Consolidadas
                     </Typography>
-                    <Button
-                      size='small'
-                      variant='tonal'
-                      color='primary'
-                      className='rounded-full text-xs py-0.5 px-2.5'
-                      startIcon={<i className='tabler-adjustments-horizontal text-sm' />}
-                      onClick={() => setAdjustModalOpen(true)}
-                    >
-                      Ajustar Stock
-                    </Button>
                   </div>
 
                   <div className='grid grid-cols-3 gap-2 text-center bg-[#F8F7FA] p-2.5 rounded-xl border border-[#E6E4F0]'>
@@ -793,6 +971,57 @@ const InventoryDetailView: React.FC<Props> = ({ id }) => {
                         Servicio
                       </Button>
                     </div>
+
+                    {productType === 'service' && (
+                      <div className='p-3.5 rounded-2xl border border-[#E6E4F0] bg-[#FFFFFF] flex flex-col gap-3 mt-3'>
+                        <div className='flex items-center justify-between'>
+                          <div className='flex items-center gap-2.5'>
+                            <div className='w-8 h-8 rounded-full bg-[#6C5CE7]/10 flex items-center justify-center text-[#6C5CE7] shrink-0'>
+                              <i className='tabler-calculator text-base' />
+                            </div>
+                            <div>
+                              <span className='font-bold text-xs text-[#1E1B2E] block'>Es un Costo en Destino (Landed Cost)</span>
+                              <span className='text-[11px] text-[#6B7280]'>
+                                Prorratea fletes, seguros o aranceles sobre recepciones de almacén para recalcular el costo promedio (AVCO)
+                              </span>
+                            </div>
+                          </div>
+                          <Switch
+                            checked={isLandedCost}
+                            onChange={e => {
+                              setIsLandedCost(e.target.checked)
+                              if (e.target.checked) {
+                                setCanBePurchased(true)
+                              }
+                            }}
+                            size='small'
+                            sx={{
+                              '& .MuiSwitch-switchBase.Mui-checked': { color: '#6C5CE7' },
+                              '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { backgroundColor: '#6C5CE7' }
+                            }}
+                          />
+                        </div>
+
+                        {isLandedCost && (
+                          <div className='pt-2.5 border-t border-[#E6E4F0] flex flex-col sm:flex-row gap-2.5 items-start sm:items-center justify-between'>
+                            <span className='text-xs text-[#1E1B2E] font-medium'>Método de Reparto Predeterminado:</span>
+                            <CustomTextField
+                              select
+                              size='small'
+                              value={defaultSplitMethod}
+                              onChange={e => setDefaultSplitMethod(e.target.value as LandedCostSplitMethod)}
+                              sx={{ minWidth: 220, '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}
+                            >
+                              <MenuItem value='BY_QUANTITY'>Por Cantidad Recibida</MenuItem>
+                              <MenuItem value='BY_COST'>Por Valor / Costo de Compra</MenuItem>
+                              <MenuItem value='BY_WEIGHT'>Por Peso Total</MenuItem>
+                              <MenuItem value='BY_VOLUME'>Por Volumen Total</MenuItem>
+                              <MenuItem value='EQUAL'>En Partes Iguales</MenuItem>
+                            </CustomTextField>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   {/* Operación Comercial (Checkboxes idénticos a Relación Comercial en Contactos) */}
@@ -1331,21 +1560,18 @@ const InventoryDetailView: React.FC<Props> = ({ id }) => {
                         Variantes Físicas y SKUs Específicos
                       </Typography>
                       <Typography variant='caption' className='text-[#6B7280]'>
-                        Edite el SKU, sobreprecio o stock de cada variante y presione &quot;Guardar Cambios&quot; arriba
+                        Edite el SKU, sobreprecio o stock de cada variante y presione &quot;Guardar&quot; arriba
                       </Typography>
                     </div>
-                    {productType !== 'service' && (
-                      <Button
-                        size='small'
-                        variant='tonal'
-                        color='primary'
-                        className='rounded-full'
-                        startIcon={<i className='tabler-adjustments-horizontal' />}
-                        onClick={() => setAdjustModalOpen(true)}
-                      >
-                        Ajuste Auditado con Kárdex
-                      </Button>
-                    )}
+                    <Button
+                      size='small'
+                      variant='outlined'
+                      startIcon={<i className='tabler-plus text-base' />}
+                      onClick={handleAddVariant}
+                      sx={{ borderRadius: '9999px', textTransform: 'none', fontWeight: 600 }}
+                    >
+                      Añadir Variante
+                    </Button>
                   </div>
 
                   <div className='overflow-x-auto border border-[#E6E4F0] rounded-xl'>
@@ -1364,60 +1590,94 @@ const InventoryDetailView: React.FC<Props> = ({ id }) => {
                           <TableCell className='font-bold text-xs text-center'>Stock Físico</TableCell>
                           <TableCell className='font-bold text-xs text-center'>Disponible</TableCell>
                           <TableCell className='font-bold text-xs text-right'>Precio Final</TableCell>
+                          <TableCell className='font-bold text-xs text-center' style={{ width: 60 }}>
+                            Acciones
+                          </TableCell>
                         </TableRow>
                       </TableHead>
                       <TableBody>
-                        {variants.map((v, idx) => {
-                          const finalPrice = basePrice + Number(v.priceExtra || 0)
-
-                          return (
-                            <TableRow key={v.id || idx} hover>
-                              <TableCell
-                                className='text-center font-mono text-xs text-[#6B7280]'
-                                style={{ width: 28, maxWidth: 28, padding: '6px 4px' }}
+                        {variants.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={8} className='text-center py-6 text-[#6B7280]'>
+                              <Typography variant='body2' className='mb-2'>
+                                No hay variantes específicas configuradas (se gestiona como artículo estándar único).
+                              </Typography>
+                              <Button
+                                size='small'
+                                variant='outlined'
+                                startIcon={<i className='tabler-plus' />}
+                                onClick={handleAddVariant}
+                                sx={{ borderRadius: '9999px', textTransform: 'none' }}
                               >
-                                {idx + 1}
-                              </TableCell>
-                              <TableCell className='text-xs font-medium text-[#1E1B2E]'>
-                                {v.combinationValues.length > 0
-                                  ? v.combinationValues.map(c => `${c.attributeName}: ${c.valueName}`).join(' · ')
-                                  : 'Estándar (Única)'}
-                              </TableCell>
-                              <TableCell>
-                                <CustomTextField
-                                  size='small'
-                                  value={v.sku}
-                                  onChange={e => handleVariantChange(idx, 'sku', e.target.value.toUpperCase())}
-                                />
-                              </TableCell>
-                              <TableCell align='right' style={{ width: 120 }}>
-                                <CustomTextField
-                                  size='small'
-                                  type='number'
-                                  value={v.priceExtra}
-                                  onChange={e => handleVariantChange(idx, 'priceExtra', parseFloat(e.target.value) || 0)}
-                                />
-                              </TableCell>
-                              <TableCell align='center' style={{ width: 110 }}>
-                                <CustomTextField
-                                  size='small'
-                                  type='number'
-                                  disabled={productType === 'service'}
-                                  value={v.physicalStock}
-                                  onChange={e =>
-                                    handleVariantChange(idx, 'physicalStock', Math.max(0, parseInt(e.target.value, 10) || 0))
-                                  }
-                                />
-                              </TableCell>
-                              <TableCell className='text-center font-mono text-xs font-bold text-success'>
-                                {v.availableStock} {uomCode}
-                              </TableCell>
-                              <TableCell className='text-right font-mono text-xs font-bold text-[#1E1B2E]'>
-                                ${finalPrice.toFixed(2)}
-                              </TableCell>
-                            </TableRow>
-                          )
-                        })}
+                                Añadir Variante
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          variants.map((v, idx) => {
+                            const finalPrice = basePrice + Number(v.priceExtra || 0)
+
+                            return (
+                              <TableRow key={v.id || idx} hover>
+                                <TableCell
+                                  className='text-center font-mono text-xs text-[#6B7280]'
+                                  style={{ width: 28, maxWidth: 28, padding: '6px 4px' }}
+                                >
+                                  {idx + 1}
+                                </TableCell>
+                                <TableCell className='text-xs font-medium text-[#1E1B2E]'>
+                                  {v.combinationValues.length > 0
+                                    ? v.combinationValues.map(c => `${c.attributeName}: ${c.valueName}`).join(' · ')
+                                    : 'Estándar (Única)'}
+                                </TableCell>
+                                <TableCell>
+                                  <CustomTextField
+                                    size='small'
+                                    value={v.sku}
+                                    onChange={e => handleVariantChange(idx, 'sku', e.target.value.toUpperCase())}
+                                  />
+                                </TableCell>
+                                <TableCell align='right' style={{ width: 120 }}>
+                                  <CustomTextField
+                                    size='small'
+                                    type='number'
+                                    value={v.priceExtra}
+                                    onChange={e => handleVariantChange(idx, 'priceExtra', parseFloat(e.target.value) || 0)}
+                                  />
+                                </TableCell>
+                                <TableCell align='center' style={{ width: 110 }}>
+                                  <CustomTextField
+                                    size='small'
+                                    type='number'
+                                    disabled={productType === 'service'}
+                                    value={v.physicalStock}
+                                    onChange={e =>
+                                      handleVariantChange(idx, 'physicalStock', Math.max(0, parseInt(e.target.value, 10) || 0))
+                                    }
+                                  />
+                                </TableCell>
+                                <TableCell className='text-center font-mono text-xs font-bold text-success'>
+                                  {v.availableStock} {uomCode}
+                                </TableCell>
+                                <TableCell className='text-right font-mono text-xs font-bold text-[#1E1B2E]'>
+                                  ${finalPrice.toFixed(2)}
+                                </TableCell>
+                                <TableCell align='center' style={{ width: 60 }}>
+                                  {variants.length > 1 && (
+                                    <IconButton
+                                      size='small'
+                                      color='error'
+                                      onClick={() => handleRemoveVariant(idx)}
+                                      title='Eliminar variante'
+                                    >
+                                      <i className='tabler-trash text-sm' />
+                                    </IconButton>
+                                  )}
+                                </TableCell>
+                              </TableRow>
+                            )
+                          })
+                        )}
                       </TableBody>
                     </Table>
                   </div>
@@ -1436,7 +1696,7 @@ const InventoryDetailView: React.FC<Props> = ({ id }) => {
                         Trazabilidad de entradas, salidas y conteos físicos registrados para este artículo
                       </Typography>
                     </div>
-                    {productType !== 'service' && (
+                    {productType !== 'service' && !isCreate && (
                       <Button
                         size='small'
                         variant='contained'
@@ -1522,20 +1782,22 @@ const InventoryDetailView: React.FC<Props> = ({ id }) => {
       </Grid>
 
       {/* Modal de Ajuste de Stock */}
-      <StockAdjustmentModal
-        open={adjustModalOpen}
-        onClose={() => setAdjustModalOpen(false)}
-        templates={allTemplates}
-        preselectedProductId={template.id}
-        onSuccess={record => {
-          loadData()
-          setToast({
-            open: true,
-            message: `Ajuste ${record.correlativo} aplicado. Nuevo stock: ${record.stock_contado} ${record.uom_code}.`,
-            severity: 'success'
-          })
-        }}
-      />
+      {!isCreate && template && (
+        <StockAdjustmentModal
+          open={adjustModalOpen}
+          onClose={() => setAdjustModalOpen(false)}
+          templates={allTemplates}
+          preselectedProductId={template.id}
+          onSuccess={record => {
+            loadData()
+            setToast({
+              open: true,
+              message: `Ajuste ${record.correlativo} aplicado. Nuevo stock: ${record.stock_contado} ${record.uom_code}.`,
+              severity: 'success'
+            })
+          }}
+        />
+      )}
 
       {/* Diálogo de Confirmación de Eliminación */}
       <Dialog open={deleteConfirmOpen} onClose={() => setDeleteConfirmOpen(false)} maxWidth='xs' fullWidth>

@@ -7,6 +7,9 @@ import Typography from '@mui/material/Typography'
 import Button from '@mui/material/Button'
 import TextField from '@mui/material/TextField'
 import MenuItem from '@mui/material/MenuItem'
+import Checkbox from '@mui/material/Checkbox'
+import Menu from '@mui/material/Menu'
+import Divider from '@mui/material/Divider'
 import CustomChip from '@core/components/mui/Chip'
 import TablePagination from '@mui/material/TablePagination'
 import Table from '@mui/material/Table'
@@ -55,6 +58,24 @@ export const PaymentsListView: React.FC = () => {
   const [singlePaymentOpen, setSinglePaymentOpen] = useState(false)
   const [toastMessage, setToastMessage] = useState<string | null>(null)
 
+  // Control de Columnas Visibles
+  const DEFAULT_VISIBLE_COLUMNS = {
+    numeroPago: true,
+    fecha: true,
+    contacto: true,
+    diario: true,
+    metodoRef: true,
+    monto: true,
+    igtf: true,
+    estado: true
+  }
+  const [visibleColumns, setVisibleColumns] = useState(DEFAULT_VISIBLE_COLUMNS)
+  const [columnAnchorEl, setColumnAnchorEl] = useState<null | HTMLElement>(null)
+
+  // Selección Múltiple y Acciones en Lote
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
+  const [batchMenuAnchorEl, setBatchMenuAnchorEl] = useState<null | HTMLElement>(null)
+
   const tasaBcv = 54.00
 
   useEffect(() => {
@@ -82,7 +103,7 @@ export const PaymentsListView: React.FC = () => {
       const stored = localStorage.getItem('foundly_accounting_payments')
       const pList: Payment[] = stored ? JSON.parse(stored) : []
 
-      // If empty, generate 2 initial payment seeds for demonstration
+      // If empty, generate initial payment seeds for demonstration
       if (pList.length === 0) {
         const seedPayments: Payment[] = [
           {
@@ -98,23 +119,14 @@ export const PaymentsListView: React.FC = () => {
             moneda: 'VES',
             monto: 31320.00,
             tasaBcvPago: 54.00,
-            facturasConciliadas: [
-              {
-                facturaId: 'inv-seed-1',
-                numeroFactura: 'INV-2026-0089',
-                tasaBcvOriginal: 52.00,
-                montoAplicadoUsd: 580.00,
-                montoAplicadoVes: 31320.00,
-                diferencialCambiarioVes: 1160.00
-              }
-            ],
+            facturasConciliadas: [{ facturaId: 'inv-seed-1', numeroFactura: 'FAC-2026-0001', tasaBcvOriginal: 54.00, montoAplicadoUsd: 580.00, montoAplicadoVes: 31320.00, diferencialCambiarioVes: 0 }],
             aplicaIgtf: false,
             montoIgtfUsd: 0,
             montoIgtfVes: 0,
-            referenciaBancaria: 'REF-88992123',
+            referenciaBancaria: 'REF-889021',
             asientoContableId: 'as-seed-p1',
             estado: 'CONFIRMADO',
-            creadoEn: '2026-10-18 10:00'
+            creadoEn: '2026-10-18 10:15'
           },
           {
             id: 'pag-seed-2',
@@ -195,14 +207,45 @@ export const PaymentsListView: React.FC = () => {
           setCurrentView('list')
           setSelectedPayment(null)
         }}
-        onSuccess={msg => {
+        onSuccess={(msg, savedPayment) => {
           handlePaymentSuccess(msg)
-          setCurrentView('list')
-          setSelectedPayment(null)
+          if (savedPayment) {
+            setSelectedPayment(savedPayment)
+            setCurrentView('form')
+          }
         }}
       />
     )
   }
+
+  const isAllSelected = paginatedPayments.length > 0 && paginatedPayments.every(p => selectedIds.includes(p.id))
+  const isIndeterminate = paginatedPayments.some(p => selectedIds.includes(p.id)) && !isAllSelected
+
+  const handleToggleSelectAll = () => {
+    if (isAllSelected) {
+      const pageIds = new Set(paginatedPayments.map(p => p.id))
+      setSelectedIds(prev => prev.filter(id => !pageIds.has(id)))
+    } else {
+      const pageIds = paginatedPayments.map(p => p.id)
+      setSelectedIds(prev => Array.from(new Set([...prev, ...pageIds])))
+    }
+  }
+
+  const handleToggleSelect = (id: string) => {
+    setSelectedIds(prev =>
+      prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
+    )
+  }
+
+  const handleCopySelected = () => {
+    const selectedList = payments.filter(p => selectedIds.includes(p.id))
+    const text = selectedList.map(p => `${p.numeroPago} - ${p.contactoNombre} - ${p.moneda} ${p.monto}`).join('\n')
+    navigator.clipboard.writeText(text)
+    setToastMessage(`${selectedIds.length} pagos copiados al portapapeles.`)
+    setBatchMenuAnchorEl(null)
+  }
+
+  const totalVisibleCols = 1 + Object.values(visibleColumns).filter(Boolean).length
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
@@ -218,7 +261,40 @@ export const PaymentsListView: React.FC = () => {
           </Typography>
         </Box>
 
-        <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
+          {selectedIds.length > 0 && (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <CustomChip
+                size='small'
+                variant='tonal'
+                color='primary'
+                label={`${selectedIds.length} seleccionados`}
+                onDelete={() => setSelectedIds([])}
+              />
+              <Button
+                variant='outlined'
+                size='small'
+                onClick={e => setBatchMenuAnchorEl(e.currentTarget)}
+                startIcon={<i className='tabler-settings text-base' />}
+                endIcon={<i className='tabler-chevron-down text-xs' />}
+                sx={{
+                  borderRadius: '9999px',
+                  borderColor: '#E6E4F0',
+                  color: '#1E1B2E',
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  fontSize: '0.85rem',
+                  px: 2.5,
+                  py: 0.8,
+                  backgroundColor: '#FFFFFF',
+                  '&:hover': { borderColor: '#6C5CE7', backgroundColor: '#F8F7FC' }
+                }}
+              >
+                Acciones
+              </Button>
+            </Box>
+          )}
+
           {typeFilter !== 'CUSTOMER' && (
             <Button
               component={Link}
@@ -321,6 +397,27 @@ export const PaymentsListView: React.FC = () => {
               size='small'
             />
           </Box>
+
+          <Button
+            size='small'
+            variant='outlined'
+            startIcon={<i className='tabler-layout-columns text-base' />}
+            onClick={e => setColumnAnchorEl(e.currentTarget)}
+            sx={{
+              borderRadius: '9999px',
+              borderColor: '#E6E4F0',
+              color: '#6C5CE7',
+              textTransform: 'none',
+              fontWeight: 600,
+              fontSize: '0.8rem',
+              px: 2,
+              py: 0.6,
+              backgroundColor: '#FFFFFF',
+              '&:hover': { borderColor: '#6C5CE7', backgroundColor: '#F3F0FF' }
+            }}
+          >
+            Columnas
+          </Button>
         </Box>
 
         {/* Table */}
@@ -328,102 +425,156 @@ export const PaymentsListView: React.FC = () => {
           <Table>
             <TableHead sx={{ backgroundColor: '#F4F3F8' }}>
               <TableRow>
-                <TableCell sx={{ fontWeight: 700, color: '#475569' }}>N° Pago</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: '#475569' }}>Fecha</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: '#475569' }}>Contacto</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: '#475569' }}>Diario de Banco / Caja</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: '#475569' }}>Método & Ref.</TableCell>
-                <TableCell align='right' sx={{ fontWeight: 700, color: '#475569' }}>Monto Pagado</TableCell>
-                <TableCell align='center' sx={{ fontWeight: 700, color: '#475569' }}>IGTF (3%)</TableCell>
-                <TableCell align='center' sx={{ fontWeight: 700, color: '#475569' }}>Estado</TableCell>
+                <TableCell padding='checkbox' sx={{ width: 44 }}>
+                  <Checkbox
+                    size='small'
+                    indeterminate={isIndeterminate}
+                    checked={isAllSelected}
+                    onChange={handleToggleSelectAll}
+                    sx={{
+                      color: '#6C5CE7',
+                      '&.Mui-checked': { color: '#6C5CE7' },
+                      '&.MuiCheckbox-indeterminate': { color: '#6C5CE7' }
+                    }}
+                  />
+                </TableCell>
+                {visibleColumns.numeroPago && <TableCell sx={{ fontWeight: 700, color: '#475569' }}>N° Pago</TableCell>}
+                {visibleColumns.fecha && <TableCell sx={{ fontWeight: 700, color: '#475569' }}>Fecha</TableCell>}
+                {visibleColumns.contacto && <TableCell sx={{ fontWeight: 700, color: '#475569' }}>Contacto</TableCell>}
+                {visibleColumns.diario && <TableCell sx={{ fontWeight: 700, color: '#475569' }}>Diario de Banco / Caja</TableCell>}
+                {visibleColumns.metodoRef && <TableCell sx={{ fontWeight: 700, color: '#475569' }}>Método & Ref.</TableCell>}
+                {visibleColumns.monto && <TableCell align='right' sx={{ fontWeight: 700, color: '#475569' }}>Monto Pagado</TableCell>}
+                {visibleColumns.igtf && <TableCell align='center' sx={{ fontWeight: 700, color: '#475569' }}>IGTF (3%)</TableCell>}
+                {visibleColumns.estado && <TableCell align='center' sx={{ fontWeight: 700, color: '#475569' }}>Estado</TableCell>}
               </TableRow>
             </TableHead>
             <TableBody>
               {loading ? (
                 Array.from({ length: 3 }).map((_, idx) => (
                   <TableRow key={idx}>
-                    <TableCell colSpan={8}>
+                    <TableCell colSpan={totalVisibleCols}>
                       <Skeleton variant='text' height={40} />
                     </TableCell>
                   </TableRow>
                 ))
               ) : filteredPayments.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} align='center' sx={{ py: 6, color: '#94A3B8' }}>
+                  <TableCell colSpan={totalVisibleCols} align='center' sx={{ py: 6, color: '#94A3B8' }}>
                     No se han registrado pagos aún.
                   </TableCell>
                 </TableRow>
               ) : (
-                paginatedPayments.map(p => (
-                  <TableRow
-                    key={p.id}
-                    hover
-                    onClick={() => {
-                      setSelectedPayment(p)
-                      setCurrentView('form')
-                    }}
-                    sx={{ cursor: 'pointer', '&:last-child td, &:last-child th': { border: 0 } }}
-                  >
-                    <TableCell sx={{ fontWeight: 700, color: '#1E293B' }}>
-                      {p.numeroPago}
-                    </TableCell>
-                    <TableCell sx={{ color: '#64748B' }}>
-                      {p.fecha}
-                    </TableCell>
-                    <TableCell sx={{ fontWeight: 600, color: '#334155' }}>
-                      {p.contactoNombre}
-                    </TableCell>
-                    <TableCell sx={{ color: '#64748B' }}>
-                      {p.diarioNombre}
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant='body2' sx={{ fontWeight: 500, color: '#1E293B' }}>
-                        {p.metodoPago}
-                      </Typography>
-                      {p.referenciaBancaria && (
-                        <Typography variant='caption' sx={{ color: '#64748B', fontFamily: 'monospace', display: 'block' }}>
-                          Ref: {p.referenciaBancaria}
-                        </Typography>
-                      )}
-                      {p.cuentaBancariaInfo && (
-                        <Typography variant='caption' sx={{ color: '#6C5CE7', fontWeight: 600, display: 'block' }}>
-                          <i className='tabler-building-bank text-xs mr-1' />
-                          {p.cuentaBancariaInfo}
-                        </Typography>
-                      )}
-                    </TableCell>
-                    <TableCell align='right'>
-                      <Typography variant='body2' sx={{ fontWeight: 700, color: p.moneda === 'USD' ? '#6C5CE7' : '#10B981' }}>
-                        {p.moneda === 'USD'
-                          ? `$${p.monto.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-                          : `${p.monto.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Bs.`}
-                      </Typography>
-                      <Typography variant='caption' sx={{ color: '#94A3B8' }}>
-                        Tasa: {p.tasaBcvPago.toFixed(2)} Bs.
-                      </Typography>
-                    </TableCell>
-                    <TableCell align='center'>
-                      {p.aplicaIgtf ? (
-                        <CustomChip
-                          label={`+${p.montoIgtfUsd.toFixed(2)} $`}
+                paginatedPayments.map(p => {
+                  const isSelected = selectedIds.includes(p.id)
+
+                  return (
+                    <TableRow
+                      key={p.id}
+                      hover
+                      selected={isSelected}
+                      onClick={() => {
+                        setSelectedPayment(p)
+                        setCurrentView('form')
+                      }}
+                      sx={{
+                        cursor: 'pointer',
+                        '&.Mui-selected': { backgroundColor: 'rgba(108, 92, 231, 0.08) !important' },
+                        '&:last-child td, &:last-child th': { border: 0 }
+                      }}
+                    >
+                      <TableCell padding='checkbox' onClick={e => e.stopPropagation()}>
+                        <Checkbox
                           size='small'
-                          variant='tonal'
-                          color='error'
+                          checked={isSelected}
+                          onChange={() => handleToggleSelect(p.id)}
+                          sx={{ color: '#6C5CE7', '&.Mui-checked': { color: '#6C5CE7' } }}
                         />
-                      ) : (
-                        <Typography variant='caption' sx={{ color: '#94A3B8' }}>—</Typography>
+                      </TableCell>
+
+                      {visibleColumns.numeroPago && (
+                        <TableCell sx={{ fontWeight: 700, color: '#1E293B' }}>
+                          {p.numeroPago}
+                        </TableCell>
                       )}
-                    </TableCell>
-                    <TableCell align='center'>
-                      <CustomChip
-                        label='Confirmado'
-                        size='small'
-                        variant='tonal'
-                        color='success'
-                      />
-                    </TableCell>
-                  </TableRow>
-                ))
+
+                      {visibleColumns.fecha && (
+                        <TableCell sx={{ color: '#64748B' }}>
+                          {p.fecha}
+                        </TableCell>
+                      )}
+
+                      {visibleColumns.contacto && (
+                        <TableCell sx={{ fontWeight: 600, color: '#334155' }}>
+                          {p.contactoNombre}
+                        </TableCell>
+                      )}
+
+                      {visibleColumns.diario && (
+                        <TableCell sx={{ color: '#64748B' }}>
+                          {p.diarioNombre}
+                        </TableCell>
+                      )}
+
+                      {visibleColumns.metodoRef && (
+                        <TableCell>
+                          <Typography variant='body2' sx={{ fontWeight: 500, color: '#1E293B' }}>
+                            {p.metodoPago}
+                          </Typography>
+                          {p.referenciaBancaria && (
+                            <Typography variant='caption' sx={{ color: '#64748B', fontFamily: 'monospace', display: 'block' }}>
+                              Ref: {p.referenciaBancaria}
+                            </Typography>
+                          )}
+                          {p.cuentaBancariaInfo && (
+                            <Typography variant='caption' sx={{ color: '#6C5CE7', fontWeight: 600, display: 'block' }}>
+                              <i className='tabler-building-bank text-xs mr-1' />
+                              {p.cuentaBancariaInfo}
+                            </Typography>
+                          )}
+                        </TableCell>
+                      )}
+
+                      {visibleColumns.monto && (
+                        <TableCell align='right'>
+                          <Typography variant='body2' sx={{ fontWeight: 700, color: p.moneda === 'USD' ? '#6C5CE7' : '#10B981' }}>
+                            {p.moneda === 'USD'
+                              ? `$${p.monto.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                              : `${p.monto.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Bs.`}
+                          </Typography>
+                          <Typography variant='caption' sx={{ color: '#94A3B8' }}>
+                            Tasa: {p.tasaBcvPago.toFixed(2)} Bs.
+                          </Typography>
+                        </TableCell>
+                      )}
+
+                      {visibleColumns.igtf && (
+                        <TableCell align='center'>
+                          {p.aplicaIgtf ? (
+                            <CustomChip
+                              label={`+${p.montoIgtfUsd.toFixed(2)} $`}
+                              size='small'
+                              variant='tonal'
+                              color='error'
+                            />
+                          ) : (
+                            <Typography variant='caption' sx={{ color: '#94A3B8' }}>—</Typography>
+                          )}
+                        </TableCell>
+                      )}
+
+                      {visibleColumns.estado && (
+                        <TableCell align='center'>
+                          <CustomChip
+                            label='Confirmado'
+                            size='small'
+                            variant='tonal'
+                            color='success'
+                          />
+                        </TableCell>
+                      )}
+                    </TableRow>
+                  )
+                })
               )}
             </TableBody>
           </Table>
@@ -446,6 +597,106 @@ export const PaymentsListView: React.FC = () => {
           }
         />
       </Card>
+
+      {/* Menú de Personalización de Columnas */}
+      <Menu
+        anchorEl={columnAnchorEl}
+        open={Boolean(columnAnchorEl)}
+        onClose={() => setColumnAnchorEl(null)}
+        slotProps={{
+          paper: {
+            sx: {
+              borderRadius: '16px',
+              p: 1,
+              minWidth: 220,
+              boxShadow: '0 8px 24px rgba(108, 92, 231, 0.12)',
+              border: '1px solid #E6E4F0'
+            }
+          }
+        }}
+      >
+        <Typography variant='caption' sx={{ fontWeight: 700, color: '#6B7280', px: 3, py: 1, display: 'block', textTransform: 'uppercase', fontSize: '0.65rem' }}>
+          COLUMNAS VISIBLES
+        </Typography>
+        <MenuItem dense onClick={() => setVisibleColumns(prev => ({ ...prev, numeroPago: !prev.numeroPago }))} sx={{ borderRadius: '8px' }}>
+          <Checkbox checked={Boolean(visibleColumns.numeroPago)} size='small' sx={{ color: '#6C5CE7', '&.Mui-checked': { color: '#6C5CE7' }, p: 0.5, mr: 1 }} />
+          <Typography variant='body2' sx={{ fontSize: '0.85rem' }}>N° Pago</Typography>
+        </MenuItem>
+        <MenuItem dense onClick={() => setVisibleColumns(prev => ({ ...prev, fecha: !prev.fecha }))} sx={{ borderRadius: '8px' }}>
+          <Checkbox checked={Boolean(visibleColumns.fecha)} size='small' sx={{ color: '#6C5CE7', '&.Mui-checked': { color: '#6C5CE7' }, p: 0.5, mr: 1 }} />
+          <Typography variant='body2' sx={{ fontSize: '0.85rem' }}>Fecha</Typography>
+        </MenuItem>
+        <MenuItem dense onClick={() => setVisibleColumns(prev => ({ ...prev, contacto: !prev.contacto }))} sx={{ borderRadius: '8px' }}>
+          <Checkbox checked={Boolean(visibleColumns.contacto)} size='small' sx={{ color: '#6C5CE7', '&.Mui-checked': { color: '#6C5CE7' }, p: 0.5, mr: 1 }} />
+          <Typography variant='body2' sx={{ fontSize: '0.85rem' }}>Contacto</Typography>
+        </MenuItem>
+        <MenuItem dense onClick={() => setVisibleColumns(prev => ({ ...prev, diario: !prev.diario }))} sx={{ borderRadius: '8px' }}>
+          <Checkbox checked={Boolean(visibleColumns.diario)} size='small' sx={{ color: '#6C5CE7', '&.Mui-checked': { color: '#6C5CE7' }, p: 0.5, mr: 1 }} />
+          <Typography variant='body2' sx={{ fontSize: '0.85rem' }}>Diario de Banco / Caja</Typography>
+        </MenuItem>
+        <MenuItem dense onClick={() => setVisibleColumns(prev => ({ ...prev, metodoRef: !prev.metodoRef }))} sx={{ borderRadius: '8px' }}>
+          <Checkbox checked={Boolean(visibleColumns.metodoRef)} size='small' sx={{ color: '#6C5CE7', '&.Mui-checked': { color: '#6C5CE7' }, p: 0.5, mr: 1 }} />
+          <Typography variant='body2' sx={{ fontSize: '0.85rem' }}>Método & Ref.</Typography>
+        </MenuItem>
+        <MenuItem dense onClick={() => setVisibleColumns(prev => ({ ...prev, monto: !prev.monto }))} sx={{ borderRadius: '8px' }}>
+          <Checkbox checked={Boolean(visibleColumns.monto)} size='small' sx={{ color: '#6C5CE7', '&.Mui-checked': { color: '#6C5CE7' }, p: 0.5, mr: 1 }} />
+          <Typography variant='body2' sx={{ fontSize: '0.85rem' }}>Monto Pagado</Typography>
+        </MenuItem>
+        <MenuItem dense onClick={() => setVisibleColumns(prev => ({ ...prev, igtf: !prev.igtf }))} sx={{ borderRadius: '8px' }}>
+          <Checkbox checked={Boolean(visibleColumns.igtf)} size='small' sx={{ color: '#6C5CE7', '&.Mui-checked': { color: '#6C5CE7' }, p: 0.5, mr: 1 }} />
+          <Typography variant='body2' sx={{ fontSize: '0.85rem' }}>IGTF (3%)</Typography>
+        </MenuItem>
+        <MenuItem dense onClick={() => setVisibleColumns(prev => ({ ...prev, estado: !prev.estado }))} sx={{ borderRadius: '8px' }}>
+          <Checkbox checked={Boolean(visibleColumns.estado)} size='small' sx={{ color: '#6C5CE7', '&.Mui-checked': { color: '#6C5CE7' }, p: 0.5, mr: 1 }} />
+          <Typography variant='body2' sx={{ fontSize: '0.85rem' }}>Estado</Typography>
+        </MenuItem>
+        <Divider sx={{ my: 1 }} />
+        <MenuItem
+          dense
+          onClick={() => {
+            setVisibleColumns(DEFAULT_VISIBLE_COLUMNS)
+            setColumnAnchorEl(null)
+          }}
+          sx={{ borderRadius: '8px', color: '#6C5CE7', fontWeight: 600, fontSize: '0.8rem' }}
+        >
+          <i className='tabler-rotate text-sm mr-2' /> Restablecer Columnas
+        </MenuItem>
+      </Menu>
+
+      {/* Menú de Acciones en Lote */}
+      <Menu
+        anchorEl={batchMenuAnchorEl}
+        open={Boolean(batchMenuAnchorEl)}
+        onClose={() => setBatchMenuAnchorEl(null)}
+        slotProps={{
+          paper: {
+            sx: {
+              borderRadius: '16px',
+              p: 1,
+              minWidth: 220,
+              boxShadow: '0 8px 24px rgba(108, 92, 231, 0.12)',
+              border: '1px solid #E6E4F0'
+            }
+          }
+        }}
+      >
+        <MenuItem dense onClick={handleCopySelected} sx={{ borderRadius: '8px', py: 1 }}>
+          <i className='tabler-copy text-base mr-2 text-[#6C5CE7]' />
+          <Typography variant='body2' sx={{ fontWeight: 600 }}>Copiar Pagos</Typography>
+        </MenuItem>
+        <Divider sx={{ my: 1 }} />
+        <MenuItem
+          dense
+          onClick={() => {
+            setSelectedIds([])
+            setBatchMenuAnchorEl(null)
+          }}
+          sx={{ borderRadius: '8px', py: 1, color: '#64748B' }}
+        >
+          <i className='tabler-x text-base mr-2' />
+          <Typography variant='body2'>Deseleccionar</Typography>
+        </MenuItem>
+      </Menu>
 
       {/* Drawer de Pago Individual */}
       <SinglePaymentDrawer

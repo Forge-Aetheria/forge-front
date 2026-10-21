@@ -1,7 +1,8 @@
 import type {
   SalesInvoicingPolicy,
   PurchaseControlPolicy,
-  DeliveryPolicy
+  DeliveryPolicy,
+  NegativeStockPolicy
 } from './inventoryTypes'
 
 // Tipos de dominio para el módulo de Ajustes Generales y Perfil de Usuario (SPEC-007)
@@ -50,6 +51,8 @@ export interface CompanySettings {
   salesInvoicingPolicyDefault?: SalesInvoicingPolicy
   purchaseControlPolicyDefault?: PurchaseControlPolicy
   deliveryPolicyDefault?: DeliveryPolicy
+  negativeStockPolicy?: NegativeStockPolicy
+  costosEnDestinoActivos?: boolean
 }
 
 // 2.1 Políticas Comerciales y de Control (Regla R6)
@@ -57,6 +60,8 @@ export interface CommercialPoliciesSettings {
   salesInvoicingPolicyDefault: SalesInvoicingPolicy // 'ORDERED' | 'DELIVERED'
   purchaseControlPolicyDefault: PurchaseControlPolicy // 'ORDERED' | 'RECEIVED'
   deliveryPolicyDefault: DeliveryPolicy // 'ALL_AT_ONCE' | 'PARTIAL'
+  negativeStockPolicy?: NegativeStockPolicy
+  costosEnDestinoActivos?: boolean
 }
 
 // 3. Control de Monedas y Tasa BCV
@@ -122,6 +127,8 @@ export interface FiscalRulesConfig {
   salesInvoicingPolicyDefault?: SalesInvoicingPolicy
   purchaseControlPolicyDefault?: PurchaseControlPolicy
   deliveryPolicyDefault?: DeliveryPolicy
+  negativeStockPolicy?: NegativeStockPolicy // 'FLEXIBLE' (despacha en negativo) o 'BLOCK' (bloquea si stock insuf.)
+  costosEnDestinoActivos?: boolean // Encender o apagar módulo de Costos en Destino (Landed Costs)
 }
 
 // 6. Hub de Módulos Estilo Odoo

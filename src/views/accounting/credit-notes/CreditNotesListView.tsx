@@ -139,7 +139,7 @@ export const CreditNotesListView: React.FC = () => {
       {/* Cabecera Principal */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <Tooltip title='Volver a Facturas'>
+          <Tooltip title='Volver'>
             <IconButton
               onClick={() => router.push(typeFilter === 'CUSTOMER' ? '/accounting/invoices?type=CUSTOMER' : '/accounting/invoices?type=SUPPLIER')}
               sx={{
@@ -212,17 +212,7 @@ export const CreditNotesListView: React.FC = () => {
             }}
           />
 
-          <TextField
-            select
-            size='small'
-            value={typeFilter}
-            onChange={e => setTypeFilter(e.target.value as any)}
-            sx={{ width: 190 }}
-          >
-            <MenuItem value='ALL'>Todos los tipos</MenuItem>
-            <MenuItem value='CUSTOMER'>Clientes (CxC)</MenuItem>
-            <MenuItem value='SUPPLIER'>Proveedores (CxP)</MenuItem>
-          </TextField>
+          
 
           <TextField
             select

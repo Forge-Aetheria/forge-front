@@ -432,7 +432,7 @@ const UserProfileView: React.FC = () => {
                       '&:hover': { backgroundColor: '#5B4CDB' }
                     }}
                   >
-                    {savingProfile ? 'Guardando...' : 'Guardar Datos'}
+                    {savingProfile ? 'Guardando...' : 'Guardar'}
                   </Button>
                 </div>
               </form>

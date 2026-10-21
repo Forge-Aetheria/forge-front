@@ -336,7 +336,6 @@ export const QuoteDetailView: React.FC<Props> = ({ id }) => {
               {quote.correlativo}
             </Typography>
             <QuoteStatusChip status={quote.estado} size="small" />
-            <BcvRateBadge rate={quote.tasa_bcv} compact />
             {quote.orden_venta_id && (
               <CustomChip
                 label={`Orden: ${quote.correlativo_orden || quote.orden_venta_id}`}
@@ -436,11 +435,14 @@ export const QuoteDetailView: React.FC<Props> = ({ id }) => {
               size="small"
               sx={{
                 borderRadius: '9999px',
-                borderColor: '#38BDF8',
-                color: '#0284C7',
+                borderColor: '#CBD5E1',
+                color: '#1E1B2E',
                 textTransform: 'none',
                 fontWeight: 600,
-                fontSize: '0.8rem'
+                fontSize: '0.85rem',
+                px: 3,
+                py: 0.8,
+                '&:hover': { borderColor: '#6C5CE7', color: '#6C5CE7', backgroundColor: '#FAF9FF' }
               }}
               startIcon={<i className="tabler-edit text-base" />}
             >
@@ -588,30 +590,53 @@ export const QuoteDetailView: React.FC<Props> = ({ id }) => {
           )}
 
           {quote.estado !== 'CANCELED' && (
-            <Tooltip title="Anular Cotización" arrow>
-              <IconButton
-                size="small"
-                onClick={() => setCancelModalOpen(true)}
-                sx={{
-                  color: '#EF4444',
-                  backgroundColor: 'rgba(239, 68, 68, 0.08)',
-                  '&:hover': { backgroundColor: 'rgba(239, 68, 68, 0.16)' }
-                }}
-              >
-                <i className="tabler-ban text-base" />
-              </IconButton>
-            </Tooltip>
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={() => setCancelModalOpen(true)}
+              sx={{
+                borderRadius: '9999px',
+                borderColor: '#FCA5A5',
+                color: '#EF4444',
+                textTransform: 'none',
+                fontWeight: 600,
+                fontSize: '0.85rem',
+                px: 3,
+                py: 0.8,
+                '&:hover': {
+                  borderColor: '#EF4444',
+                  backgroundColor: '#FEF2F2'
+                }
+              }}
+              startIcon={<i className="tabler-ban text-base" />}
+            >
+              Anular
+            </Button>
           )}
 
-          <Tooltip title="Imprimir documento" arrow>
-            <IconButton
-              size="small"
-              onClick={() => window.print()}
-              sx={{ color: '#6B7280', '&:hover': { color: '#6C5CE7' } }}
-            >
-              <i className="tabler-printer text-base" />
-            </IconButton>
-          </Tooltip>
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={() => window.print()}
+            sx={{
+              borderRadius: '9999px',
+              borderColor: '#E6E4F0',
+              color: '#6B7280',
+              textTransform: 'none',
+              fontWeight: 600,
+              fontSize: '0.85rem',
+              px: 2.5,
+              py: 0.8,
+              '&:hover': {
+                borderColor: '#6C5CE7',
+                color: '#6C5CE7',
+                backgroundColor: '#FAF9FF'
+              }
+            }}
+            startIcon={<i className="tabler-printer text-base" />}
+          >
+            Imprimir
+          </Button>
         </div>
       </div>
 

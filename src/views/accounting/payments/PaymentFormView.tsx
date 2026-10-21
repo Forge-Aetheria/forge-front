@@ -9,7 +9,7 @@ import IconButton from '@mui/material/IconButton'
 import Tooltip from '@mui/material/Tooltip'
 import TextField from '@mui/material/TextField'
 import MenuItem from '@mui/material/MenuItem'
-import Chip from '@mui/material/Chip'
+import CustomChip from '@core/components/mui/Chip'
 import Grid from '@mui/material/Grid'
 import Autocomplete from '@mui/material/Autocomplete'
 import FormControlLabel from '@mui/material/FormControlLabel'
@@ -53,7 +53,7 @@ interface Props {
   accounts: Account[]
   defaultTasaBcv?: number
   onBack: () => void
-  onSuccess: (message: string) => void
+  onSuccess: (message: string, payment?: Payment) => void
 }
 
 export const PaymentFormView: React.FC<Props> = ({
@@ -66,8 +66,9 @@ export const PaymentFormView: React.FC<Props> = ({
   onBack,
   onSuccess
 }) => {
-  const isReadOnly = Boolean(payment)
-  const isCustomer = (payment ? payment.tipo : initialType) === 'CUSTOMER'
+  const [currentPayment, setCurrentPayment] = useState<Payment | null>(payment || null)
+  const isReadOnly = Boolean(currentPayment)
+  const isCustomer = (currentPayment ? currentPayment.tipo : initialType) === 'CUSTOMER'
 
   // Filtrar diarios que sean de Banco o Caja
   const bankJournals = useMemo(() => {
@@ -183,7 +184,8 @@ export const PaymentFormView: React.FC<Props> = ({
           referenciaBancaria: referenciaBancaria.trim() || undefined,
           fecha
         })
-        onSuccess(`Pago ${res.payment.numeroPago} conciliado y contabilizado exitosamente en asiento ${res.entry.numeroAsiento}.`)
+        setCurrentPayment(res.payment)
+        onSuccess(`Pago ${res.payment.numeroPago} conciliado y contabilizado exitosamente en asiento ${res.entry.numeroAsiento}.`, res.payment)
       } else {
         // Pago libre / anticipo de cliente o proveedor
         const finalContact = CONTACT_OPTIONS.find(c => c.id === contactoId)
@@ -198,11 +200,10 @@ export const PaymentFormView: React.FC<Props> = ({
           aplicaIgtf,
           referenciaBancaria: referenciaBancaria.trim() || undefined
         })
-        onSuccess(`Pago ${res.payment.numeroPago} registrado y contabilizado en asiento ${res.entry.numeroAsiento}.`)
+        setCurrentPayment(res.payment)
+        onSuccess(`Pago ${res.payment.numeroPago} registrado y contabilizado en asiento ${res.entry.numeroAsiento}.`, res.payment)
       }
-
-      onBack()
-    } catch (err: any) {
+      } catch (err: any) {
       setErrorMsg(err?.message || 'Error al procesar el pago')
     } finally {
       setSubmitting(false)
@@ -214,7 +215,7 @@ export const PaymentFormView: React.FC<Props> = ({
       {/* 1. BARRA SUPERIOR DE ACCIONES */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2.5 }}>
-          <Tooltip title='Volver a pagos y cobros'>
+          <Tooltip title='Volver'>
             <IconButton
               onClick={onBack}
               sx={{
@@ -235,85 +236,68 @@ export const PaymentFormView: React.FC<Props> = ({
           <Box>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
               <Typography variant='h5' sx={{ fontWeight: 800, color: '#1E293B' }}>
-                {payment
-                  ? `Pago: ${payment.numeroPago}`
+                {currentPayment
+                  ? `Pago: ${currentPayment.numeroPago}`
                   : tipo === 'CUSTOMER'
                     ? 'Registrar Cobro de Cliente'
                     : 'Registrar Pago a Proveedor'}
               </Typography>
-              <Chip
-                label={payment ? 'Confirmado' : 'Nuevo Registro'}
+              <CustomChip
+                label={currentPayment ? 'Confirmado' : 'Nuevo'}
                 size='small'
-                sx={{
-                  fontWeight: 800,
-                  fontSize: '0.75rem',
-                  backgroundColor: payment ? 'rgba(16, 185, 129, 0.12)' : 'rgba(108, 92, 231, 0.12)',
-                  color: payment ? '#10B981' : '#6C5CE7'
-                }}
+                variant='tonal'
+                color={currentPayment ? 'success' : 'primary'}
               />
-              <Chip
-                label={tipo === 'CUSTOMER' ? 'Ingreso (Cobro)' : 'Egreso (Pago)'}
+              <CustomChip
+                label={tipo === 'CUSTOMER' ? 'Ingreso' : 'Egreso'}
                 size='small'
-                sx={{
-                  fontWeight: 700,
-                  fontSize: '0.72rem',
-                  backgroundColor: tipo === 'CUSTOMER' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-                  color: tipo === 'CUSTOMER' ? '#10B981' : '#EF4444'
-                }}
+                variant='tonal'
+                color={tipo === 'CUSTOMER' ? 'success' : 'error'}
               />
             </Box>
-            <Typography variant='caption' sx={{ color: '#64748B' }}>
-              {isReadOnly
-                ? 'Comprobante de pago procesado y conciliado en la contabilidad general'
-                : 'Emisión de cobros y pagos con conciliación de facturas, cálculo bimonetario y diferencial cambiario'}
-            </Typography>
           </Box>
         </Box>
 
-        {/* Botones de Cabecera (Minimalista) */}
+        {/* Botones de Cabecera */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
           <Button
-            variant='outlined'
+            variant='tonal'
+            color='secondary'
+            size='small'
             onClick={onBack}
             disabled={submitting}
             sx={{
               borderRadius: '9999px',
-              borderColor: '#CBD5E1',
-              color: '#64748B',
               fontWeight: 600,
-              textTransform: 'none',
-              px: 2.5,
-              height: 38
+              textTransform: 'none'
             }}
           >
-            {isReadOnly ? 'Cerrar' : 'Cancelar'}
+            {isReadOnly ? 'Volver' : 'Cancelar'}
           </Button>
 
           {!isReadOnly && (
-            <Tooltip title={tipo === 'CUSTOMER' ? 'Confirmar Cobro' : 'Confirmar Pago'}>
-              <span>
-                <IconButton
-                  onClick={handleSubmit}
-                  disabled={submitting || numericMonto <= 0}
-                  sx={{
-                    width: 38,
-                    height: 38,
-                    borderRadius: '9999px',
-                    backgroundColor: tipo === 'CUSTOMER' ? '#10B981' : '#6C5CE7',
-                    color: '#FFFFFF',
-                    boxShadow: tipo === 'CUSTOMER' ? '0 4px 14px rgba(16, 185, 129, 0.3)' : '0 4px 14px rgba(108, 92, 231, 0.3)',
-                    '&:hover': { backgroundColor: tipo === 'CUSTOMER' ? '#059669' : '#5b4bc4' },
-                    '&:disabled': { backgroundColor: '#E2E8F0', color: '#94A3B8' }
-                  }}
-                >
-                  {submitting ? (
-                    <CircularProgress size={18} color='inherit' />
-                  ) : (
-                    <i className='tabler-device-floppy text-lg' />
-                  )}
-                </IconButton>
-              </span>
-            </Tooltip>
+            <Button
+              variant='contained'
+              size='small'
+              color={tipo === 'CUSTOMER' ? 'success' : 'primary'}
+              onClick={handleSubmit}
+              disabled={submitting || numericMonto <= 0}
+              startIcon={
+                submitting ? (
+                  <CircularProgress size={16} color='inherit' />
+                ) : (
+                  <i className='tabler-device-floppy text-base' />
+                )
+              }
+              sx={{
+                borderRadius: '9999px',
+                fontWeight: 600,
+                textTransform: 'none',
+                px: 3
+              }}
+            >
+              {submitting ? 'Guardando...' : 'Guardar'}
+            </Button>
           )}
         </Box>
       </Box>
@@ -427,17 +411,11 @@ export const PaymentFormView: React.FC<Props> = ({
                       <Typography variant='body2' sx={{ fontWeight: 700, color: '#1E293B' }}>
                         {opt.nombre}
                       </Typography>
-                      <Chip
+                      <CustomChip
                         label={opt.tipo === 'CUSTOMER' ? 'Cliente' : 'Proveedor'}
                         size='small'
-                        sx={{
-                          height: 20,
-                          fontSize: '0.68rem',
-                          fontWeight: 700,
-                          backgroundColor:
-                            opt.tipo === 'CUSTOMER' ? 'rgba(108, 92, 231, 0.1)' : 'rgba(245, 158, 11, 0.1)',
-                          color: opt.tipo === 'CUSTOMER' ? '#6C5CE7' : '#D97706'
-                        }}
+                        variant='tonal'
+                        color={opt.tipo === 'CUSTOMER' ? 'primary' : 'warning'}
                       />
                     </Box>
                     <Typography variant='caption' sx={{ color: '#64748B', fontFamily: 'monospace' }}>

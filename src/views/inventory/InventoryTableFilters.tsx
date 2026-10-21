@@ -43,27 +43,21 @@ const InventoryTableFilters = ({
     <CardContent className='p-5 flex flex-col gap-4 border-b border-[#E6E4F0] bg-[#FFFFFF]'>
       <div className='flex items-center justify-between flex-wrap gap-3'>
         <Typography variant='h6' className='font-bold text-[#1E1B2E]'>
-          Filtros de Catálogo Maestro
+          Filtros
         </Typography>
 
-        {/* Feature Flag: Localización Fiscal SENIAT */}
-        <div className='flex items-center gap-2.5 bg-[#F8F7FC] px-3.5 py-1.5 rounded-full border border-[#E6E4F0]'>
-          <i className='tabler-receipt-tax text-[#6C5CE7] text-base' />
-          <span className='text-xs font-semibold text-[#1E1B2E] select-none'>
-            Localización Fiscal (SENIAT / IVA)
-          </span>
-          <Switch
+        {hasActiveFilters && onResetFilters && (
+          <Button
             size='small'
-            checked={fiscalEnabled}
-            onChange={e => onToggleFiscal(e.target.checked)}
-            sx={{
-              '& .MuiSwitch-switchBase.Mui-checked': {
-                color: '#6C5CE7',
-                '& + .MuiSwitch-track': { backgroundColor: '#6C5CE7' }
-              }
-            }}
-          />
-        </div>
+            variant='text'
+            color='secondary'
+            onClick={onResetFilters}
+            startIcon={<i className='tabler-filter-off text-sm' />}
+            sx={{ textTransform: 'none', fontSize: '0.8rem', fontWeight: 600 }}
+          >
+            Limpiar filtros
+          </Button>
+        )}
       </div>
 
       <Grid container spacing={2.5} alignItems='center'>

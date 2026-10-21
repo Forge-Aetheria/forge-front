@@ -7,6 +7,9 @@ import Typography from '@mui/material/Typography'
 import Button from '@mui/material/Button'
 import TextField from '@mui/material/TextField'
 import MenuItem from '@mui/material/MenuItem'
+import Checkbox from '@mui/material/Checkbox'
+import Menu from '@mui/material/Menu'
+import Divider from '@mui/material/Divider'
 import CustomChip from '@core/components/mui/Chip'
 import TablePagination from '@mui/material/TablePagination'
 import Table from '@mui/material/Table'
@@ -45,6 +48,24 @@ export const ChartOfAccountsView: React.FC = () => {
   const [isFormActive, setIsFormActive] = useState(false)
   const [selectedAccount, setSelectedAccount] = useState<Account | null>(null)
   const [toastMessage, setToastMessage] = useState<string | null>(null)
+
+  // Control de Columnas Visibles
+  const DEFAULT_VISIBLE_COLUMNS = {
+    codigo: true,
+    nombre: true,
+    tipo: true,
+    moneda: true,
+    saldoUsd: true,
+    saldoVes: true,
+    conciliable: true
+  }
+  const [visibleColumns, setVisibleColumns] = useState(DEFAULT_VISIBLE_COLUMNS)
+  const [columnAnchorEl, setColumnAnchorEl] = useState<null | HTMLElement>(null)
+
+  // Selección Múltiple y Acciones en Lote
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
+  const [batchMenuAnchorEl, setBatchMenuAnchorEl] = useState<null | HTMLElement>(null)
+
 
   const loadAccounts = async () => {
     try {
@@ -113,10 +134,10 @@ export const ChartOfAccountsView: React.FC = () => {
   }
 
   const handleAccountSaved = (acc: Account, isNew: boolean) => {
-    setToastMessage(`Cuenta ${acc.codigo} - ${acc.nombre} ${isNew ? 'creada' : 'actualizada'} exitosamente.`)
+    setToastMessage(`Cuenta ${acc.codigo} - ${acc.nombre} ${isNew ? "creada" : "actualizada"} exitosamente.`)
     loadAccounts()
-    setIsFormActive(false)
-    setSelectedAccount(null)
+    setSelectedAccount(acc)
+    setIsFormActive(true)
   }
 
   if (isFormActive) {
@@ -196,6 +217,35 @@ export const ChartOfAccountsView: React.FC = () => {
     )
   }
 
+    const isAllSelected = paginatedAccounts.length > 0 && paginatedAccounts.every(acc => selectedIds.includes(acc.id))
+  const isIndeterminate = paginatedAccounts.some(acc => selectedIds.includes(acc.id)) && !isAllSelected
+
+  const handleToggleSelectAll = () => {
+    if (isAllSelected) {
+      const pageIds = new Set(paginatedAccounts.map(a => a.id))
+      setSelectedIds(prev => prev.filter(id => !pageIds.has(id)))
+    } else {
+      const pageIds = paginatedAccounts.map(a => a.id)
+      setSelectedIds(prev => Array.from(new Set([...prev, ...pageIds])))
+    }
+  }
+
+  const handleToggleSelect = (id: string) => {
+    setSelectedIds(prev =>
+      prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
+    )
+  }
+
+  const handleCopySelected = () => {
+    const selectedAccounts = accounts.filter(a => selectedIds.includes(a.id))
+    const text = selectedAccounts.map(a => `${a.codigo} - ${a.nombre}`).join('\n')
+    navigator.clipboard.writeText(text)
+    setToastMessage(`${selectedIds.length} cuentas copiadas al portapapeles.`)
+    setBatchMenuAnchorEl(null)
+  }
+
+  const totalVisibleCols = 1 + Object.values(visibleColumns).filter(Boolean).length + 1
+
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
       {/* Cabecera */}
@@ -205,22 +255,54 @@ export const ChartOfAccountsView: React.FC = () => {
             Plan Único de Cuentas (PUC)
           </Typography>
         </Box>
+        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+          {selectedIds.length > 0 && (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <CustomChip
+                size='small'
+                variant='tonal'
+                color='primary'
+                label={`${selectedIds.length} seleccionados`}
+                onDelete={() => setSelectedIds([])}
+              />
+              <Button
+                variant='outlined'
+                size='small'
+                onClick={e => setBatchMenuAnchorEl(e.currentTarget)}
+                startIcon={<i className='tabler-settings text-base' />}
+                endIcon={<i className='tabler-chevron-down text-xs' />}
+                sx={{
+                  borderRadius: '9999px',
+                  borderColor: '#E6E4F0',
+                  color: '#1E1B2E',
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  fontSize: '0.85rem',
+                  px: 2.5,
+                  py: 0.8,
+                  backgroundColor: '#FFFFFF',
+                  '&:hover': { borderColor: '#6C5CE7', backgroundColor: '#F8F7FC' }
+                }}
+              >
+                Acciones
+              </Button>
+            </Box>
+          )}
 
-        <Box sx={{ display: 'flex', gap: 2 }}>
           <Button
             variant='contained'
             startIcon={<i className='tabler-plus' />}
             onClick={handleOpenCreate}
             sx={{
-              borderRadius: '9999px',
               backgroundColor: '#6C5CE7',
-              fontWeight: 700,
+              borderRadius: '9999px',
               textTransform: 'none',
-              px: 4,
+              fontWeight: 600,
+              px: 3,
               '&:hover': { backgroundColor: '#5b4bc4' }
             }}
           >
-            Nuevo
+            Nueva Cuenta
           </Button>
         </Box>
       </Box>
@@ -306,6 +388,27 @@ export const ChartOfAccountsView: React.FC = () => {
               size='small'
             />
           </Box>
+
+          <Button
+            size='small'
+            variant='outlined'
+            startIcon={<i className='tabler-layout-columns text-base' />}
+            onClick={e => setColumnAnchorEl(e.currentTarget)}
+            sx={{
+              borderRadius: '9999px',
+              borderColor: '#E6E4F0',
+              color: '#6C5CE7',
+              textTransform: 'none',
+              fontWeight: 600,
+              fontSize: '0.8rem',
+              px: 2,
+              py: 0.6,
+              backgroundColor: '#FFFFFF',
+              '&:hover': { borderColor: '#6C5CE7', backgroundColor: '#F3F0FF' }
+            }}
+          >
+            Columnas
+          </Button>
         </Box>
 
         {/* Table */}
@@ -313,68 +416,124 @@ export const ChartOfAccountsView: React.FC = () => {
           <Table>
             <TableHead sx={{ backgroundColor: '#F4F3F8' }}>
               <TableRow>
-                <TableCell sx={{ fontWeight: 700, color: '#475569' }}>Código</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: '#475569' }}>Nombre de la Cuenta</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: '#475569' }}>Tipo de Cuenta</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: '#475569' }}>Moneda</TableCell>
-                <TableCell align='right' sx={{ fontWeight: 700, color: '#475569' }}>Saldo (USD)</TableCell>
-                <TableCell align='right' sx={{ fontWeight: 700, color: '#475569' }}>Saldo (VES)</TableCell>
-                <TableCell align='center' sx={{ fontWeight: 700, color: '#475569' }}>Conciliable</TableCell>
-                <TableCell align='center' sx={{ fontWeight: 700, color: '#475569' }}>Acciones</TableCell>
+                <TableCell padding='checkbox' sx={{ width: 44 }}>
+                  <Checkbox
+                    size='small'
+                    indeterminate={isIndeterminate}
+                    checked={isAllSelected}
+                    onChange={handleToggleSelectAll}
+                    sx={{
+                      color: '#6C5CE7',
+                      '&.Mui-checked': { color: '#6C5CE7' },
+                      '&.MuiCheckbox-indeterminate': { color: '#6C5CE7' }
+                    }}
+                  />
+                </TableCell>
+                {visibleColumns.codigo && <TableCell sx={{ fontWeight: 700, color: '#475569' }}>Código</TableCell>}
+                {visibleColumns.nombre && <TableCell sx={{ fontWeight: 700, color: '#475569' }}>Nombre de la Cuenta</TableCell>}
+                {visibleColumns.tipo && <TableCell sx={{ fontWeight: 700, color: '#475569' }}>Tipo de Cuenta</TableCell>}
+                {visibleColumns.moneda && <TableCell sx={{ fontWeight: 700, color: '#475569' }}>Moneda</TableCell>}
+                {visibleColumns.saldoUsd && <TableCell align='right' sx={{ fontWeight: 700, color: '#475569' }}>Saldo (USD)</TableCell>}
+                {visibleColumns.saldoVes && <TableCell align='right' sx={{ fontWeight: 700, color: '#475569' }}>Saldo (VES)</TableCell>}
+                {visibleColumns.conciliable && <TableCell align='center' sx={{ fontWeight: 700, color: '#475569' }}>Conciliable</TableCell>}
+                <TableCell align='center' sx={{ fontWeight: 700, color: '#475569', width: 90 }}>Acciones</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {loading ? (
                 Array.from({ length: 4 }).map((_, idx) => (
                   <TableRow key={idx}>
-                    <TableCell colSpan={8}>
+                    <TableCell colSpan={totalVisibleCols}>
                       <Skeleton variant='text' height={40} />
                     </TableCell>
                   </TableRow>
                 ))
               ) : filteredAccounts.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} align='center' sx={{ py: 6, color: '#94A3B8' }}>
+                  <TableCell colSpan={totalVisibleCols} align='center' sx={{ py: 6, color: '#94A3B8' }}>
                     No se encontraron cuentas contables.
                   </TableCell>
                 </TableRow>
               ) : (
-                paginatedAccounts.map(acc => (
-                  <TableRow key={acc.id} hover sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
-                    <TableCell sx={{ fontWeight: 700, color: '#1E293B', fontFamily: 'monospace' }}>
-                      {acc.codigo}
-                    </TableCell>
-                    <TableCell sx={{ fontWeight: 600, color: '#334155' }}>
-                      {acc.nombre}
-                    </TableCell>
-                    <TableCell>
-                      {getTypeChip(acc.tipo, acc.subtipo, acc.tipoCuentaNombre)}
-                    </TableCell>
-                    <TableCell sx={{ color: '#64748B', fontWeight: 500 }}>
-                      {acc.moneda}
-                    </TableCell>
-                    <TableCell align='right' sx={{ fontWeight: 700, color: '#1E293B' }}>
-                      ${acc.saldoUsd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </TableCell>
-                    <TableCell align='right' sx={{ color: '#64748B' }}>
-                      {acc.saldoVes.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Bs.
-                    </TableCell>
-                    <TableCell align='center'>
-                      {acc.permiteConciliacion ? (
-                        <CustomChip label='Sí' size='small' variant='tonal' color='success' />
-                      ) : (
-                        <Typography variant='caption' sx={{ color: '#94A3B8' }}>No</Typography>
+                paginatedAccounts.map(acc => {
+                  const isSelected = selectedIds.includes(acc.id)
+
+                  return (
+                    <TableRow
+                      key={acc.id}
+                      hover
+                      selected={isSelected}
+                      onClick={() => handleOpenEdit(acc)}
+                      sx={{
+                        cursor: 'pointer',
+                        '&.Mui-selected': { backgroundColor: 'rgba(108, 92, 231, 0.08) !important' },
+                        '&:last-child td, &:last-child th': { border: 0 }
+                      }}
+                    >
+                      <TableCell padding='checkbox' onClick={e => e.stopPropagation()}>
+                        <Checkbox
+                          size='small'
+                          checked={isSelected}
+                          onChange={() => handleToggleSelect(acc.id)}
+                          sx={{ color: '#6C5CE7', '&.Mui-checked': { color: '#6C5CE7' } }}
+                        />
+                      </TableCell>
+                      {visibleColumns.codigo && (
+                        <TableCell sx={{ fontWeight: 700, color: '#1E293B', fontFamily: 'monospace' }}>
+                          {acc.codigo}
+                        </TableCell>
                       )}
-                    </TableCell>
-                    <TableCell align='center'>
-                      <Tooltip title='Editar Cuenta'>
-                        <IconButton size='small' onClick={() => handleOpenEdit(acc)} sx={{ color: '#6C5CE7' }}>
-                          <i className='tabler-edit' />
-                        </IconButton>
-                      </Tooltip>
-                    </TableCell>
-                  </TableRow>
-                ))
+                      {visibleColumns.nombre && (
+                        <TableCell sx={{ fontWeight: 600, color: '#334155' }}>
+                          {acc.nombre}
+                        </TableCell>
+                      )}
+                      {visibleColumns.tipo && (
+                        <TableCell>
+                          {getTypeChip(acc.tipo, acc.subtipo, acc.tipoCuentaNombre)}
+                        </TableCell>
+                      )}
+                      {visibleColumns.moneda && (
+                        <TableCell sx={{ color: '#64748B', fontWeight: 500 }}>
+                          {acc.moneda}
+                        </TableCell>
+                      )}
+                      {visibleColumns.saldoUsd && (
+                        <TableCell align='right' sx={{ fontWeight: 700, color: '#1E293B' }}>
+                          ${acc.saldoUsd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </TableCell>
+                      )}
+                      {visibleColumns.saldoVes && (
+                        <TableCell align='right' sx={{ color: '#64748B' }}>
+                          {acc.saldoVes.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Bs.
+                        </TableCell>
+                      )}
+                      {visibleColumns.conciliable && (
+                        <TableCell align='center'>
+                          {acc.permiteConciliacion ? (
+                            <CustomChip label='Sí' size='small' variant='tonal' color='success' />
+                          ) : (
+                            <Typography variant='caption' sx={{ color: '#94A3B8' }}>No</Typography>
+                          )}
+                        </TableCell>
+                      )}
+                      <TableCell align='center' onClick={e => e.stopPropagation()}>
+                        <Tooltip title='Editar Cuenta'>
+                          <IconButton
+                            size='small'
+                            onClick={e => {
+                              e.stopPropagation()
+                              handleOpenEdit(acc)
+                            }}
+                            sx={{ color: '#6C5CE7' }}
+                          >
+                            <i className='tabler-edit' />
+                          </IconButton>
+                        </Tooltip>
+                      </TableCell>
+                    </TableRow>
+                  )
+                })
               )}
             </TableBody>
           </Table>
@@ -397,6 +556,103 @@ export const ChartOfAccountsView: React.FC = () => {
           }
         />
       </Card>
+
+      
+      {/* Menú de Personalización de Columnas */}
+      <Menu
+        anchorEl={columnAnchorEl}
+        open={Boolean(columnAnchorEl)}
+        onClose={() => setColumnAnchorEl(null)}
+        slotProps={{
+          paper: {
+            sx: {
+              borderRadius: '16px',
+              p: 1,
+              minWidth: 220,
+              boxShadow: '0 8px 24px rgba(108, 92, 231, 0.12)',
+              border: '1px solid #E6E4F0'
+            }
+          }
+        }}
+      >
+        <Typography variant='caption' sx={{ fontWeight: 700, color: '#6B7280', px: 3, py: 1, display: 'block', textTransform: 'uppercase', fontSize: '0.65rem' }}>
+          COLUMNAS VISIBLES
+        </Typography>
+        <MenuItem dense onClick={() => setVisibleColumns(prev => ({ ...prev, codigo: !prev.codigo }))} sx={{ borderRadius: '8px' }}>
+          <Checkbox checked={Boolean(visibleColumns.codigo)} size='small' sx={{ color: '#6C5CE7', '&.Mui-checked': { color: '#6C5CE7' }, p: 0.5, mr: 1 }} />
+          <Typography variant='body2' sx={{ fontSize: '0.85rem' }}>Código</Typography>
+        </MenuItem>
+        <MenuItem dense onClick={() => setVisibleColumns(prev => ({ ...prev, nombre: !prev.nombre }))} sx={{ borderRadius: '8px' }}>
+          <Checkbox checked={Boolean(visibleColumns.nombre)} size='small' sx={{ color: '#6C5CE7', '&.Mui-checked': { color: '#6C5CE7' }, p: 0.5, mr: 1 }} />
+          <Typography variant='body2' sx={{ fontSize: '0.85rem' }}>Nombre de la Cuenta</Typography>
+        </MenuItem>
+        <MenuItem dense onClick={() => setVisibleColumns(prev => ({ ...prev, tipo: !prev.tipo }))} sx={{ borderRadius: '8px' }}>
+          <Checkbox checked={Boolean(visibleColumns.tipo)} size='small' sx={{ color: '#6C5CE7', '&.Mui-checked': { color: '#6C5CE7' }, p: 0.5, mr: 1 }} />
+          <Typography variant='body2' sx={{ fontSize: '0.85rem' }}>Tipo de Cuenta</Typography>
+        </MenuItem>
+        <MenuItem dense onClick={() => setVisibleColumns(prev => ({ ...prev, moneda: !prev.moneda }))} sx={{ borderRadius: '8px' }}>
+          <Checkbox checked={Boolean(visibleColumns.moneda)} size='small' sx={{ color: '#6C5CE7', '&.Mui-checked': { color: '#6C5CE7' }, p: 0.5, mr: 1 }} />
+          <Typography variant='body2' sx={{ fontSize: '0.85rem' }}>Moneda</Typography>
+        </MenuItem>
+        <MenuItem dense onClick={() => setVisibleColumns(prev => ({ ...prev, saldoUsd: !prev.saldoUsd }))} sx={{ borderRadius: '8px' }}>
+          <Checkbox checked={Boolean(visibleColumns.saldoUsd)} size='small' sx={{ color: '#6C5CE7', '&.Mui-checked': { color: '#6C5CE7' }, p: 0.5, mr: 1 }} />
+          <Typography variant='body2' sx={{ fontSize: '0.85rem' }}>Saldo (USD)</Typography>
+        </MenuItem>
+        <MenuItem dense onClick={() => setVisibleColumns(prev => ({ ...prev, saldoVes: !prev.saldoVes }))} sx={{ borderRadius: '8px' }}>
+          <Checkbox checked={Boolean(visibleColumns.saldoVes)} size='small' sx={{ color: '#6C5CE7', '&.Mui-checked': { color: '#6C5CE7' }, p: 0.5, mr: 1 }} />
+          <Typography variant='body2' sx={{ fontSize: '0.85rem' }}>Saldo (VES)</Typography>
+        </MenuItem>
+        <MenuItem dense onClick={() => setVisibleColumns(prev => ({ ...prev, conciliable: !prev.conciliable }))} sx={{ borderRadius: '8px' }}>
+          <Checkbox checked={Boolean(visibleColumns.conciliable)} size='small' sx={{ color: '#6C5CE7', '&.Mui-checked': { color: '#6C5CE7' }, p: 0.5, mr: 1 }} />
+          <Typography variant='body2' sx={{ fontSize: '0.85rem' }}>Conciliable</Typography>
+        </MenuItem>
+        <Divider sx={{ my: 1 }} />
+        <MenuItem
+          dense
+          onClick={() => {
+            setVisibleColumns(DEFAULT_VISIBLE_COLUMNS)
+            setColumnAnchorEl(null)
+          }}
+          sx={{ borderRadius: '8px', color: '#6C5CE7', fontWeight: 600, fontSize: '0.8rem' }}
+        >
+          <i className='tabler-rotate text-sm mr-2' /> Restablecer Columnas
+        </MenuItem>
+      </Menu>
+
+      {/* Menú de Acciones en Lote */}
+      <Menu
+        anchorEl={batchMenuAnchorEl}
+        open={Boolean(batchMenuAnchorEl)}
+        onClose={() => setBatchMenuAnchorEl(null)}
+        slotProps={{
+          paper: {
+            sx: {
+              borderRadius: '16px',
+              p: 1,
+              minWidth: 220,
+              boxShadow: '0 8px 24px rgba(108, 92, 231, 0.12)',
+              border: '1px solid #E6E4F0'
+            }
+          }
+        }}
+      >
+        <MenuItem dense onClick={handleCopySelected} sx={{ borderRadius: '8px', py: 1 }}>
+          <i className='tabler-copy text-base mr-2 text-[#6C5CE7]' />
+          <Typography variant='body2' sx={{ fontWeight: 600 }}>Copiar Cuentas</Typography>
+        </MenuItem>
+        <Divider sx={{ my: 1 }} />
+        <MenuItem
+          dense
+          onClick={() => {
+            setSelectedIds([])
+            setBatchMenuAnchorEl(null)
+          }}
+          sx={{ borderRadius: '8px', py: 1, color: '#64748B' }}
+        >
+          <i className='tabler-x text-base mr-2' />
+          <Typography variant='body2'>Deseleccionar</Typography>
+        </MenuItem>
+      </Menu>
 
       {/* Toast */}
       <Snackbar

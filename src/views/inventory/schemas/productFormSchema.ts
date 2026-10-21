@@ -43,6 +43,8 @@ export const productFormSchema = z.object({
   invoicingPolicy: z.enum(['DEFAULT', 'ORDERED', 'DELIVERED']).default('DEFAULT'),
   purchaseControlPolicy: z.enum(['DEFAULT', 'ORDERED', 'RECEIVED']).default('DEFAULT'),
   deliveryPolicy: z.enum(['DEFAULT', 'PARTIAL', 'ALL_AT_ONCE']).default('DEFAULT'),
+  isLandedCost: z.boolean().optional(),
+  defaultSplitMethod: z.enum(['EQUAL', 'BY_QUANTITY', 'BY_COST', 'BY_WEIGHT', 'BY_VOLUME']).optional(),
   variants: z.array(productVariantSchema).min(1, 'Debe registrar al menos una variante')
 })
 

@@ -316,7 +316,6 @@ export const QuoteMasterDetailForm: React.FC<Props> = ({
                   ? `Editar Cotización ${initialQuote?.correlativo}`
                   : 'Nueva Cotización de Venta'}
               </Typography>
-              {bcvRate && <BcvRateBadge rate={bcvRate} />}
             </div>
             <Typography variant="body2" className="text-[#6B7280] mt-0.5">
               Configure el cliente, líneas de productos y condiciones bimonetarias
@@ -324,58 +323,45 @@ export const QuoteMasterDetailForm: React.FC<Props> = ({
           </div>
         </div>
 
-        {/* Acciones Superiores de Guardado (Minimalista) */}
+        {/* Botones de Acción */}
         <div className="flex items-center gap-2">
-          <Tooltip title="Guardar Borrador">
-            <span>
-              <IconButton
-                onClick={() => handleSubmit(false)}
-                disabled={isSubmitting}
-                sx={{
-                  width: 38,
-                  height: 38,
-                  borderRadius: '9999px',
-                  color: '#6B7280',
-                  backgroundColor: '#FFFFFF',
-                  border: '1px solid #E6E4F0',
-                  boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
-                  '&:hover': { color: '#6C5CE7', backgroundColor: '#F0EEF9', borderColor: '#6C5CE7' },
-                  '&:disabled': { backgroundColor: '#F1F5F9', color: '#94A3B8' }
-                }}
-              >
-                {isSubmitting && submitAction === 'draft' ? (
-                  <CircularProgress size={18} color="inherit" />
-                ) : (
-                  <i className="tabler-device-floppy text-lg" />
-                )}
-              </IconButton>
-            </span>
-          </Tooltip>
+          <Button
+            variant="tonal"
+            color="secondary"
+            size="small"
+            component={Link}
+            href="/sales/quotes"
+            disabled={isSubmitting}
+            sx={{ borderRadius: '9999px', fontWeight: 600, textTransform: 'none', px: 3, py: 0.8 }}
+          >
+            Cancelar
+          </Button>
 
-          <Tooltip title="Emitir Presupuesto">
-            <span>
-              <IconButton
-                onClick={() => handleSubmit(true)}
-                disabled={isSubmitting}
-                sx={{
-                  width: 38,
-                  height: 38,
-                  borderRadius: '9999px',
-                  backgroundColor: '#6C5CE7',
-                  color: '#FFFFFF',
-                  boxShadow: '0 4px 12px rgba(108, 92, 231, 0.3)',
-                  '&:hover': { backgroundColor: '#5B4CDB' },
-                  '&:disabled': { backgroundColor: '#E2E8F0', color: '#94A3B8' }
-                }}
-              >
-                {isSubmitting && submitAction === 'issue' ? (
-                  <CircularProgress size={18} color="inherit" />
-                ) : (
-                  <i className="tabler-send text-lg" />
-                )}
-              </IconButton>
-            </span>
-          </Tooltip>
+          <Button
+            variant="contained"
+            color="primary"
+            size="small"
+            onClick={() => handleSubmit(true)}
+            disabled={isSubmitting}
+            startIcon={
+              isSubmitting ? (
+                <CircularProgress size={16} color="inherit" />
+              ) : (
+                <i className="tabler-device-floppy text-base" />
+              )
+            }
+            sx={{
+              borderRadius: '9999px',
+              backgroundColor: '#6C5CE7',
+              fontWeight: 600,
+              textTransform: 'none',
+              px: 3.5,
+              py: 0.8,
+              '&:hover': { backgroundColor: '#5B4CDB' }
+            }}
+          >
+            Guardar
+          </Button>
         </div>
       </div>
 

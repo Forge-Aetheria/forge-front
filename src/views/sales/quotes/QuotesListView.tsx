@@ -186,7 +186,6 @@ export const QuotesListView: React.FC = () => {
             <Typography variant="h4" className="font-bold text-[#1E1B2E]">
               Ventas y Cotizaciones
             </Typography>
-            {bcvRate && <BcvRateBadge rate={bcvRate} onRefresh={loadData} />}
           </div>
         </div>
 

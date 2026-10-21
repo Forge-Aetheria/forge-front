@@ -49,6 +49,20 @@ export {
   validateWarehouseOperationOrder,
   cancelWarehouseOperationOrder
 } from './inventory/operationOrdersService'
+export {
+  calculateWeightedAverageCost,
+  recalculateTemplateStandardCost,
+  getSystemNegativeStockPolicy
+} from './inventory/costingService'
+export {
+  getLandedCosts,
+  getLandedCostById,
+  calculateValuationAdjustments,
+  createLandedCost,
+  updateLandedCost,
+  deleteLandedCost,
+  validateLandedCost
+} from './inventory/landedCostService'
 
 // ==========================================
 // PRODUCT TEMPLATES & VARIANTS CRUD (WITH IN-MEMORY CACHE)

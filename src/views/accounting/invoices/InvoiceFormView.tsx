@@ -11,7 +11,7 @@ import TextField from '@mui/material/TextField'
 import Autocomplete from '@mui/material/Autocomplete'
 import MenuItem from '@mui/material/MenuItem'
 import IconButton from '@mui/material/IconButton'
-import Chip from '@mui/material/Chip'
+import CustomChip from '@core/components/mui/Chip'
 import Table from '@mui/material/Table'
 import TableBody from '@mui/material/TableBody'
 import TableCell from '@mui/material/TableCell'
@@ -626,7 +626,14 @@ export const InvoiceFormView: React.FC<Props> = ({
 
     setCurrentInvoice(newInvoice)
     onSaved(newInvoice)
-    onBack()
+    if (onInvoiceUpdated) {
+      onInvoiceUpdated(newInvoice)
+    }
+    setToastMessage(
+      postDirectly
+        ? `Factura ${newInvoice.numeroFactura} confirmada y publicada con éxito.`
+        : `Borrador de factura ${newInvoice.numeroFactura} guardado correctamente.`
+    )
   }
 
   // Handle payment success
@@ -661,7 +668,7 @@ export const InvoiceFormView: React.FC<Props> = ({
       {/* Botón de Retorno y Cabecera de la Vista Completa */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2.5 }}>
-          <Tooltip title='Volver al listado'>
+          <Tooltip title='Volver'>
             <IconButton
               onClick={onBack}
               sx={{
@@ -689,169 +696,85 @@ export const InvoiceFormView: React.FC<Props> = ({
                     : `Nueva Factura de Cliente (${tipoDocumento})`}
               </Typography>
 
-              {/* Sello de Pago o Estado estilo Odoo */}
+              {/* Sello de Pago o Estado */}
               {currentInvoice?.estado === 'CANCELED' ? (
-                <Chip
-                  label='ANULADA'
-                  size='medium'
-                  sx={{
-                    fontWeight: 900,
-                    letterSpacing: '1px',
-                    borderRadius: '8px',
-                    backgroundColor: 'rgba(239, 68, 68, 0.15)',
-                    color: '#EF4444',
-                    border: '2px solid #EF4444',
-                    px: 1
-                  }}
-                />
+                <CustomChip label='Anulada' size='small' variant='tonal' color='error' />
               ) : isFullyReversed ? (
-                <Chip
-                  label='REVERTIDA'
-                  size='medium'
-                  sx={{
-                    fontWeight: 900,
-                    letterSpacing: '1px',
-                    borderRadius: '8px',
-                    backgroundColor: 'rgba(108, 92, 231, 0.15)',
-                    color: '#6C5CE7',
-                    border: '2px solid #6C5CE7',
-                    px: 1
-                  }}
-                />
+                <CustomChip label='Revertida' size='small' variant='tonal' color='secondary' />
               ) : currentInvoice?.tipoDocumento === 'NOTA_CREDITO' ? (
-                <Chip
-                  label='NOTA DE CRÉDITO'
-                  size='medium'
-                  sx={{
-                    fontWeight: 800,
-                    borderRadius: '8px',
-                    backgroundColor: 'rgba(108, 92, 231, 0.15)',
-                    color: '#6C5CE7',
-                    border: '1px solid #6C5CE7',
-                    px: 1
-                  }}
-                />
+                <CustomChip label='Nota de Crédito' size='small' variant='tonal' color='info' />
               ) : isFullyPaid ? (
-                <Chip
-                  label='PAGADA'
-                  size='medium'
-                  sx={{
-                    fontWeight: 900,
-                    letterSpacing: '1px',
-                    borderRadius: '8px',
-                    backgroundColor: 'rgba(108, 185, 129, 0.15)',
-                    color: '#10B981',
-                    border: '2px solid #10B981',
-                    px: 1
-                  }}
-                />
+                <CustomChip label='Pagada' size='small' variant='tonal' color='success' />
               ) : isPartiallyPaid ? (
-                <Chip
-                  label='ABONADA PARCIAL'
-                  size='medium'
-                  sx={{
-                    fontWeight: 800,
-                    borderRadius: '8px',
-                    backgroundColor: 'rgba(245, 158, 11, 0.15)',
-                    color: '#D97706',
-                    border: '1px solid #F59E0B'
-                  }}
-                />
+                <CustomChip label='Abonada Parcial' size='small' variant='tonal' color='warning' />
               ) : currentInvoice?.estado === 'POSTED' ? (
-                <Chip
-                  label='Publicada'
-                  size='medium'
-                  sx={{
-                    fontWeight: 700,
-                    borderRadius: '9999px',
-                    backgroundColor: 'rgba(108, 92, 231, 0.12)',
-                    color: '#6C5CE7'
-                  }}
-                />
+                <CustomChip label='Publicada' size='small' variant='tonal' color='primary' />
               ) : (
-                <Chip
-                  label='Borrador'
-                  size='medium'
-                  sx={{
-                    fontWeight: 700,
-                    borderRadius: '9999px',
-                    backgroundColor: 'rgba(148, 163, 184, 0.15)',
-                    color: '#64748B'
-                  }}
-                />
+                <CustomChip label='Borrador' size='small' variant='tonal' color='secondary' />
               )}
             </Box>
-            <Typography variant='body2' sx={{ color: '#64748B' }}>
-              {isSupplier
-                ? 'Control de gastos de compras, suministros y servicios públicos con imputación contable directa'
-                : 'Facturación comercial con doble partida automática, partida bimonetaria y conciliación de cobros'}
-            </Typography>
           </Box>
         </Box>
 
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
-          {/* Botones Minimalistas de Guardar (Estilo Ícono Disquete) */}
+          {/* Botones en Modo Borrador / Edición */}
           {!isReadOnly && (
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-              <Tooltip title='Guardar Borrador'>
-                <IconButton
-                  onClick={() => handleSave(false)}
-                  sx={{
-                    width: 38,
-                    height: 38,
-                    borderRadius: '9999px',
-                    color: '#6B7280',
-                    backgroundColor: '#FFFFFF',
-                    border: '1px solid #E6E4F0',
-                    boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
-                    '&:hover': { color: '#6C5CE7', backgroundColor: '#F0EEF9', borderColor: '#6C5CE7' }
-                  }}
-                >
-                  <i className='tabler-device-floppy text-lg' />
-                </IconButton>
-              </Tooltip>
+            <>
+              <Button
+                variant='tonal'
+                color='secondary'
+                size='small'
+                onClick={onBack}
+                sx={{ borderRadius: '9999px', textTransform: 'none', fontWeight: 600 }}
+              >
+                Cancelar
+              </Button>
 
-              <Tooltip title='Confirmar y Publicar Factura'>
-                <IconButton
-                  onClick={() => handleSave(true)}
-                  sx={{
-                    width: 38,
-                    height: 38,
-                    borderRadius: '9999px',
-                    backgroundColor: '#6C5CE7',
-                    color: '#FFFFFF',
-                    boxShadow: '0 4px 12px rgba(108, 92, 231, 0.3)',
-                    '&:hover': { backgroundColor: '#5B4CDB' }
-                  }}
-                >
-                  <i className='tabler-check text-lg' />
-                </IconButton>
-              </Tooltip>
-            </Box>
+              <Button
+                variant='outlined'
+                color='primary'
+                size='small'
+                startIcon={<i className='tabler-device-floppy text-base' />}
+                onClick={() => handleSave(false)}
+                sx={{ borderRadius: '9999px', textTransform: 'none', fontWeight: 600 }}
+              >
+                Guardar
+              </Button>
+
+              <Button
+                variant='contained'
+                color='primary'
+                size='small'
+                startIcon={<i className='tabler-check text-base' />}
+                onClick={() => handleSave(true)}
+                sx={{ borderRadius: '9999px', textTransform: 'none', fontWeight: 600 }}
+              >
+                Publicar
+              </Button>
+            </>
           )}
 
-          {/* Botón Restablecer a Borrador estilo Odoo */}
+          {/* Botón A Borrador si está Publicada */}
           {currentInvoice?.estado === 'POSTED' && (
             <Button
               variant='outlined'
               size='small'
-              startIcon={<i className='tabler-rotate-2' />}
+              startIcon={<i className='tabler-rotate-2 text-base' />}
               onClick={handleResetToDraft}
               disabled={resettingDraft}
               sx={{
                 borderRadius: '9999px',
                 borderColor: '#F59E0B',
                 color: '#D97706',
-                fontWeight: 700,
+                fontWeight: 600,
                 textTransform: 'none',
-                px: 2.5,
                 '&:hover': {
                   borderColor: '#D97706',
                   backgroundColor: 'rgba(245, 158, 11, 0.08)'
                 }
               }}
             >
-              {resettingDraft ? 'Restableciendo...' : 'Restablecer a Borrador'}
+              {resettingDraft ? 'Procesando...' : 'A Borrador'}
             </Button>
           )}
 
@@ -860,19 +783,13 @@ export const InvoiceFormView: React.FC<Props> = ({
             <Button
               variant='outlined'
               size='small'
-              startIcon={<i className='tabler-receipt-refund' />}
+              color='secondary'
+              startIcon={<i className='tabler-receipt-refund text-base' />}
               onClick={() => setCreditNoteModalOpen(true)}
               sx={{
                 borderRadius: '9999px',
-                borderColor: '#6C5CE7',
-                color: '#6C5CE7',
-                fontWeight: 700,
-                textTransform: 'none',
-                px: 2.5,
-                '&:hover': {
-                  borderColor: '#5B4CDB',
-                  backgroundColor: 'rgba(108, 92, 231, 0.08)'
-                }
+                fontWeight: 600,
+                textTransform: 'none'
               }}
             >
               Nota de Crédito
@@ -884,55 +801,37 @@ export const InvoiceFormView: React.FC<Props> = ({
             <Button
               variant='outlined'
               size='small'
-              startIcon={<i className='tabler-ban' />}
+              color='error'
+              startIcon={<i className='tabler-ban text-base' />}
               onClick={() => setCancelModalOpen(true)}
               sx={{
                 borderRadius: '9999px',
-                borderColor: '#EF4444',
-                color: '#EF4444',
-                fontWeight: 700,
-                textTransform: 'none',
-                px: 2.5,
-                '&:hover': {
-                  borderColor: '#DC2626',
-                  backgroundColor: 'rgba(239, 68, 68, 0.08)'
-                }
+                fontWeight: 600,
+                textTransform: 'none'
               }}
             >
               Anular
             </Button>
           )}
 
-          {/* Botón Destacado: Registrar Pago (Estilo Odoo) */}
+          {/* Botón Destacado: Cobrar / Pagar */}
           {currentInvoice && currentInvoice.estado !== 'DRAFT' && currentInvoice.estado !== 'CANCELED' && currentInvoice.estado !== 'REVERSED' && !isFullyReversed && saldoPendienteUsd > 0.01 && (
             <Button
               variant='contained'
-              startIcon={<i className='tabler-cash' />}
+              size='small'
+              color='success'
+              startIcon={<i className='tabler-cash text-base' />}
               onClick={() => setPaymentModalOpen(true)}
               sx={{
                 borderRadius: '9999px',
-                backgroundColor: '#10B981',
-                fontWeight: 700,
+                fontWeight: 600,
                 textTransform: 'none',
-                px: 3,
-                boxShadow: '0 4px 12px rgba(16, 185, 129, 0.25)',
-                '&:hover': { backgroundColor: '#059669' }
+                px: 3
               }}
             >
-              {isSupplier ? 'Registrar Pago' : 'Registrar Cobro'}
+              {isSupplier ? 'Pagar' : 'Cobrar'}
             </Button>
           )}
-
-          <Chip
-            label={`Tasa BCV: ${tasaBcv.toFixed(2)} Bs/USD`}
-            size='medium'
-            sx={{
-              fontWeight: 700,
-              borderRadius: '9999px',
-              backgroundColor: 'rgba(108, 92, 231, 0.1)',
-              color: '#6C5CE7'
-            }}
-          />
         </Box>
       </Box>
 
@@ -1069,17 +968,11 @@ export const InvoiceFormView: React.FC<Props> = ({
                       <Typography variant='body2' sx={{ fontWeight: 700, color: '#1E293B' }}>
                         {opt.nombre}
                       </Typography>
-                      <Chip
+                      <CustomChip
                         label={opt.tipo === 'CUSTOMER' ? 'Cliente' : 'Proveedor'}
                         size='small'
-                        sx={{
-                          height: 20,
-                          fontSize: '0.68rem',
-                          fontWeight: 700,
-                          backgroundColor:
-                            opt.tipo === 'CUSTOMER' ? 'rgba(108, 92, 231, 0.1)' : 'rgba(245, 158, 11, 0.1)',
-                          color: opt.tipo === 'CUSTOMER' ? '#6C5CE7' : '#D97706'
-                        }}
+                        variant='tonal'
+                        color={opt.tipo === 'CUSTOMER' ? 'primary' : 'warning'}
                       />
                     </Box>
                     <Typography variant='caption' sx={{ color: '#64748B', fontFamily: 'monospace' }}>
@@ -1276,16 +1169,11 @@ export const InvoiceFormView: React.FC<Props> = ({
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                   <i className='tabler-receipt-2' />
                   <span>Pagos Conciliados</span>
-                  <Chip
+                  <CustomChip
                     label={pagosAsociados.length}
                     size='small'
-                    sx={{
-                      height: 20,
-                      fontSize: '0.75rem',
-                      fontWeight: 700,
-                      backgroundColor: pagosAsociados.length > 0 ? 'rgba(16, 185, 129, 0.15)' : 'rgba(148, 163, 184, 0.15)',
-                      color: pagosAsociados.length > 0 ? '#10B981' : '#64748B'
-                    }}
+                    variant='tonal'
+                    color={pagosAsociados.length > 0 ? 'success' : 'secondary'}
                   />
                 </Box>
               }
@@ -1295,22 +1183,11 @@ export const InvoiceFormView: React.FC<Props> = ({
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                   <i className='tabler-receipt-refund' />
                   <span>Notas de Crédito</span>
-                  <Chip
+                  <CustomChip
                     label={currentInvoice?.notasCreditoAplicadas?.length || 0}
                     size='small'
-                    sx={{
-                      height: 20,
-                      fontSize: '0.75rem',
-                      fontWeight: 700,
-                      backgroundColor:
-                        (currentInvoice?.notasCreditoAplicadas?.length || 0) > 0
-                          ? 'rgba(108, 92, 231, 0.15)'
-                          : 'rgba(148, 163, 184, 0.15)',
-                      color:
-                        (currentInvoice?.notasCreditoAplicadas?.length || 0) > 0
-                          ? '#6C5CE7'
-                          : '#64748B'
-                    }}
+                    variant='tonal'
+                    color={(currentInvoice?.notasCreditoAplicadas?.length || 0) > 0 ? 'primary' : 'secondary'}
                   />
                 </Box>
               }
@@ -1708,10 +1585,11 @@ export const InvoiceFormView: React.FC<Props> = ({
                           {pago.diarioNombre}
                         </TableCell>
                         <TableCell>
-                          <Chip
+                          <CustomChip
                             label={pago.metodoPago}
                             size='small'
-                            sx={{ fontWeight: 700, fontSize: '0.75rem', backgroundColor: '#F1F5F9', color: '#475569' }}
+                            variant='tonal'
+                            color='secondary'
                           />
                         </TableCell>
                         <TableCell sx={{ color: '#64748B' }}>

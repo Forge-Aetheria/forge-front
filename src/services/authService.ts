@@ -19,50 +19,17 @@ import type {
 const SESSION_STORAGE_KEY = 'foundly_auth_session'
 const USER_STORAGE_KEY = 'foundly_auth_user'
 
-export const DEMO_AUTH_USER: AuthenticatedUser = {
-  id: 'usr-admin-01',
-  email: 'admin@vuexy.com',
-  tenantId: 'ten-forge-01',
-  tenantName: 'Distribuidora Global C.A.',
-  tenantSlug: 'distribuidora-global'
-}
-
-export const DEMO_AUTH_SESSION: AuthSession = {
-  accessToken: 'demo_access_token_forge_2026',
-  refreshToken: 'demo_refresh_token_forge_2026',
-  tokenType: 'bearer',
-  expiresIn: 86400 * 30, // 30 días
-  expiresAt: Math.floor(Date.now() / 1000) + 86400 * 30
-}
-
 export const authService = {
   /**
-   * Autenticación con email y contraseña contra backend GraphQL real,
-   * con soporte de credenciales demo rápidas o fallback en desarrollo.
+   * Autenticación con email y contraseña contra el backend GraphQL.
    */
   async signIn(input: IniciarSesionInput): Promise<AuthResponse<{ session: AuthSession; user: AuthenticatedUser }>> {
-    const normalizedEmail = input.email.trim().toLowerCase()
-    const isDemoAccount = normalizedEmail === 'admin@vuexy.com' || normalizedEmail === 'demo@forge.com'
-
-    // 0. Si son credenciales demo designadas, autenticar de inmediato sin retrasos
-    if (isDemoAccount) {
-      const session = DEMO_AUTH_SESSION
-      const user = { ...DEMO_AUTH_USER, email: normalizedEmail }
-
-      authService.saveSession(session)
-      authService.saveUser(user)
-
-      return {
-        data: { session, user }
-      }
-    }
-
     try {
-      // 1. Ejecutar mutación de Login contra el backend
+      // 1. Ejecutar mutación de Login contra el backend con timeout controlado
       const signInRes = await executeGraphQL<{ signIn: AuthSession }, { input: IniciarSesionInput }>(
         SIGN_IN_MUTATION,
         { input },
-        { token: null, timeoutMs: 8000 }
+        { token: null, timeoutMs: 9000 }
       )
 
       const session = signInRes.signIn
@@ -76,10 +43,11 @@ export const authService = {
         const meRes = await executeGraphQL<{ me: AuthenticatedUser }>(
           ME_QUERY,
           undefined,
-          { token: session.accessToken, timeoutMs: 5000 }
+          { token: session.accessToken, timeoutMs: 6000 }
         )
         user = meRes.me
       } catch {
+        // Si la query `me` tiene latencia o no está implementada, preservar la sesión con usuario inferido
         user = {
           id: 'usr_authenticated',
           email: input.email,
@@ -95,6 +63,15 @@ export const authService = {
         data: { session, user }
       }
     } catch (err: unknown) {
+      authService.clearSession()
+
+      if (err instanceof GraphQLClientError) {
+        return {
+          error: mapAuthErrorMessage(err.code, err.message),
+          errorCode: err.code
+        }
+      }
+
       const isConnectionError =
         err instanceof Error &&
         (err.message.includes('fetch') ||
@@ -103,28 +80,9 @@ export const authService = {
           err.name === 'TypeError')
 
       if (isConnectionError) {
-        console.warn('[authService] Backend offline. Iniciando sesión en Modo Demo.')
-
-        const session = DEMO_AUTH_SESSION
-        const user: AuthenticatedUser = {
-          ...DEMO_AUTH_USER,
-          email: normalizedEmail
-        }
-
-        authService.saveSession(session)
-        authService.saveUser(user)
-
         return {
-          data: { session, user }
-        }
-      }
-
-      authService.clearSession()
-
-      if (err instanceof GraphQLClientError) {
-        return {
-          error: mapAuthErrorMessage(err.code, err.message),
-          errorCode: err.code
+          error: 'No fue posible conectar con el servidor de autenticación. Verifica que el backend esté en ejecución.',
+          errorCode: 'NETWORK_ERROR'
         }
       }
 
@@ -139,12 +97,6 @@ export const authService = {
    * Obtener perfil del usuario autenticado actual desde el backend o caché local.
    */
   async me(): Promise<AuthenticatedUser | null> {
-    const session = authService.getStoredSession()
-
-    if (session?.accessToken?.startsWith('demo_')) {
-      return authService.getStoredUser() || DEMO_AUTH_USER
-    }
-
     try {
       const res = await executeGraphQL<{ me: AuthenticatedUser }>(ME_QUERY)
       const user = res.me
@@ -164,15 +116,6 @@ export const authService = {
     if (!session?.refreshToken) {
       authService.clearSession()
       return null
-    }
-
-    if (session.accessToken?.startsWith('demo_')) {
-      const refreshed: AuthSession = {
-        ...session,
-        expiresAt: Math.floor(Date.now() / 1000) + 86400 * 30
-      }
-      authService.saveSession(refreshed)
-      return refreshed
     }
 
     try {
@@ -202,15 +145,11 @@ export const authService = {
    * Cierre de sesión en backend y limpieza local.
    */
   async signOut(scope: SignOutScope = 'LOCAL' as SignOutScope): Promise<boolean> {
-    const session = authService.getStoredSession()
-
     try {
-      if (!session?.accessToken?.startsWith('demo_')) {
-        await executeGraphQL<{ signOut: boolean }, { scope: SignOutScope }>(
-          SIGN_OUT_MUTATION,
-          { scope }
-        )
-      }
+      await executeGraphQL<{ signOut: boolean }, { scope: SignOutScope }>(
+        SIGN_OUT_MUTATION,
+        { scope }
+      )
     } catch {
       // Ignorar errores al cerrar sesión si el token ya expiró
     } finally {
@@ -236,6 +175,7 @@ export const authService = {
 
     try {
       const raw = localStorage.getItem(SESSION_STORAGE_KEY)
+
       return raw ? JSON.parse(raw) : null
     } catch {
       return null
@@ -244,6 +184,7 @@ export const authService = {
 
   saveUser(user: AuthenticatedUser): void {
     if (typeof window === 'undefined') return
+
     localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user))
   },
 
@@ -252,6 +193,7 @@ export const authService = {
 
     try {
       const raw = localStorage.getItem(USER_STORAGE_KEY)
+
       return raw ? JSON.parse(raw) : null
     } catch {
       return null

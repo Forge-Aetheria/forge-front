@@ -1,9 +1,9 @@
-import { FinancialReportsView } from '@/views/accounting/reports/FinancialReportsView'
+import { redirect } from 'next/navigation'
 
 export const metadata = {
-  title: 'Reportes Financieros Bimonetarios - Foundly ERP'
+  title: 'Reportes Financieros - Foundly ERP'
 }
 
 export default function FinancialReportsPage() {
-  return <FinancialReportsView />
+  redirect('/accounting/reports/balance-sheet')
 }

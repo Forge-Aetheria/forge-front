@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import type { Metadata } from 'next'
 import InventoryLocationsView from '@/views/inventory/InventoryLocationsView'
 
@@ -7,5 +8,9 @@ export const metadata: Metadata = {
 }
 
 export default function LocationsPage() {
-  return <InventoryLocationsView />
+  return (
+    <Suspense fallback={<div className='p-8 text-center text-textSecondary'>Cargando ubicaciones...</div>}>
+      <InventoryLocationsView />
+    </Suspense>
+  )
 }

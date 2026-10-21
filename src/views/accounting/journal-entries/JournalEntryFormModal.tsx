@@ -530,7 +530,7 @@ export const JournalEntryFormModal: React.FC<Props> = ({
                 }
               }}
             >
-              Restablecer a Borrador
+              A Borrador
             </Button>
 
             <Button
@@ -547,7 +547,7 @@ export const JournalEntryFormModal: React.FC<Props> = ({
                 '&:hover': { backgroundColor: '#dc2626' }
               }}
             >
-              Revertir Asiento (Crear Contraasiento)
+              Revertir
             </Button>
           </>
         ) : (
@@ -565,7 +565,7 @@ export const JournalEntryFormModal: React.FC<Props> = ({
               '&:hover': { backgroundColor: '#5b4bc4' }
             }}
           >
-            Publicar Asiento
+            Publicar
           </Button>
         )}
       </DialogActions>

@@ -4,7 +4,6 @@ import React, { useState, useEffect } from 'react'
 import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
 import Button from '@mui/material/Button'
-import CustomChip from '@core/components/mui/Chip'
 import Skeleton from '@mui/material/Skeleton'
 import Snackbar from '@mui/material/Snackbar'
 import Alert from '@mui/material/Alert'
@@ -89,54 +88,9 @@ export const AccountingDashboardView: React.FC = () => {
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
       {/* Cabecera Principal */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
-        <Box>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Typography variant='h5' sx={{ fontWeight: 700, color: '#1E293B' }}>
-              Tablero de Contabilidad y Tesorería
-            </Typography>
-            <CustomChip
-              label={`Tasa BCV: ${tasaBcv.toFixed(2)} Bs/USD`}
-              size='small'
-              variant='tonal'
-              color='primary'
-            />
-          </Box>
-        </Box>
-
-        <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-          <Button
-            component={Link}
-            href='/accounting/reports'
-            variant='outlined'
-            startIcon={<i className='tabler-chart-pie' />}
-            sx={{
-              borderRadius: '9999px',
-              borderColor: '#6C5CE7',
-              color: '#6C5CE7',
-              fontWeight: 600,
-              textTransform: 'none',
-              px: 3
-            }}
-          >
-            Reportes Financieros
-          </Button>
-
-          <Button
-            variant='contained'
-            startIcon={<i className='tabler-plus' />}
-            onClick={() => setJournalEntryOpen(true)}
-            sx={{
-              borderRadius: '9999px',
-              backgroundColor: '#6C5CE7',
-              fontWeight: 700,
-              textTransform: 'none',
-              px: 4,
-              '&:hover': { backgroundColor: '#5b4bc4' }
-            }}
-          >
-            Nuevo
-          </Button>
-        </Box>
+        <Typography variant='h5' sx={{ fontWeight: 700, color: '#1E293B' }}>
+          Tablero de Contabilidad y Tesorería
+        </Typography>
       </Box>
 
       {/* Fila 1: KPIs Estadísticos (EARS-DASH-01) */}

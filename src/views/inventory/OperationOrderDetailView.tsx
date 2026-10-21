@@ -360,16 +360,27 @@ export const OperationOrderDetailView = ({ id, defaultType = 'RECEIPT' }: Props)
       <div className='flex items-center justify-between gap-4 flex-wrap sm:flex-nowrap'>
         {/* Izquierda: Botón Volver + Título + Badges de Tipo y Estado */}
         <div className='flex items-center gap-3 min-w-0 flex-1'>
-          <Button
-            component={Link}
-            href={baseRoute}
-            variant='tonal'
-            size='small'
-            startIcon={<i className='tabler-arrow-left' />}
-            className='shrink-0'
-          >
-            Volver
-          </Button>
+          <Tooltip title='Volver'>
+            <Button
+              component={Link}
+              href={baseRoute}
+              variant='text'
+              sx={{
+                minWidth: 'auto',
+                width: 38,
+                height: 38,
+                p: 0,
+                borderRadius: '9999px',
+                color: '#6B7280',
+                backgroundColor: '#FFFFFF',
+                border: '1px solid #E6E4F0',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
+                '&:hover': { color: '#6C5CE7', backgroundColor: '#F0EEF9', borderColor: '#6C5CE7' }
+              }}
+            >
+              <i className='tabler-arrow-left text-lg' />
+            </Button>
+          </Tooltip>
 
           <div className='min-w-0 flex-1 flex items-center gap-2.5 flex-wrap'>
             <Typography variant='h4' className='font-bold text-textPrimary truncate'>
@@ -414,7 +425,27 @@ export const OperationOrderDetailView = ({ id, defaultType = 'RECEIPT' }: Props)
         <div className='flex items-center gap-2.5 shrink-0'>
           {isCreate ? (
             <>
-              <Button component={Link} href={baseRoute} variant='outlined' color='secondary'>
+              <Button
+                component={Link}
+                href={baseRoute}
+                variant='outlined'
+                color='secondary'
+                sx={{
+                  borderRadius: '9999px',
+                  borderColor: '#E6E4F0',
+                  color: '#6B7280',
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  fontSize: '0.85rem',
+                  px: 2.5,
+                  py: 0.8,
+                  '&:hover': {
+                    borderColor: '#6C5CE7',
+                    color: '#6C5CE7',
+                    backgroundColor: '#FAF9FF'
+                  }
+                }}
+              >
                 Cancelar
               </Button>
               <Button
@@ -422,7 +453,17 @@ export const OperationOrderDetailView = ({ id, defaultType = 'RECEIPT' }: Props)
                 color='primary'
                 onClick={handleSaveOrder}
                 disabled={submitting}
-                startIcon={<i className='tabler-check' />}
+                sx={{
+                  borderRadius: '9999px',
+                  backgroundColor: '#6C5CE7',
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  fontSize: '0.85rem',
+                  px: 3,
+                  py: 0.8,
+                  '&:hover': { backgroundColor: '#5B4CDB' }
+                }}
+                startIcon={<i className={submitting ? 'tabler-loader-2 animate-spin text-base' : 'tabler-device-floppy text-base'} />}
               >
                 {submitting ? 'Guardando...' : 'Guardar'}
               </Button>
@@ -436,7 +477,21 @@ export const OperationOrderDetailView = ({ id, defaultType = 'RECEIPT' }: Props)
                       variant='outlined'
                       color='error'
                       onClick={() => setCancelModalOpen(true)}
-                      startIcon={<i className='tabler-ban' />}
+                      sx={{
+                        borderRadius: '9999px',
+                        borderColor: '#FCA5A5',
+                        color: '#EF4444',
+                        textTransform: 'none',
+                        fontWeight: 600,
+                        fontSize: '0.85rem',
+                        px: 3,
+                        py: 0.8,
+                        '&:hover': {
+                          borderColor: '#EF4444',
+                          backgroundColor: '#FEF2F2'
+                        }
+                      }}
+                      startIcon={<i className='tabler-ban text-base' />}
                     >
                       Anular
                     </Button>
@@ -444,12 +499,45 @@ export const OperationOrderDetailView = ({ id, defaultType = 'RECEIPT' }: Props)
                       variant='contained'
                       color='primary'
                       onClick={() => setValidateModalOpen(true)}
-                      startIcon={<i className='tabler-check' />}
+                      sx={{
+                        borderRadius: '9999px',
+                        backgroundColor: '#6C5CE7',
+                        textTransform: 'none',
+                        fontWeight: 600,
+                        fontSize: '0.85rem',
+                        px: 3,
+                        py: 0.8,
+                        '&:hover': { backgroundColor: '#5B4CDB' }
+                      }}
+                      startIcon={<i className='tabler-check text-base' />}
                     >
                       Validar
                     </Button>
                   </>
                 )}
+                <Button
+                  variant='outlined'
+                  size='small'
+                  onClick={() => window.print()}
+                  sx={{
+                    borderRadius: '9999px',
+                    borderColor: '#E6E4F0',
+                    color: '#6B7280',
+                    textTransform: 'none',
+                    fontWeight: 600,
+                    fontSize: '0.85rem',
+                    px: 2.5,
+                    py: 0.8,
+                    '&:hover': {
+                      borderColor: '#6C5CE7',
+                      color: '#6C5CE7',
+                      backgroundColor: '#FAF9FF'
+                    }
+                  }}
+                  startIcon={<i className='tabler-printer text-base' />}
+                >
+                  Imprimir
+                </Button>
               </>
             )
           )}
@@ -585,10 +673,19 @@ export const OperationOrderDetailView = ({ id, defaultType = 'RECEIPT' }: Props)
 
             {isCreate && (
               <Button
-                variant='tonal'
+                variant='outlined'
                 size='small'
-                startIcon={<i className='tabler-plus' />}
+                startIcon={<i className='tabler-plus text-sm' />}
                 onClick={handleAddLine}
+                sx={{
+                  borderRadius: '9999px',
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  fontSize: '0.8rem',
+                  borderColor: '#DCD8EC',
+                  color: '#6C5CE7',
+                  '&:hover': { borderColor: '#6C5CE7', backgroundColor: '#F4F3FF' }
+                }}
               >
                 Agregar Artículo
               </Button>
@@ -718,10 +815,23 @@ export const OperationOrderDetailView = ({ id, defaultType = 'RECEIPT' }: Props)
           </Typography>
         </DialogContent>
         <DialogActions className='p-4 pt-0 flex justify-end gap-2'>
-          <Button onClick={() => setCancelModalOpen(false)} variant='outlined' color='secondary'>
+          <Button
+            onClick={() => setCancelModalOpen(false)}
+            variant='outlined'
+            color='secondary'
+            size='small'
+            sx={{ borderRadius: '9999px', textTransform: 'none', fontWeight: 600 }}
+          >
             Cancelar
           </Button>
-          <Button onClick={handleCancelOrder} variant='contained' color='error' disabled={submitting}>
+          <Button
+            onClick={handleCancelOrder}
+            variant='contained'
+            color='error'
+            size='small'
+            disabled={submitting}
+            sx={{ borderRadius: '9999px', textTransform: 'none', fontWeight: 600 }}
+          >
             {submitting ? 'Anulando...' : `Sí, Anular ${typeLabel}`}
           </Button>
         </DialogActions>
@@ -736,10 +846,29 @@ export const OperationOrderDetailView = ({ id, defaultType = 'RECEIPT' }: Props)
           </Typography>
         </DialogContent>
         <DialogActions className='p-4 pt-0 flex justify-end gap-2'>
-          <Button onClick={() => setValidateModalOpen(false)} variant='outlined' color='secondary'>
+          <Button
+            onClick={() => setValidateModalOpen(false)}
+            variant='outlined'
+            color='secondary'
+            size='small'
+            sx={{ borderRadius: '9999px', textTransform: 'none', fontWeight: 600 }}
+          >
             Cancelar
           </Button>
-          <Button onClick={handleValidateOrder} variant='contained' color='primary' disabled={submitting}>
+          <Button
+            onClick={handleValidateOrder}
+            variant='contained'
+            color='primary'
+            size='small'
+            disabled={submitting}
+            sx={{
+              borderRadius: '9999px',
+              backgroundColor: '#6C5CE7',
+              textTransform: 'none',
+              fontWeight: 600,
+              '&:hover': { backgroundColor: '#5B4CDB' }
+            }}
+          >
             {submitting ? 'Procesando...' : `Sí, Validar ${typeLabel}`}
           </Button>
         </DialogActions>

@@ -27,7 +27,8 @@ import type {
   ProductAttribute,
   ProductInvoicingPolicyOption,
   ProductPurchaseControlOption,
-  ProductDeliveryPolicyOption
+  ProductDeliveryPolicyOption,
+  LandedCostSplitMethod
 } from '@/types/inventoryTypes'
 import {
   createProductTemplate,
@@ -108,6 +109,10 @@ const ProductFormDrawer: React.FC<Props> = ({
   const [purchaseControlPolicy, setPurchaseControlPolicy] = useState<ProductPurchaseControlOption>('DEFAULT')
   const [deliveryPolicy, setDeliveryPolicy] = useState<ProductDeliveryPolicyOption>('DEFAULT')
 
+  // Landed Cost Configuration (for services)
+  const [isLandedCost, setIsLandedCost] = useState(false)
+  const [defaultSplitMethod, setDefaultSplitMethod] = useState<LandedCostSplitMethod>('BY_QUANTITY')
+
   // Logística (Informativo)
   const [weight, setWeight] = useState<number>(0)
   const [volume, setVolume] = useState<number>(0)
@@ -155,6 +160,8 @@ const ProductFormDrawer: React.FC<Props> = ({
       setInvoicingPolicy(initialProduct.invoicingPolicy || 'DEFAULT')
       setPurchaseControlPolicy(initialProduct.purchaseControlPolicy || 'DEFAULT')
       setDeliveryPolicy(initialProduct.deliveryPolicy || 'DEFAULT')
+      setIsLandedCost(Boolean(initialProduct.isLandedCost))
+      setDefaultSplitMethod(initialProduct.defaultSplitMethod || 'BY_QUANTITY')
       setWeight(initialProduct.weight ?? 0)
       setVolume(initialProduct.volume ?? 0)
       setVariants(initialProduct.variants.map(v => ({ ...v })))
@@ -200,6 +207,8 @@ const ProductFormDrawer: React.FC<Props> = ({
       setInvoicingPolicy('DEFAULT')
       setPurchaseControlPolicy('DEFAULT')
       setDeliveryPolicy('DEFAULT')
+      setIsLandedCost(false)
+      setDefaultSplitMethod('BY_QUANTITY')
       setWeight(0)
       setVolume(0)
       setAttrName1('')
@@ -419,6 +428,8 @@ const ProductFormDrawer: React.FC<Props> = ({
       invoicingPolicy,
       purchaseControlPolicy,
       deliveryPolicy,
+      isLandedCost: productType === 'service' ? isLandedCost : false,
+      defaultSplitMethod: productType === 'service' && isLandedCost ? defaultSplitMethod : undefined,
       weight: weight > 0 ? weight : undefined,
       volume: volume > 0 ? volume : undefined,
       variants: finalVariants
@@ -557,6 +568,57 @@ const ProductFormDrawer: React.FC<Props> = ({
                 )
               })}
             </div>
+
+            {productType === 'service' && (
+              <div className='p-3.5 rounded-2xl border border-[#E6E4F0] bg-[#FFFFFF] flex flex-col gap-3 mt-3'>
+                <div className='flex items-center justify-between'>
+                  <div className='flex items-center gap-2.5'>
+                    <div className='w-8 h-8 rounded-full bg-[#6C5CE7]/10 flex items-center justify-center text-[#6C5CE7] shrink-0'>
+                      <i className='tabler-calculator text-base' />
+                    </div>
+                    <div>
+                      <span className='font-bold text-xs text-[#1E1B2E] block'>Es un Costo en Destino (Landed Cost)</span>
+                      <span className='text-[11px] text-[#6B7280]'>
+                        Prorratea fletes, seguros o aranceles sobre recepciones de almacén para recalcular el costo promedio (AVCO)
+                      </span>
+                    </div>
+                  </div>
+                  <Switch
+                    checked={isLandedCost}
+                    onChange={e => {
+                      setIsLandedCost(e.target.checked)
+                      if (e.target.checked) {
+                        setCanBePurchased(true)
+                      }
+                    }}
+                    size='small'
+                    sx={{
+                      '& .MuiSwitch-switchBase.Mui-checked': { color: '#6C5CE7' },
+                      '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { backgroundColor: '#6C5CE7' }
+                    }}
+                  />
+                </div>
+
+                {isLandedCost && (
+                  <div className='pt-2.5 border-t border-[#E6E4F0] flex flex-col sm:flex-row gap-2.5 items-start sm:items-center justify-between'>
+                    <span className='text-xs text-[#1E1B2E] font-medium'>Método de Reparto Predeterminado:</span>
+                    <CustomTextField
+                      select
+                      size='small'
+                      value={defaultSplitMethod}
+                      onChange={e => setDefaultSplitMethod(e.target.value as LandedCostSplitMethod)}
+                      sx={{ minWidth: 220, '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}
+                    >
+                      <MenuItem value='BY_QUANTITY'>Por Cantidad Recibida</MenuItem>
+                      <MenuItem value='BY_COST'>Por Valor / Costo de Compra</MenuItem>
+                      <MenuItem value='BY_WEIGHT'>Por Peso Total</MenuItem>
+                      <MenuItem value='BY_VOLUME'>Por Volumen Total</MenuItem>
+                      <MenuItem value='EQUAL'>En Partes Iguales</MenuItem>
+                    </CustomTextField>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* 2. Información Maestra */}
@@ -1187,7 +1249,7 @@ const ProductFormDrawer: React.FC<Props> = ({
               )
             }
           >
-            {isSubmitting ? 'Guardando...' : isEdit ? 'Actualizar Producto' : 'Guardar Producto'}
+            {isSubmitting ? 'Guardando...' : 'Guardar'}
           </Button>
         </div>
       </form>

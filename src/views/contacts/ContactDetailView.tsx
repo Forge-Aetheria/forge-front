@@ -73,7 +73,7 @@ export const ContactDetailView: React.FC<Props> = ({ id }) => {
   const [allContacts, setAllContacts] = useState<TerceroEntity[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState<'general' | 'referentes' | 'direcciones' | 'contabilidad' | 'bancos'>('general');
+  const [activeTab, setActiveTab] = useState<'general' | 'referentes' | 'direcciones' | 'contabilidad'>('general');
 
   // Cuentas Bancarias del Contacto
   const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([]);
@@ -577,7 +577,7 @@ export const ContactDetailView: React.FC<Props> = ({ id }) => {
       <div className='flex items-center justify-between gap-4 flex-wrap sm:flex-nowrap'>
         {/* Izquierda: Botón Volver + Título + Chip Tipo + Subtítulo */}
         <div className='flex items-center gap-3 min-w-0 flex-1'>
-          <Tooltip title='Volver al directorio'>
+          <Tooltip title='Volver'>
             <Button
               component={Link}
               href='/contacts'
@@ -599,7 +599,7 @@ export const ContactDetailView: React.FC<Props> = ({ id }) => {
             </Button>
           </Tooltip>
           <div className='min-w-0 flex-1'>
-            <Tooltip title={isCreate ? 'Nuevo Contacto' : (nombreRazonSocial || 'Contacto')}>
+            <Tooltip title={isCreate ? 'Nuevo' : (nombreRazonSocial || 'Contacto')}>
               <Typography variant='h4' className='font-bold text-textPrimary truncate'>
                 {isCreate ? 'Nuevo Contacto' : (nombreRazonSocial || 'Contacto')}
               </Typography>
@@ -668,13 +668,7 @@ export const ContactDetailView: React.FC<Props> = ({ id }) => {
             onClick={handleSaveChanges}
             className='shrink-0'
           >
-            {saving
-              ? isCreate
-                ? 'Creando...'
-                : 'Guardando...'
-              : isCreate
-              ? 'Crear'
-              : 'Guardar'}
+            {saving ? 'Guardando...' : 'Guardar'}
           </Button>
 
           {/* Eliminar */}
@@ -890,7 +884,7 @@ export const ContactDetailView: React.FC<Props> = ({ id }) => {
                   <span>Cuentas Bancarias:</span>
                   <span
                     className="font-semibold text-[#6C5CE7] cursor-pointer hover:underline"
-                    onClick={() => setActiveTab('bancos')}
+                    onClick={() => setActiveTab('contabilidad')}
                   >
                     {bankAccounts.length} registradas
                   </span>
@@ -967,12 +961,6 @@ export const ContactDetailView: React.FC<Props> = ({ id }) => {
                 icon={<i className="tabler-report-money text-lg mr-1.5" />}
                 iconPosition="start"
                 label="Contabilidad"
-              />
-              <Tab
-                value="bancos"
-                icon={<i className="tabler-building-bank text-lg mr-1.5" />}
-                iconPosition="start"
-                label={`Cuentas Bancarias (${bankAccounts.length})`}
               />
             </Tabs>
 
@@ -1544,10 +1532,15 @@ export const ContactDetailView: React.FC<Props> = ({ id }) => {
                   {/* Sección Cuentas Bancarias del Contacto (Cobros y Pagos) */}
                   <div>
                     <div className="flex items-center justify-between flex-wrap gap-2 mb-3">
-                      <div className="flex items-center gap-2">
-                        <i className="tabler-building-bank text-lg text-[#6C5CE7]" />
-                        <Typography variant="subtitle2" className="font-bold text-[#1E1B2E]">
-                          Cuentas Bancarias del Contacto (Cobros y Pagos)
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <i className="tabler-building-bank text-lg text-[#6C5CE7]" />
+                          <Typography variant="subtitle2" className="font-bold text-[#1E1B2E]">
+                            Cuentas Bancarias del Contacto (Cobros y Pagos)
+                          </Typography>
+                        </div>
+                        <Typography variant="caption" className="text-[#6B7280]">
+                          Cuentas asociadas en el modelo bancario para transferencias, pago móvil y conciliación de facturas.
                         </Typography>
                       </div>
                       <div className="flex items-center gap-2">
@@ -1562,10 +1555,11 @@ export const ContactDetailView: React.FC<Props> = ({ id }) => {
                             color: '#6C5CE7',
                             fontWeight: 600,
                             textTransform: 'none',
-                            px: 2.5
+                            px: 2.5,
+                            '&:hover': { borderColor: '#5B4CDB', backgroundColor: 'rgba(108, 92, 231, 0.04)' }
                           }}
                         >
-                          + Crear Nueva Cuenta
+                          Agregar Cuenta
                         </Button>
                       </div>
                     </div>
@@ -1648,20 +1642,12 @@ export const ContactDetailView: React.FC<Props> = ({ id }) => {
                             <Typography variant="caption" className="text-[#64748B] font-bold text-[11px]">
                               Cuentas asociadas en nuestro modelo bancario ({bankAccounts.length}):
                             </Typography>
-                            <Button
-                              size="small"
-                              variant="text"
-                              onClick={() => setActiveTab('bancos')}
-                              sx={{ textTransform: 'none', fontSize: '0.75rem', p: 0, color: '#6C5CE7', minWidth: 0, fontWeight: 600 }}
-                            >
-                              Ver todas en pestaña de bancos →
-                            </Button>
                           </div>
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                             {bankAccounts.map(acc => (
                               <div
                                 key={acc.id}
-                                className="p-3 rounded-xl border border-[#E2E8F0] bg-[#FFFFFF] flex items-center justify-between gap-2 shadow-xs"
+                                className="p-3 rounded-xl border border-[#E2E8F0] bg-[#FFFFFF] flex items-center justify-between gap-2 shadow-xs hover:border-[#6C5CE7] transition-all"
                               >
                                 <div className="truncate">
                                   <div className="flex items-center gap-1.5">
@@ -1702,32 +1688,21 @@ export const ContactDetailView: React.FC<Props> = ({ id }) => {
                                       <i className="tabler-edit text-sm" />
                                     </IconButton>
                                   </Tooltip>
+                                  <Tooltip title="Eliminar Cuenta">
+                                    <IconButton size="small" onClick={() => handleDeleteBankAccount(acc.id, acc.banco)} sx={{ color: '#EF4444', p: 0.5 }}>
+                                      <i className="tabler-trash text-sm" />
+                                    </IconButton>
+                                  </Tooltip>
                                 </div>
                               </div>
                             ))}
                           </div>
                         </div>
                       ) : (
-                        <div className="pt-2 border-t border-[#EAE8F2] flex items-center justify-between">
-                          <Typography variant="caption" className="text-[#94A3B8]">
-                            Este contacto no posee cuentas bancarias en el modelo. Puedes crearlas o vincular una existente arriba.
+                        <div className="pt-2 border-t border-[#EAE8F2] flex items-center">
+                          <Typography variant="caption" className="text-[#94A3B8] italic">
+                            Este contacto aún no posee cuentas bancarias registradas. Puedes agregar una con el botón superior o vincular una existente arriba.
                           </Typography>
-                          <Button
-                            variant="contained"
-                            size="small"
-                            startIcon={<i className="tabler-plus" />}
-                            onClick={handleOpenNewBankAccount}
-                            sx={{
-                              borderRadius: '9999px',
-                              backgroundColor: '#6C5CE7',
-                              fontWeight: 700,
-                              textTransform: 'none',
-                              px: 3,
-                              '&:hover': { backgroundColor: '#5b4bc4' }
-                            }}
-                          >
-                            Crear Cuenta Ahora
-                          </Button>
                         </div>
                       )}
                     </div>
@@ -1850,138 +1825,6 @@ export const ContactDetailView: React.FC<Props> = ({ id }) => {
                       <strong>Automatización Contable:</strong> Al seleccionar a este contacto en la emisión de Facturas de Cliente o registro de Facturas de Proveedor, el sistema cargará automáticamente estas cuentas contables y calculará las retenciones fiscales de acuerdo a esta configuración.
                     </Typography>
                   </div>
-                </div>
-              )}
-
-              {/* PESTAÑA 4: CUENTAS BANCARIAS */}
-              {activeTab === 'bancos' && (
-                <div className="space-y-6">
-                  <div className="flex items-center justify-between flex-wrap gap-3 pb-2 border-b border-[#F1F5F9]">
-                    <div>
-                      <Typography variant="subtitle1" className="font-bold text-[#1E1B2E] flex items-center gap-2">
-                        <i className="tabler-building-bank text-xl text-[#6C5CE7]" />
-                        Cuentas Bancarias y Métodos de Cobro/Pago
-                      </Typography>
-                      <Typography variant="caption" className="text-[#6B7280]">
-                        Cuentas asociadas a este contacto para transferencias bancarias, pago móvil y conciliación de facturas
-                      </Typography>
-                    </div>
-
-                    <Button
-                      variant="contained"
-                      startIcon={<i className="tabler-plus" />}
-                      onClick={handleOpenNewBankAccount}
-                      sx={{
-                        borderRadius: '9999px',
-                        backgroundColor: '#6C5CE7',
-                        color: '#FFFFFF',
-                        fontWeight: 700,
-                        textTransform: 'none',
-                        px: 3,
-                        boxShadow: '0 4px 12px rgba(108, 92, 231, 0.25)',
-                        '&:hover': { backgroundColor: '#5b4bc4' }
-                      }}
-                    >
-                      Nueva Cuenta
-                    </Button>
-                  </div>
-
-                  {bankAccounts.length === 0 ? (
-                    <div className="p-8 text-center rounded-2xl border-2 border-dashed border-[#E2E8F0] bg-[#FAF9FD]">
-                      <i className="tabler-building-bank text-4xl text-[#CBD5E1] mb-2 block mx-auto" />
-                      <Typography variant="subtitle2" className="font-bold text-[#475569]">
-                        No hay cuentas bancarias registradas
-                      </Typography>
-                      <Typography variant="caption" className="text-[#94A3B8] block mb-4">
-                        Agrega las cuentas de este contacto para utilizarlas en órdenes de pago y cobranzas.
-                      </Typography>
-                      <Button
-                        variant="outlined"
-                        size="small"
-                        startIcon={<i className="tabler-plus" />}
-                        onClick={handleOpenNewBankAccount}
-                        sx={{
-                          borderRadius: '9999px',
-                          borderColor: '#6C5CE7',
-                          color: '#6C5CE7',
-                          textTransform: 'none',
-                          fontWeight: 600
-                        }}
-                      >
-                        Agregar Primera Cuenta
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {bankAccounts.map(acc => (
-                        <div
-                          key={acc.id}
-                          className="p-4 rounded-2xl border border-[#E6E4F0] bg-[#FFFFFF] hover:border-[#6C5CE7] transition-all flex items-center justify-between flex-wrap gap-3 shadow-xs"
-                        >
-                          <div className="flex items-center gap-3.5">
-                            <div className="w-11 h-11 rounded-xl bg-[rgba(108,92,231,0.1)] text-[#6C5CE7] flex items-center justify-center text-xl shrink-0">
-                              <i className="tabler-building-bank" />
-                            </div>
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <Typography variant="subtitle2" className="font-bold text-[#1E1B2E]">
-                                  {acc.banco}
-                                </Typography>
-                                <CustomChip
-                                  label={acc.moneda}
-                                  size="small"
-                                  variant="tonal"
-                                  color={acc.moneda === 'USD' ? 'primary' : acc.moneda === 'EUR' ? 'info' : 'success'}
-                                />
-                                {acc.is_predeterminada && (
-                                  <CustomChip
-                                    label="Predeterminada"
-                                    size="small"
-                                    variant="tonal"
-                                    color="success"
-                                  />
-                                )}
-                              </div>
-                              <Typography variant="body2" className="font-mono text-[#475569] text-xs mt-0.5 font-semibold">
-                                {acc.numero_cuenta}
-                              </Typography>
-                              <div className="flex items-center gap-2 mt-1 text-[11px] text-[#64748B]">
-                                <span>Titular: <strong>{acc.titular}</strong> ({acc.identificacion_titular})</span>
-                                <span>•</span>
-                                <span>Tipo: <span className="capitalize">{acc.tipo_cuenta.toLowerCase()}</span></span>
-                                {acc.is_pago_movil && acc.telefono_pago_movil && (
-                                  <>
-                                    <span>•</span>
-                                    <span className="text-[#10B981] font-bold">Pago Móvil: {acc.telefono_pago_movil}</span>
-                                  </>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center gap-1">
-                            {!acc.is_predeterminada && (
-                              <Tooltip title="Establecer como cuenta principal">
-                                <IconButton size="small" onClick={() => handleSetDefaultBankAccount(acc)} sx={{ color: '#F59E0B' }}>
-                                  <i className="tabler-star text-base" />
-                                </IconButton>
-                              </Tooltip>
-                            )}
-                            <Tooltip title="Editar Cuenta">
-                              <IconButton size="small" onClick={() => handleOpenEditBankAccount(acc)} sx={{ color: '#6C5CE7' }}>
-                                <i className="tabler-edit text-base" />
-                              </IconButton>
-                            </Tooltip>
-                            <Tooltip title="Eliminar Cuenta">
-                              <IconButton size="small" onClick={() => handleDeleteBankAccount(acc.id, acc.banco)} sx={{ color: '#EF4444' }}>
-                                <i className="tabler-trash text-base" />
-                              </IconButton>
-                            </Tooltip>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
                 </div>
               )}
             </CardContent>
