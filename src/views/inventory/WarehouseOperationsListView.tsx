@@ -528,18 +528,13 @@ const WarehouseOperationsListView: React.FC<WarehouseOperationsListViewProps> = 
           {/* Controles de Selección Múltiple en Cabecera */}
           {selectedIds.length > 0 && (
             <div className='flex items-center gap-2'>
-              <div className='flex items-center gap-1.5 bg-[#F3F0FF] text-[#6C5CE7] border border-[#E9D5FF] px-3 py-1.5 rounded-full text-xs font-semibold'>
-                <span>{selectedIds.length} seleccionados</span>
-                <Tooltip title='Deseleccionar'>
-                  <IconButton
-                    size='small'
-                    onClick={() => setSelectedIds([])}
-                    sx={{ p: 0.2, ml: 0.5, color: '#6C5CE7', '&:hover': { color: '#4B3AA6' } }}
-                  >
-                    <i className='tabler-x text-xs' />
-                  </IconButton>
-                </Tooltip>
-              </div>
+              <CustomChip
+                size='small'
+                variant='tonal'
+                color='primary'
+                label={`${selectedIds.length} seleccionados`}
+                onDelete={() => setSelectedIds([])}
+              />
 
               <Button
                 variant='outlined'
@@ -588,7 +583,13 @@ const WarehouseOperationsListView: React.FC<WarehouseOperationsListViewProps> = 
         <CardContent className='p-4 flex items-center justify-between flex-wrap gap-3'>
           <CustomTextField
             size='small'
-            placeholder='Buscar por referencia, proveedor/cliente, documento origen o producto...'
+            placeholder={`Buscar por referencia, ${
+              operationType === 'RECEIPT'
+                ? 'proveedor'
+                : operationType === 'DELIVERY'
+                ? 'cliente'
+                : 'motivo'
+            }, documento origen o producto...`}
             value={search}
             onChange={e => {
               setSearch(e.target.value)
@@ -621,7 +622,7 @@ const WarehouseOperationsListView: React.FC<WarehouseOperationsListViewProps> = 
               },
               {
                 key: 'WAITING',
-                label: `En Espera (${
+                label: `En espera (${
                   orders.filter(
                     o => o.estado === 'WAITING' || o.estado === 'PENDING' || o.estado === 'LATE'
                   ).length
@@ -666,11 +667,14 @@ const WarehouseOperationsListView: React.FC<WarehouseOperationsListViewProps> = 
         <div className='flex items-center justify-between flex-wrap gap-3 px-5 py-3 border-b border-[#E6E4F0] bg-[#FAF9FF]'>
           <div className='flex items-center gap-2.5'>
             <Typography variant='h6' className='font-semibold text-[#1E1B2E] text-sm'>
-              Operaciones de Almacén
+              {cfg.title}
             </Typography>
-            <span className='text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#F3F0FF] text-[#6C5CE7] border border-[#E9D5FF]'>
-              {filteredOrders.length} {filteredOrders.length === 1 ? 'registro' : 'registros'}
-            </span>
+            <CustomChip
+              size='small'
+              variant='tonal'
+              color='primary'
+              label={`${filteredOrders.length} ${filteredOrders.length === 1 ? 'registro' : 'registros'}`}
+            />
           </div>
 
           <div className='flex items-center gap-2 flex-wrap'>
@@ -1180,7 +1184,7 @@ const WarehouseOperationsListView: React.FC<WarehouseOperationsListViewProps> = 
             onClick={() => setBatchCancelConfirmOpen(false)}
             sx={{ borderRadius: '9999px', color: '#6B7280' }}
           >
-            Volver
+            Cancelar
           </Button>
           <Button
             variant='contained'
@@ -1195,7 +1199,7 @@ const WarehouseOperationsListView: React.FC<WarehouseOperationsListViewProps> = 
               '&:hover': { backgroundColor: '#DC2626' }
             }}
           >
-            Cancelar Operaciones
+            Sí, Cancelar {selectedIds.length} Operaciones
           </Button>
         </DialogActions>
       </Dialog>

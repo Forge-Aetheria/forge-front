@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import WarehouseOperationsListView from '@/views/inventory/WarehouseOperationsListView'
 
 export const metadata: Metadata = {
-  title: 'Órdenes de Entrega (Despachos) | Inventario | Forge ERP',
+  title: 'Órdenes de Entrega (Despachos) | Inventario | Foundly ERP',
   description: 'Gestión y validación de órdenes de entrega y despachos de ventas'
 }
 
