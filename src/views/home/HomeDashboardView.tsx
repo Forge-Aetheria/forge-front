@@ -15,7 +15,6 @@ import FormControlLabel from '@mui/material/FormControlLabel'
 import Checkbox from '@mui/material/Checkbox'
 import InputAdornment from '@mui/material/InputAdornment'
 
-import CustomChip from '@core/components/mui/Chip'
 import CustomTextField from '@core/components/mui/TextField'
 import CustomAvatar from '@core/components/mui/Avatar'
 import { getActiveBcvRate } from '@/services/inventoryService'
@@ -160,51 +159,22 @@ export const HomeDashboardView = () => {
 
   return (
     <div className='flex flex-col gap-5'>
-      {/* Top Banner & Quick Controls */}
-      <div className='flex flex-col md:flex-row md:items-center justify-between gap-3'>
-        <div>
-          <div className='flex items-center gap-2.5'>
-            <Typography variant='h4' className='font-bold text-[#1E1B2E]'>
-              Panel General
-            </Typography>
-            <CustomChip
-              size='small'
-              round='true'
-              label='Bimonetario Activo'
-              color='success'
-              variant='outlined'
-              className='text-xs font-semibold'
-            />
-          </div>
-          <Typography variant='body2' className='text-[#6B7280] mt-0.5'>
-            Monitoreo en vivo de finanzas, ventas, inventario y abastecimiento
-          </Typography>
-        </div>
+      {/* Top Banner */}
+      <div className='flex flex-col sm:flex-row sm:items-center justify-between gap-3'>
+        <Typography variant='h4' className='font-bold text-[#1E1B2E]'>
+          Panel General
+        </Typography>
 
-        <div className='flex items-center gap-2 flex-wrap'>
-          <Button
-            variant='outlined'
-            size='small'
-            onClick={() => setCustomizerOpen(true)}
-            startIcon={<i className='tabler-adjustments-alt text-base' />}
-            className='text-xs font-semibold border-[#DCD8EC] text-[#1E1B2E] bg-white hover:bg-[#F4F3F8]'
-            sx={{ textTransform: 'none' }}
-          >
-            Personalizar ({visibleMetricIds.length})
-          </Button>
-
-          <Button
-            component={Link}
-            href='/pos/terminal'
-            variant='contained'
-            size='small'
-            startIcon={<i className='tabler-cash-register text-base' />}
-            className='rounded-full text-xs font-semibold bg-[#6C5CE7] hover:bg-[#5A4BD1] text-white shadow-sm'
-            sx={{ textTransform: 'none', px: 2.5 }}
-          >
-            Terminal POS
-          </Button>
-        </div>
+        <Button
+          variant='outlined'
+          size='small'
+          onClick={() => setCustomizerOpen(true)}
+          startIcon={<i className='tabler-adjustments-alt text-base' />}
+          className='text-xs font-semibold border-[#DCD8EC] text-[#1E1B2E] bg-white hover:bg-[#F4F3F8]'
+          sx={{ textTransform: 'none' }}
+        >
+          Personalizar ({visibleMetricIds.length})
+        </Button>
       </div>
 
       {/* Hero: Monitor de Tasas Cambiarias y Conversor Rápido */}
@@ -324,68 +294,6 @@ export const HomeDashboardView = () => {
           </Grid>
         ))}
       </Grid>
-
-      {/* Accesos Rápidos de Flujo Operativo */}
-      <div className='bg-[#F8F7FC] border border-[#E6E4F0] rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3'>
-        <div className='flex items-center gap-2'>
-          <i className='tabler-bolt text-[#6C5CE7] text-xl' />
-          <div>
-            <Typography variant='body2' className='font-bold text-[#1E1B2E] text-xs'>
-              Accesos Directos de Creación Rápida
-            </Typography>
-            <Typography variant='caption' className='text-[#6B7280] text-[11px] block'>
-              Inicia transacciones comerciales o inventario con un clic
-            </Typography>
-          </div>
-        </div>
-
-        <div className='flex items-center gap-2 flex-wrap'>
-          <Button
-            component={Link}
-            href='/sales/quotes/create'
-            variant='outlined'
-            size='small'
-            className='rounded-full text-xs font-semibold bg-white border-[#DCD8EC] text-[#1E1B2E]'
-            startIcon={<i className='tabler-file-plus text-sm text-[#6C5CE7]' />}
-            sx={{ textTransform: 'none' }}
-          >
-            + Cotización
-          </Button>
-          <Button
-            component={Link}
-            href='/purchases/quotes/create'
-            variant='outlined'
-            size='small'
-            className='rounded-full text-xs font-semibold bg-white border-[#DCD8EC] text-[#1E1B2E]'
-            startIcon={<i className='tabler-shopping-bag text-sm text-[#6C5CE7]' />}
-            sx={{ textTransform: 'none' }}
-          >
-            + Compra
-          </Button>
-          <Button
-            component={Link}
-            href='/contacts/create'
-            variant='outlined'
-            size='small'
-            className='rounded-full text-xs font-semibold bg-white border-[#DCD8EC] text-[#1E1B2E]'
-            startIcon={<i className='tabler-user-plus text-sm text-[#6C5CE7]' />}
-            sx={{ textTransform: 'none' }}
-          >
-            + Contacto
-          </Button>
-          <Button
-            component={Link}
-            href='/inventory/adjustments'
-            variant='outlined'
-            size='small'
-            className='rounded-full text-xs font-semibold bg-white border-[#DCD8EC] text-[#1E1B2E]'
-            startIcon={<i className='tabler-adjustments text-sm text-[#6C5CE7]' />}
-            sx={{ textTransform: 'none' }}
-          >
-            + Ajuste
-          </Button>
-        </div>
-      </div>
 
       {/* Modal de Personalización de Métricas */}
       <Dialog
