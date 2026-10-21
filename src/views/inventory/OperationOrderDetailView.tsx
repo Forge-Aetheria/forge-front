@@ -379,34 +379,34 @@ export const OperationOrderDetailView = ({ id, defaultType = 'RECEIPT' }: Props)
             </Typography>
 
             <CustomChip
-              round='true'
               label={typeLabel}
               size='small'
-              className='font-semibold bg-[#F3F0FF] text-[#6C5CE7] border border-[#DCD8EC]'
+              variant='tonal'
+              color='primary'
             />
 
             {!isCreate && order && (
               <CustomChip
-                round='true'
+                size='small'
+                variant='tonal'
+                color={
+                  order.estado === 'COMPLETED'
+                    ? 'success'
+                    : order.estado === 'READY'
+                    ? 'primary'
+                    : order.estado === 'CANCELLED'
+                    ? 'error'
+                    : 'warning'
+                }
                 label={
                   order.estado === 'COMPLETED'
-                    ? 'REALIZADO'
+                    ? 'Realizado'
                     : order.estado === 'READY'
-                    ? 'LISTO'
+                    ? 'Listo'
                     : order.estado === 'CANCELLED'
-                    ? 'CANCELADO'
-                    : 'BORRADOR'
+                    ? 'Cancelado'
+                    : 'Borrador'
                 }
-                size='small'
-                className={`font-semibold ${
-                  order.estado === 'COMPLETED'
-                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                    : order.estado === 'READY'
-                    ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                    : order.estado === 'CANCELLED'
-                    ? 'bg-red-50 text-red-700 border border-red-200'
-                    : 'bg-amber-50 text-amber-700 border border-amber-200'
-                }`}
               />
             )}
           </div>

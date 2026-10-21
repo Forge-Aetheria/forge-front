@@ -38,6 +38,17 @@
   - `text-primary`: `#1E1B2E` (alto contraste sobre superficies claras).
   - `text-secondary`: `#6B7280`.
 
+### 1.2 Convención Canónica para Chips y Badges (Foundly Chips Standard)
+- **Componente Oficial Exclusivo:** Toda pastilla, indicador o etiqueta de estado debe implementarse obligatoriamente mediante `CustomChip` (`@core/components/mui/Chip`). Queda estrictamente prohibido utilizar clases Tailwind ad-hoc (`bg-emerald-50`, `text-emerald-700`, etc.) o estilos hexadecimales manuales en `sx={{ backgroundColor: '#...', color: '#...' }}`.
+- **Geometría y Tamaño:** Siempre píldora continua (`borderRadius: 9999` gestionado globalmente por el tema). El tamaño estándar en tablas maestras, tarjetas y cabeceras es `size="small"` (altura 24px, fuente 12px / `0.75rem`).
+- **Variante Semántica de Estados (`variant="tonal"`):** Todos los estados operativos, comerciales o contables adoptan la variante tonal de la plantilla (fondo translúcido suave al 12% con tipografía de alto contraste del color semántico):
+  - **Éxito / Completado / Pagado / Conciliado / Activo:** `variant="tonal" color="success"`
+  - **Listo / En Tránsito / Publicado:** `variant="tonal" color="primary"` o `color="info"`
+  - **Pendiente / En Espera / Borrador / Retrasado:** `variant="tonal" color="warning"`
+  - **Cancelado / Anulado / Agotado / Error:** `variant="tonal" color="error"`
+- **Etiquetas de Metadatos y Clasificación:** Para información secundaria no vinculada a estados (categorías, tipo de documento, moneda), se utiliza `variant="tonal" color="secondary"` o `variant="outlined"` neutro.
+- **Microcopy y Capitalización Elegante (Title Case):** Queda terminantemente prohibido escribir etiquetas de chips en MAYÚSCULAS CONTINUAS (ej. *"REALIZADO"*, *"LISTO"*, *"BORRADOR"*, *"CANCELADO"*). Deben formularse siempre en Title Case o Sentence Case elegante: `"Realizado"`, `"Listo"`, `"Borrador"`, `"Cancelado"`, `"En espera"`.
+
 ---
 
 ## 2. Metodología SDD & Sintaxis EARS (Easy Approach to Requirements Syntax)

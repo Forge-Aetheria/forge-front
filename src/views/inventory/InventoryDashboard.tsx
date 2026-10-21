@@ -212,7 +212,8 @@ const InventoryDashboard = () => {
                             </span>
                             <CustomChip
                               size='small'
-                              round='true'
+                              variant='tonal'
+                              color={isDelivery ? 'info' : isTransfer ? 'warning' : 'primary'}
                               label={
                                 isDelivery
                                   ? 'Despacho Venta'
@@ -220,21 +221,6 @@ const InventoryDashboard = () => {
                                   ? 'Transferencia Interna'
                                   : 'Recepción Compra'
                               }
-                              sx={{
-                                height: 20,
-                                fontSize: '0.72rem',
-                                fontWeight: 700,
-                                backgroundColor: isDelivery
-                                  ? '#E0F2FE'
-                                  : isTransfer
-                                  ? '#FEF3C7'
-                                  : '#F0EEF9',
-                                color: isDelivery
-                                  ? '#0284C7'
-                                  : isTransfer
-                                  ? '#D97706'
-                                  : '#6C5CE7'
-                              }}
                             />
                           </div>
                           <span className='font-semibold text-sm text-[#1E1B2E] block mt-0.5'>
@@ -253,31 +239,21 @@ const InventoryDashboard = () => {
                       <div className='flex items-center gap-2'>
                         <CustomChip
                           size='small'
-                          round='true'
+                          variant='tonal'
+                          color={
+                            op.estado === 'READY'
+                              ? 'primary'
+                              : op.estado === 'LATE'
+                              ? 'error'
+                              : 'warning'
+                          }
                           label={
                             op.estado === 'READY'
-                              ? 'Listo p/ Procesar'
+                              ? 'Listo'
                               : op.estado === 'LATE'
                               ? 'Retrasado'
-                              : 'En Espera'
+                              : 'En espera'
                           }
-                          sx={{
-                            fontWeight: 700,
-                            fontSize: '0.72rem',
-                            height: 22,
-                            backgroundColor:
-                              op.estado === 'READY'
-                                ? '#E8F5E9'
-                                : op.estado === 'LATE'
-                                ? '#FEE2E2'
-                                : '#FEF3C7',
-                            color:
-                              op.estado === 'READY'
-                                ? '#10B981'
-                                : op.estado === 'LATE'
-                                ? '#EF4444'
-                                : '#D97706'
-                          }}
                         />
                       </div>
                     </Link>
@@ -390,14 +366,9 @@ const InventoryDashboard = () => {
                 </Typography>
                 <CustomChip
                   size='small'
-                  round='true'
+                  variant='tonal'
+                  color={criticalItems.length > 0 ? 'warning' : 'success'}
                   label={`${criticalItems.length} críticos`}
-                  sx={{
-                    backgroundColor: '#FEF3C7',
-                    color: '#D97706',
-                    fontWeight: 700,
-                    fontSize: '0.72rem'
-                  }}
                 />
               </div>
 
@@ -430,15 +401,12 @@ const InventoryDashboard = () => {
                             <span className='font-mono text-xs font-bold text-[#1E1B2E]'>
                               {item.defaultCode}
                             </span>
-                            <span
-                              className={`text-xs px-2 py-0.5 rounded-full font-bold ${
-                                isZero
-                                  ? 'bg-[#FEE2E2] text-[#EF4444]'
-                                  : 'bg-[#FEF3C7] text-[#D97706]'
-                              }`}
-                            >
-                              {isZero ? 'Agotado (0)' : `Stock Bajo (${avail} ${item.uomCode})`}
-                            </span>
+                            <CustomChip
+                              size='small'
+                              variant='tonal'
+                              color={isZero ? 'error' : 'warning'}
+                              label={isZero ? 'Agotado (0)' : `Stock Bajo (${avail} ${item.uomCode})`}
+                            />
                           </div>
                           <Link
                             href={`/inventory/products/${item.id}`}

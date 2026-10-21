@@ -943,15 +943,9 @@ const WarehouseOperationsListView: React.FC<WarehouseOperationsListViewProps> = 
                           <TableCell align='center' sx={{ py: 1.5 }}>
                             <CustomChip
                               size='small'
-                              round='true'
+                              variant='tonal'
+                              color={st.color}
                               label={st.label}
-                              sx={{
-                                fontWeight: 700,
-                                fontSize: '0.75rem',
-                                height: 22,
-                                backgroundColor: st.bg,
-                                color: st.color
-                              }}
                             />
                           </TableCell>
                         )}

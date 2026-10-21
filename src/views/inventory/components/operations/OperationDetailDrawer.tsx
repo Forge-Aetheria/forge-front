@@ -3,7 +3,7 @@
 import React from 'react'
 import Drawer from '@mui/material/Drawer'
 import Typography from '@mui/material/Typography'
-import Chip from '@mui/material/Chip'
+import CustomChip from '@core/components/mui/Chip'
 import IconButton from '@mui/material/IconButton'
 import TextField from '@mui/material/TextField'
 import Button from '@mui/material/Button'
@@ -77,17 +77,11 @@ const OperationDetailDrawer: React.FC<OperationDetailDrawerProps> = ({
                 <span className='font-mono text-xs font-bold text-[#6C5CE7]'>
                   {order.codigo}
                 </span>
-                <Chip
+                <CustomChip
                   size='small'
+                  variant='tonal'
+                  color={st.color}
                   label={st.label}
-                  sx={{
-                    borderRadius: '9999px',
-                    height: 20,
-                    fontSize: '0.66rem',
-                    fontWeight: 700,
-                    backgroundColor: st.bg,
-                    color: st.color
-                  }}
                 />
               </div>
               <Typography variant='h6' className='font-bold text-[#1E1B2E] leading-tight mt-0.5'>
@@ -289,7 +283,7 @@ const OperationDetailDrawer: React.FC<OperationDetailDrawerProps> = ({
                   fontWeight: 600
                 }}
               >
-                Cancelar Orden
+                Anular
               </Button>
 
               <div className='flex items-center gap-2'>
@@ -329,7 +323,7 @@ const OperationDetailDrawer: React.FC<OperationDetailDrawerProps> = ({
                   }}
                   startIcon={<i className='tabler-check text-base' />}
                 >
-                  {validating ? 'Validando...' : 'Validar Operación'}
+                  {validating ? 'Validando...' : 'Validar'}
                 </Button>
               </div>
             </>
@@ -346,7 +340,7 @@ const OperationDetailDrawer: React.FC<OperationDetailDrawerProps> = ({
                 fontWeight: 600
               }}
             >
-              Cerrar Detalle
+              Cerrar
             </Button>
           )}
         </div>

@@ -72,13 +72,13 @@ export const OPERATION_CONFIG: Record<WarehouseOperationType, OperationConfigMet
 
 export const STATUS_META: Record<
   WarehouseOperationStatus,
-  { label: string; bg: string; color: string }
+  { label: string; color: 'secondary' | 'warning' | 'primary' | 'error' | 'success' }
 > = {
-  DRAFT: { label: 'Borrador', bg: '#F4F3F8', color: '#6B7280' },
-  PENDING: { label: 'En Espera', bg: '#FEF3C7', color: '#D97706' },
-  WAITING: { label: 'En Espera', bg: '#FEF3C7', color: '#D97706' },
-  READY: { label: 'Listo p/ Procesar', bg: '#E0F2FE', color: '#0284C7' },
-  LATE: { label: 'Retrasado', bg: '#FEE2E2', color: '#EF4444' },
-  COMPLETED: { label: 'Realizado', bg: '#E8F5E9', color: '#10B981' },
-  CANCELLED: { label: 'Cancelado', bg: '#F3F4F6', color: '#9CA3AF' }
+  DRAFT: { label: 'Borrador', color: 'secondary' },
+  PENDING: { label: 'En espera', color: 'warning' },
+  WAITING: { label: 'En espera', color: 'warning' },
+  READY: { label: 'Listo', color: 'primary' },
+  LATE: { label: 'Retrasado', color: 'error' },
+  COMPLETED: { label: 'Realizado', color: 'success' },
+  CANCELLED: { label: 'Cancelado', color: 'secondary' }
 }
