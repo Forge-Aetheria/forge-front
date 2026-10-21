@@ -485,8 +485,18 @@ export const OperationOrderDetailView = ({ id, defaultType = 'RECEIPT' }: Props)
             <Grid size={{ xs: 12, sm: 6, md: isCreate ? 4 : 6 }}>
               <CustomTextField
                 fullWidth
-                label={currentType === 'RECEIPT' ? 'Proveedor / Tercero' : 'Cliente / Tercero'}
-                placeholder='Nombre o razón social'
+                label={
+                  currentType === 'RECEIPT'
+                    ? 'Proveedor / Tercero'
+                    : currentType === 'DELIVERY'
+                    ? 'Cliente / Destinatario'
+                    : 'Motivo del Traslado'
+                }
+                placeholder={
+                  currentType === 'INTERNAL_TRANSFER'
+                    ? 'Ej. Reposición semanal de piso de venta'
+                    : 'Nombre o razón social'
+                }
                 value={terceroNombre}
                 onChange={e => setTerceroNombre(e.target.value)}
                 disabled={!isCreate && order?.estado !== 'DRAFT'}

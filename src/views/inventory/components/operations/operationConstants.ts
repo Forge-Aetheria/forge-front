@@ -64,7 +64,7 @@ export const OPERATION_CONFIG: Record<WarehouseOperationType, OperationConfigMet
     icon: 'tabler-arrows-left-right',
     accentBg: '#FEF3C7',
     accentColor: '#D97706',
-    partnerLabel: 'Concepto / Motivo del Traslado',
+    partnerLabel: 'Motivo del Traslado',
     partnerPlaceholder: 'Ej. Reposición semanal de piso de venta',
     docPlaceholder: 'Ej. REQ-SUC-022'
   }

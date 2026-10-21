@@ -917,7 +917,9 @@ const WarehouseOperationsListView: React.FC<WarehouseOperationsListViewProps> = 
                             </div>
                             {(order.ubicacion_destino_nombre || order.ubicacion_origen_nombre) && (
                               <span className='text-xs font-mono text-[#6B7280] block truncate mt-0.5'>
-                                {operationType === 'DELIVERY'
+                                {operationType === 'INTERNAL_TRANSFER'
+                                  ? `${order.ubicacion_origen_nombre?.split('·')[0].trim() || 'Principal'} → ${order.ubicacion_destino_nombre?.split('·')[0].trim() || 'Principal'}`
+                                  : operationType === 'DELIVERY'
                                   ? order.ubicacion_origen_nombre
                                   : order.ubicacion_destino_nombre}
                               </span>
