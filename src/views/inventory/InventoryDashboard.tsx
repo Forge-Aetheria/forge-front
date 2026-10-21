@@ -7,11 +7,12 @@ import Grid from '@mui/material/Grid'
 import Card from '@mui/material/Card'
 import CardContent from '@mui/material/CardContent'
 import Button from '@mui/material/Button'
-import Chip from '@mui/material/Chip'
 import Divider from '@mui/material/Divider'
 import Snackbar from '@mui/material/Snackbar'
 import Alert from '@mui/material/Alert'
 import Skeleton from '@mui/material/Skeleton'
+
+import CustomChip from '@core/components/mui/Chip'
 
 import type {
   ProductTemplate,
@@ -96,99 +97,13 @@ const InventoryDashboard = () => {
 
   return (
     <div className='flex flex-col gap-6'>
-      {/* Top Header & Quick Actions */}
+      {/* Top Header & Actions */}
       <div className='flex items-center justify-between flex-wrap gap-4'>
-        <div>
-          <Typography variant='h4' className='font-bold text-[#1E1B2E]'>
-            Inventario & Almacén
-          </Typography>
-          <Typography variant='body2' className='text-[#6B7280] mt-0.5'>
-            Flujo operativo, transferencias y control de almacén
-          </Typography>
-        </div>
+        <Typography variant='h4' className='font-bold text-[#1E1B2E]'>
+          Inventario & Almacén
+        </Typography>
 
-        {/* Action Pills */}
         <div className='flex items-center gap-2 flex-wrap'>
-          <Button
-            component={Link}
-            href='/inventory/products'
-            variant='outlined'
-            size='small'
-            sx={{
-              borderRadius: '9999px',
-              textTransform: 'none',
-              borderColor: '#DCD8EC',
-              color: '#1E1B2E',
-              backgroundColor: '#FFFFFF',
-              fontWeight: 600,
-              fontSize: '0.8rem',
-              '&:hover': { backgroundColor: '#F4F3F8' }
-            }}
-            startIcon={<i className='tabler-box text-sm text-[#6C5CE7]' />}
-          >
-            Catálogo ({ops.total_articulos_catalogo})
-          </Button>
-
-          <Button
-            component={Link}
-            href='/inventory/settings/locations'
-            variant='outlined'
-            size='small'
-            sx={{
-              borderRadius: '9999px',
-              textTransform: 'none',
-              borderColor: '#DCD8EC',
-              color: '#1E1B2E',
-              backgroundColor: '#FFFFFF',
-              fontWeight: 600,
-              fontSize: '0.8rem',
-              '&:hover': { backgroundColor: '#F4F3F8' }
-            }}
-            startIcon={<i className='tabler-map-pin text-sm text-[#6C5CE7]' />}
-          >
-            Ubicaciones
-          </Button>
-
-          <Button
-            component={Link}
-            href='/inventory/settings/warehouses'
-            variant='outlined'
-            size='small'
-            sx={{
-              borderRadius: '9999px',
-              textTransform: 'none',
-              borderColor: '#DCD8EC',
-              color: '#1E1B2E',
-              backgroundColor: '#FFFFFF',
-              fontWeight: 600,
-              fontSize: '0.8rem',
-              '&:hover': { backgroundColor: '#F4F3F8' }
-            }}
-            startIcon={<i className='tabler-building-warehouse text-sm text-[#6C5CE7]' />}
-          >
-            Almacenes
-          </Button>
-
-          <Button
-            component={Link}
-            href='/inventory/kardex'
-            variant='outlined'
-            size='small'
-            sx={{
-              borderRadius: '9999px',
-              textTransform: 'none',
-              borderColor: '#DCD8EC',
-              color: '#1E1B2E',
-              backgroundColor: '#FFFFFF',
-              fontWeight: 600,
-              fontSize: '0.8rem',
-              '&:hover': { backgroundColor: '#F4F3F8' }
-            }}
-            startIcon={<i className='tabler-arrows-exchange text-sm text-[#6C5CE7]' />}
-          >
-            Kárdex
-          </Button>
-
           <Button
             variant='outlined'
             size='small'
@@ -197,7 +112,6 @@ const InventoryDashboard = () => {
               setAdjustModalOpen(true)
             }}
             sx={{
-              borderRadius: '9999px',
               textTransform: 'none',
               borderColor: '#6C5CE7',
               color: '#6C5CE7',
@@ -208,7 +122,7 @@ const InventoryDashboard = () => {
             }}
             startIcon={<i className='tabler-adjustments-horizontal text-sm' />}
           >
-            Ajuste Rápido
+            + Ajuste
           </Button>
 
           <Button
@@ -216,7 +130,6 @@ const InventoryDashboard = () => {
             size='small'
             onClick={() => setProductDrawerOpen(true)}
             sx={{
-              borderRadius: '9999px',
               textTransform: 'none',
               backgroundColor: '#6C5CE7',
               color: '#FFFFFF',
@@ -250,14 +163,9 @@ const InventoryDashboard = () => {
           >
             <CardContent className='p-5 flex flex-col gap-4'>
               <div className='flex items-center justify-between flex-wrap gap-2'>
-                <div>
-                  <Typography variant='h6' className='font-bold text-[#1E1B2E] flex items-center gap-2'>
-                    <i className='tabler-forklift text-[#6C5CE7]' /> Flujo de Operaciones de Almacén
-                  </Typography>
-                  <span className='text-xs text-[#6B7280]'>
-                    Recepciones de proveedores, despachos de ventas y transferencias internas activas
-                  </span>
-                </div>
+                <Typography variant='h6' className='font-bold text-[#1E1B2E] flex items-center gap-2'>
+                  <i className='tabler-forklift text-[#6C5CE7]' /> Flujo de Operaciones de Almacén
+                </Typography>
 
                 {/* Filter Pills */}
                 <div className='flex items-center gap-1 bg-[#F4F3F8] p-1 rounded-full flex-wrap'>
@@ -327,8 +235,9 @@ const InventoryDashboard = () => {
                             <span className='font-mono font-bold text-xs text-[#6C5CE7]'>
                               {op.codigo}
                             </span>
-                            <Chip
+                            <CustomChip
                               size='small'
+                              round='true'
                               label={
                                 isDelivery
                                   ? 'Despacho Venta'
@@ -337,9 +246,8 @@ const InventoryDashboard = () => {
                                   : 'Recepción Compra'
                               }
                               sx={{
-                                borderRadius: '9999px',
-                                height: 18,
-                                fontSize: '0.65rem',
+                                height: 20,
+                                fontSize: '0.72rem',
                                 fontWeight: 700,
                                 backgroundColor: isDelivery
                                   ? '#E0F2FE'
@@ -368,8 +276,9 @@ const InventoryDashboard = () => {
                       </div>
 
                       <div className='flex items-center gap-2'>
-                        <Chip
+                        <CustomChip
                           size='small'
+                          round='true'
                           label={
                             op.estado === 'READY'
                               ? 'Listo p/ Procesar'
@@ -378,9 +287,8 @@ const InventoryDashboard = () => {
                               : 'En Espera'
                           }
                           sx={{
-                            borderRadius: '9999px',
                             fontWeight: 700,
-                            fontSize: '0.7rem',
+                            fontSize: '0.72rem',
                             height: 22,
                             backgroundColor:
                               op.estado === 'READY'
@@ -415,14 +323,9 @@ const InventoryDashboard = () => {
           >
             <CardContent className='p-5 flex flex-col gap-3'>
               <div className='flex items-center justify-between'>
-                <div>
-                  <Typography variant='h6' className='font-bold text-[#1E1B2E] flex items-center gap-2'>
-                    <i className='tabler-history text-[#6C5CE7]' /> Movimientos Recientes (Kárdex)
-                  </Typography>
-                  <span className='text-xs text-[#6B7280]'>
-                    Últimas entradas, salidas y ajustes asentados en almacén
-                  </span>
-                </div>
+                <Typography variant='h6' className='font-bold text-[#1E1B2E] flex items-center gap-2'>
+                  <i className='tabler-history text-[#6C5CE7]' /> Movimientos Recientes (Kárdex)
+                </Typography>
                 <Button
                   component={Link}
                   href='/inventory/kardex'
@@ -465,7 +368,7 @@ const InventoryDashboard = () => {
                             {mov.producto_nombre}{' '}
                             <small className='font-mono text-[#6C5CE7]'>({mov.variante_sku})</small>
                           </span>
-                          <span className='text-[#6B7280] text-[11px]'>
+                          <span className='text-[#6B7280] text-xs'>
                             Ref: <strong>{mov.documento_referencia}</strong> ·{' '}
                             {new Date(mov.fecha).toLocaleDateString('es-VE')}
                           </span>
@@ -483,7 +386,7 @@ const InventoryDashboard = () => {
                             : `-${mov.cantidad_salida}`}{' '}
                           {mov.uom_code}
                         </span>
-                        <span className='text-[10px] text-[#9CA3AF]'>
+                        <span className='text-xs text-[#9CA3AF]'>
                           Saldo: {mov.saldo_resultante} {mov.uom_code}
                         </span>
                       </div>
@@ -507,23 +410,18 @@ const InventoryDashboard = () => {
           >
             <CardContent className='p-5 flex flex-col gap-4'>
               <div className='flex items-center justify-between'>
-                <div>
-                  <Typography variant='h6' className='font-bold text-[#1E1B2E] flex items-center gap-2'>
-                    <i className='tabler-bell-ringing text-[#F59E0B]' /> Alertas de Stock y Reposición
-                  </Typography>
-                  <span className='text-xs text-[#6B7280]'>
-                    Artículos por debajo del stock mínimo o agotados
-                  </span>
-                </div>
-                <Chip
+                <Typography variant='h6' className='font-bold text-[#1E1B2E] flex items-center gap-2'>
+                  <i className='tabler-bell-ringing text-[#F59E0B]' /> Alertas de Stock y Reposición
+                </Typography>
+                <CustomChip
                   size='small'
+                  round='true'
                   label={`${criticalItems.length} críticos`}
                   sx={{
-                    borderRadius: '9999px',
                     backgroundColor: '#FEF3C7',
                     color: '#D97706',
                     fontWeight: 700,
-                    fontSize: '0.7rem'
+                    fontSize: '0.72rem'
                   }}
                 />
               </div>
@@ -558,7 +456,7 @@ const InventoryDashboard = () => {
                               {item.defaultCode}
                             </span>
                             <span
-                              className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                              className={`text-xs px-2 py-0.5 rounded-full font-bold ${
                                 isZero
                                   ? 'bg-[#FEE2E2] text-[#EF4444]'
                                   : 'bg-[#FEF3C7] text-[#D97706]'
@@ -573,7 +471,7 @@ const InventoryDashboard = () => {
                           >
                             {item.name}
                           </Link>
-                          <span className='text-[11px] text-[#6B7280]'>
+                          <span className='text-xs text-[#6B7280]'>
                             Mínimo requerido: <strong>{item.minStock || 5} {item.uomCode}</strong>
                           </span>
                         </div>
@@ -591,13 +489,13 @@ const InventoryDashboard = () => {
                             backgroundColor: '#6C5CE7',
                             color: '#FFFFFF',
                             fontWeight: 600,
-                            fontSize: '0.72rem',
+                            fontSize: '0.75rem',
                             px: 2,
                             shrink: 0,
                             '&:hover': { backgroundColor: '#5B4CDB' }
                           }}
                         >
-                          Ajustar / Reponer
+                          Ajustar
                         </Button>
                       </div>
                     )
