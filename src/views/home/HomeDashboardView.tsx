@@ -17,6 +17,7 @@ import InputAdornment from '@mui/material/InputAdornment'
 
 import CustomTextField from '@core/components/mui/TextField'
 import CustomAvatar from '@core/components/mui/Avatar'
+import CustomChip from '@core/components/mui/Chip'
 import { getActiveBcvRate } from '@/services/inventoryService'
 
 interface MetricConfig {
@@ -213,9 +214,12 @@ export const HomeDashboardView = () => {
                   <Typography variant='caption' className='text-[#6B7280] font-bold uppercase tracking-wider block text-xs'>
                     Mercado Referencial
                   </Typography>
-                  <span className='text-xs font-bold text-amber-600 px-1.5 py-0.5 rounded bg-amber-50'>
-                    +{spreadPercent.toFixed(1)}%
-                  </span>
+                  <CustomChip
+                    size='small'
+                    variant='tonal'
+                    color='warning'
+                    label={`+${spreadPercent.toFixed(1)}%`}
+                  />
                 </div>
                 <div className='flex items-baseline gap-1'>
                   <Typography variant='h5' className='font-bold font-mono text-[#1E1B2E]'>
