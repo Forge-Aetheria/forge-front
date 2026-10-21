@@ -22,11 +22,9 @@ import type {
 import {
   getInventoryTemplates,
   getWarehouseOperationsDashboard,
-  getStockMovements,
-  getFiscalConfig
+  getStockMovements
 } from '@/services/inventoryService'
 import InventoryStatsCards from './InventoryStatsCards'
-import ProductFormDrawer from './components/ProductFormDrawer'
 import StockAdjustmentModal from './components/StockAdjustmentModal'
 
 const InventoryDashboard = () => {
@@ -34,11 +32,9 @@ const InventoryDashboard = () => {
   const [ops, setOps] = useState<WarehouseOperationsDashboard | null>(null)
   const [recentMovements, setRecentMovements] = useState<StockMovement[]>([])
   const [opFilter, setOpFilter] = useState<'ALL' | 'DELIVERY' | 'RECEIPT' | 'INTERNAL_TRANSFER'>('ALL')
-  const [fiscalEnabled, setFiscalEnabled] = useState(true)
   const [loading, setLoading] = useState(true)
 
-  // Modals / Drawers
-  const [productDrawerOpen, setProductDrawerOpen] = useState(false)
+  // Modals
   const [adjustModalOpen, setAdjustModalOpen] = useState(false)
   const [preselectedProduct, setPreselectedProduct] = useState<ProductTemplate | null>(null)
 
@@ -55,12 +51,10 @@ const InventoryDashboard = () => {
       getWarehouseOperationsDashboard(),
       getStockMovements()
     ])
-    const fiscal = getFiscalConfig()
 
     setTemplates(tpls)
     setOps(dashOps)
     setRecentMovements(movs.slice(0, 5))
-    setFiscalEnabled(fiscal.enabled)
     setLoading(false)
   }
 
@@ -123,25 +117,6 @@ const InventoryDashboard = () => {
             startIcon={<i className='tabler-adjustments-horizontal text-sm' />}
           >
             + Ajuste
-          </Button>
-
-          <Button
-            variant='contained'
-            size='small'
-            onClick={() => setProductDrawerOpen(true)}
-            sx={{
-              textTransform: 'none',
-              backgroundColor: '#6C5CE7',
-              color: '#FFFFFF',
-              fontWeight: 600,
-              fontSize: '0.8rem',
-              px: 2.5,
-              boxShadow: '0 4px 14px rgba(108, 92, 231, 0.3)',
-              '&:hover': { backgroundColor: '#5B4CDB' }
-            }}
-            startIcon={<i className='tabler-plus text-sm' />}
-          >
-            Nuevo
           </Button>
         </div>
       </div>
@@ -507,21 +482,7 @@ const InventoryDashboard = () => {
         </Grid>
       </Grid>
 
-      {/* Modals & Drawers */}
-      <ProductFormDrawer
-        open={productDrawerOpen}
-        onClose={() => setProductDrawerOpen(false)}
-        fiscalEnabled={fiscalEnabled}
-        onSuccess={saved => {
-          loadDashboardData()
-          setToast({
-            open: true,
-            message: `Producto "${saved.name}" creado exitosamente`,
-            severity: 'success'
-          })
-        }}
-      />
-
+      {/* Modals */}
       <StockAdjustmentModal
         open={adjustModalOpen}
         onClose={() => setAdjustModalOpen(false)}
