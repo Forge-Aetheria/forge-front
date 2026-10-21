@@ -6,7 +6,6 @@ import Card from '@mui/material/Card'
 import CardContent from '@mui/material/CardContent'
 import Typography from '@mui/material/Typography'
 import Button from '@mui/material/Button'
-import Chip from '@mui/material/Chip'
 import Grid from '@mui/material/Grid'
 import Dialog from '@mui/material/Dialog'
 import DialogTitle from '@mui/material/DialogTitle'
@@ -14,9 +13,10 @@ import DialogContent from '@mui/material/DialogContent'
 import DialogActions from '@mui/material/DialogActions'
 import FormControlLabel from '@mui/material/FormControlLabel'
 import Checkbox from '@mui/material/Checkbox'
-import TextField from '@mui/material/TextField'
 import InputAdornment from '@mui/material/InputAdornment'
 
+import CustomChip from '@core/components/mui/Chip'
+import CustomTextField from '@core/components/mui/TextField'
 import CustomAvatar from '@core/components/mui/Avatar'
 import { getActiveBcvRate } from '@/services/inventoryService'
 
@@ -167,12 +167,13 @@ export const HomeDashboardView = () => {
             <Typography variant='h4' className='font-bold text-[#1E1B2E]'>
               Panel General
             </Typography>
-            <Chip
+            <CustomChip
               size='small'
+              round='true'
               label='Bimonetario Activo'
               color='success'
               variant='outlined'
-              className='rounded-full text-xs font-semibold'
+              className='text-xs font-semibold'
             />
           </div>
           <Typography variant='body2' className='text-[#6B7280] mt-0.5'>
@@ -186,10 +187,10 @@ export const HomeDashboardView = () => {
             size='small'
             onClick={() => setCustomizerOpen(true)}
             startIcon={<i className='tabler-adjustments-alt text-base' />}
-            className='rounded-full text-xs font-semibold border-[#DCD8EC] text-[#1E1B2E] bg-white hover:bg-[#F4F3F8]'
+            className='text-xs font-semibold border-[#DCD8EC] text-[#1E1B2E] bg-white hover:bg-[#F4F3F8]'
             sx={{ textTransform: 'none' }}
           >
-            Personalizar Métricas ({visibleMetricIds.length})
+            Personalizar ({visibleMetricIds.length})
           </Button>
 
           <Button
@@ -217,7 +218,7 @@ export const HomeDashboardView = () => {
                 <i className='tabler-building-bank text-2xl text-[#6C5CE7]' />
               </CustomAvatar>
               <div>
-                <Typography variant='caption' className='text-[#6C5CE7] font-bold uppercase tracking-wider block text-[10px]'>
+                <Typography variant='caption' className='text-[#6C5CE7] font-bold uppercase tracking-wider block text-xs'>
                   Tasa Oficial BCV
                 </Typography>
                 <div className='flex items-baseline gap-1'>
@@ -226,7 +227,7 @@ export const HomeDashboardView = () => {
                   </Typography>
                   <span className='text-xs text-[#6B7280] font-semibold'>Bs/USD</span>
                 </div>
-                <Typography variant='caption' className='text-[#6B7280] text-[10px] block'>
+                <Typography variant='caption' className='text-[#6B7280] text-xs block'>
                   Banco Central de Venezuela
                 </Typography>
               </div>
@@ -239,10 +240,10 @@ export const HomeDashboardView = () => {
               </CustomAvatar>
               <div>
                 <div className='flex items-center justify-between gap-2'>
-                  <Typography variant='caption' className='text-[#6B7280] font-bold uppercase tracking-wider block text-[10px]'>
+                  <Typography variant='caption' className='text-[#6B7280] font-bold uppercase tracking-wider block text-xs'>
                     Mercado Referencial
                   </Typography>
-                  <span className='text-[10px] font-bold text-amber-600 px-1.5 py-0.2 rounded bg-amber-50'>
+                  <span className='text-xs font-bold text-amber-600 px-1.5 py-0.5 rounded bg-amber-50'>
                     +{spreadPercent.toFixed(1)}%
                   </span>
                 </div>
@@ -252,7 +253,7 @@ export const HomeDashboardView = () => {
                   </Typography>
                   <span className='text-xs text-[#6B7280] font-semibold'>Bs/USD</span>
                 </div>
-                <Typography variant='caption' className='text-[#6B7280] text-[10px] block'>
+                <Typography variant='caption' className='text-[#6B7280] text-xs block'>
                   Brecha cambiaria: ${(parallelRate - bcvRate).toFixed(2)} Bs.
                 </Typography>
               </div>
@@ -262,7 +263,7 @@ export const HomeDashboardView = () => {
           {/* Calculadora / Convertidor Inmediato */}
           <div className='flex flex-col sm:flex-row sm:items-center gap-3 bg-[#F8F7FC] p-3 rounded-2xl border border-[#E6E4F0] flex-1 lg:max-w-md'>
             <div className='flex-1'>
-              <TextField
+              <CustomTextField
                 size='small'
                 label='Monto a convertir'
                 value={converterUsd}
@@ -277,13 +278,13 @@ export const HomeDashboardView = () => {
               />
             </div>
             <div className='flex flex-col justify-center text-right pl-2 sm:border-l border-[#DCD8EC] min-w-[130px]'>
-              <Typography variant='caption' className='text-[#6B7280] text-[10px] font-bold uppercase'>
+              <Typography variant='caption' className='text-[#6B7280] text-xs font-bold uppercase'>
                 Total Oficial (BCV)
               </Typography>
               <Typography variant='body2' className='font-bold font-mono text-[#6C5CE7]'>
                 Bs. {convertedBcv.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </Typography>
-              <Typography variant='caption' className='text-[10px] text-[#6B7280] font-mono'>
+              <Typography variant='caption' className='text-xs text-[#6B7280] font-mono'>
                 ≈ Ref: Bs. {convertedParallel.toLocaleString('es-VE', { maximumFractionDigits: 0 })}
               </Typography>
             </div>
@@ -359,7 +360,7 @@ export const HomeDashboardView = () => {
             startIcon={<i className='tabler-shopping-bag text-sm text-[#6C5CE7]' />}
             sx={{ textTransform: 'none' }}
           >
-            + Solicitud de Compra
+            + Compra
           </Button>
           <Button
             component={Link}
@@ -381,7 +382,7 @@ export const HomeDashboardView = () => {
             startIcon={<i className='tabler-adjustments text-sm text-[#6C5CE7]' />}
             sx={{ textTransform: 'none' }}
           >
-            Ajuste de Stock
+            + Ajuste
           </Button>
         </div>
       </div>
@@ -426,14 +427,22 @@ export const HomeDashboardView = () => {
             )
           })}
         </DialogContent>
-        <DialogActions className='p-3'>
+        <DialogActions className='p-3 flex justify-end gap-2'>
+          <Button
+            onClick={() => setCustomizerOpen(false)}
+            variant='outlined'
+            className='rounded-full text-xs font-semibold border-[#DCD8EC] text-[#6B7280]'
+            sx={{ textTransform: 'none' }}
+          >
+            Cerrar
+          </Button>
           <Button
             onClick={() => setCustomizerOpen(false)}
             variant='contained'
             className='rounded-full bg-[#6C5CE7] hover:bg-[#5A4BD1] text-xs font-semibold text-white px-4'
             sx={{ textTransform: 'none' }}
           >
-            Listo
+            Guardar
           </Button>
         </DialogActions>
       </Dialog>
