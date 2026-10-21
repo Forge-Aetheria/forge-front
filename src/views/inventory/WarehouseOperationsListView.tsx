@@ -21,6 +21,12 @@ import Dialog from '@mui/material/Dialog'
 import DialogTitle from '@mui/material/DialogTitle'
 import DialogContent from '@mui/material/DialogContent'
 import DialogActions from '@mui/material/DialogActions'
+import Table from '@mui/material/Table'
+import TableHead from '@mui/material/TableHead'
+import TableBody from '@mui/material/TableBody'
+import TableRow from '@mui/material/TableRow'
+import TableCell from '@mui/material/TableCell'
+import TablePagination from '@mui/material/TablePagination'
 
 import CustomChip from '@core/components/mui/Chip'
 import CustomTextField from '@core/components/mui/TextField'
@@ -81,6 +87,10 @@ const WarehouseOperationsListView: React.FC<WarehouseOperationsListViewProps> = 
   const [statusFilter, setStatusFilter] = useState<
     'ALL' | 'READY' | 'WAITING' | 'COMPLETED' | 'CANCELLED'
   >('ALL')
+
+  // Pagination
+  const [page, setPage] = useState(0)
+  const [rowsPerPage, setRowsPerPage] = useState(10)
 
   // Selección múltiple y control de columnas
   const [selectedIds, setSelectedIds] = useState<string[]>([])
@@ -228,6 +238,10 @@ const WarehouseOperationsListView: React.FC<WarehouseOperationsListViewProps> = 
       return true
     })
   }, [orders, statusFilter, search])
+
+  const paginatedOrders = useMemo(() => {
+    return filteredOrders.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+  }, [filteredOrders, page, rowsPerPage])
 
   const isAllSelected = filteredOrders.length > 0 && filteredOrders.every(o => selectedIds.includes(o.id))
   const isSomeSelected = filteredOrders.some(o => selectedIds.includes(o.id)) && !isAllSelected
@@ -576,7 +590,10 @@ const WarehouseOperationsListView: React.FC<WarehouseOperationsListViewProps> = 
             size='small'
             placeholder='Buscar por referencia, proveedor/cliente, documento origen o producto...'
             value={search}
-            onChange={e => setSearch(e.target.value)}
+            onChange={e => {
+              setSearch(e.target.value)
+              setPage(0)
+            }}
             sx={{
               minWidth: { xs: '100%', sm: 340 },
               '& .MuiOutlinedInput-root': {
@@ -618,7 +635,10 @@ const WarehouseOperationsListView: React.FC<WarehouseOperationsListViewProps> = 
               <button
                 key={tab.key}
                 type='button'
-                onClick={() => setStatusFilter(tab.key as any)}
+                onClick={() => {
+                  setStatusFilter(tab.key as any)
+                  setPage(0)
+                }}
                 className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
                   statusFilter === tab.key
                     ? 'bg-[#6C5CE7] text-white shadow-xs'
@@ -683,11 +703,11 @@ const WarehouseOperationsListView: React.FC<WarehouseOperationsListViewProps> = 
             <Skeleton variant='rounded' height={48} />
           </div>
         ) : (
-          <div className='w-full'>
-            <table className='w-full border-collapse text-left table-fixed'>
-              <thead>
-                <tr className='bg-[#F4F3F8] border-b border-[#E6E4F0] text-[11px] uppercase tracking-wider text-[#6B7280] font-bold'>
-                  <th className='py-3.5 px-3 w-[44px] text-center'>
+          <div className='w-full overflow-x-auto'>
+            <Table size='small'>
+              <TableHead sx={{ backgroundColor: '#F4F3F8' }}>
+                <TableRow sx={{ borderBottom: '1px solid #E6E4F0' }}>
+                  <TableCell padding='checkbox' sx={{ width: 44, minWidth: 44, pl: 2, pr: 0 }}>
                     <Checkbox
                       size='small'
                       checked={isAllSelected}
@@ -700,43 +720,142 @@ const WarehouseOperationsListView: React.FC<WarehouseOperationsListViewProps> = 
                         p: 0.5
                       }}
                     />
-                  </th>
-                  <th className='py-3.5 px-3 w-[42px] text-center'>#</th>
-                  <th className='py-3.5 px-3 w-[16%]'>Referencia / Origen</th>
-                  {visibleColumns.partner && <th className='py-3.5 px-3 w-[24%]'>{cfg.partnerLabel}</th>}
-                  {visibleColumns.flujo && <th className='py-3.5 px-3 w-[25%]'>Flujo de Almacén</th>}
-                  {visibleColumns.fecha && <th className='py-3.5 px-3 w-[11%] text-center'>Fecha Prog.</th>}
-                  {visibleColumns.articulos && <th className='py-3.5 px-3 w-[10%] text-right'>Artículos</th>}
-                  {visibleColumns.estado && <th className='py-3.5 px-3 w-[14%] text-center'>Estado</th>}
-                </tr>
-              </thead>
-              <tbody className='divide-y divide-[#E6E4F0] text-sm'>
+                  </TableCell>
+                  <TableCell
+                    sx={{
+                      width: 42,
+                      minWidth: 42,
+                      py: 1.5,
+                      px: 1,
+                      textAlign: 'center',
+                      fontWeight: 700,
+                      color: '#6B7280',
+                      fontSize: '0.75rem',
+                      letterSpacing: '0.05em'
+                    }}
+                  >
+                    #
+                  </TableCell>
+                  <TableCell
+                    sx={{
+                      width: '16%',
+                      py: 1.5,
+                      fontWeight: 700,
+                      color: '#6B7280',
+                      fontSize: '0.75rem',
+                      letterSpacing: '0.05em'
+                    }}
+                  >
+                    REFERENCIA / ORIGEN
+                  </TableCell>
+                  {visibleColumns.partner && (
+                    <TableCell
+                      sx={{
+                        width: '24%',
+                        py: 1.5,
+                        fontWeight: 700,
+                        color: '#6B7280',
+                        fontSize: '0.75rem',
+                        letterSpacing: '0.05em'
+                      }}
+                    >
+                      {cfg.partnerLabel.toUpperCase()}
+                    </TableCell>
+                  )}
+                  {visibleColumns.flujo && (
+                    <TableCell
+                      sx={{
+                        width: '25%',
+                        py: 1.5,
+                        fontWeight: 700,
+                        color: '#6B7280',
+                        fontSize: '0.75rem',
+                        letterSpacing: '0.05em'
+                      }}
+                    >
+                      FLUJO DE ALMACÉN
+                    </TableCell>
+                  )}
+                  {visibleColumns.fecha && (
+                    <TableCell
+                      align='center'
+                      sx={{
+                        width: '11%',
+                        py: 1.5,
+                        fontWeight: 700,
+                        color: '#6B7280',
+                        fontSize: '0.75rem',
+                        letterSpacing: '0.05em'
+                      }}
+                    >
+                      FECHA PROG.
+                    </TableCell>
+                  )}
+                  {visibleColumns.articulos && (
+                    <TableCell
+                      align='right'
+                      sx={{
+                        width: '10%',
+                        py: 1.5,
+                        fontWeight: 700,
+                        color: '#6B7280',
+                        fontSize: '0.75rem',
+                        letterSpacing: '0.05em'
+                      }}
+                    >
+                      ARTÍCULOS
+                    </TableCell>
+                  )}
+                  {visibleColumns.estado && (
+                    <TableCell
+                      align='center'
+                      sx={{
+                        width: '14%',
+                        py: 1.5,
+                        fontWeight: 700,
+                        color: '#6B7280',
+                        fontSize: '0.75rem',
+                        letterSpacing: '0.05em'
+                      }}
+                    >
+                      ESTADO
+                    </TableCell>
+                  )}
+                </TableRow>
+              </TableHead>
+              <TableBody>
                 {filteredOrders.length === 0 ? (
-                  <tr>
-                    <td colSpan={colSpanCount} className='py-12 text-center text-[#6B7280]'>
+                  <TableRow>
+                    <TableCell colSpan={colSpanCount} sx={{ py: 6, textAlign: 'center', color: '#6B7280' }}>
                       <i className={`${cfg.icon} text-3xl text-[#6C5CE7] mb-2 inline-block`} />
-                      <p className='font-semibold text-[#1E1B2E]'>
+                      <Typography variant='body1' className='font-semibold text-[#1E1B2E]'>
                         No se encontraron operaciones en esta vista
-                      </p>
-                      <p className='text-xs mt-1'>
+                      </Typography>
+                      <Typography variant='caption' className='text-xs mt-1 block text-[#6B7280]'>
                         Haz clic en <strong>&ldquo;+ {cfg.newBtnLabel}&rdquo;</strong> arriba a la derecha para registrar una nueva orden.
-                      </p>
-                    </td>
-                  </tr>
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
                 ) : (
-                  filteredOrders.map((order, idx) => {
+                  paginatedOrders.map((order, idx) => {
                     const st = STATUS_META[order.estado] || STATUS_META.READY
                     const isSelected = selectedIds.includes(order.id)
+                    const absoluteIndex = page * rowsPerPage + idx + 1
 
                     return (
-                      <tr
+                      <TableRow
+                        hover
                         key={order.id}
                         onClick={() => router.push(`${currentBaseRoute}/${order.id}`)}
-                        className={`transition-colors cursor-pointer group ${
-                          isSelected ? 'bg-[#F3F0FF] hover:bg-[#EBE5FF]' : 'hover:bg-[#F9F8FF]'
-                        }`}
+                        sx={{
+                          cursor: 'pointer',
+                          backgroundColor: isSelected ? 'rgba(108, 92, 231, 0.08)' : undefined,
+                          '&:hover': {
+                            backgroundColor: isSelected ? 'rgba(108, 92, 231, 0.12)' : '#F9F8FF'
+                          }
+                        }}
                       >
-                        <td className='py-3.5 px-3 text-center' onClick={e => e.stopPropagation()}>
+                        <TableCell padding='checkbox' sx={{ pl: 2, pr: 0 }} onClick={e => e.stopPropagation()}>
                           <Checkbox
                             size='small'
                             checked={isSelected}
@@ -747,14 +866,14 @@ const WarehouseOperationsListView: React.FC<WarehouseOperationsListViewProps> = 
                               p: 0.5
                             }}
                           />
-                        </td>
+                        </TableCell>
 
-                        <td className='py-3.5 px-3 text-center font-mono text-xs text-[#9CA3AF]'>
-                          {idx + 1}
-                        </td>
+                        <TableCell sx={{ textAlign: 'center', fontFamily: 'monospace', fontSize: '0.75rem', color: '#9CA3AF' }}>
+                          {absoluteIndex}
+                        </TableCell>
 
-                        <td className='py-3.5 px-3'>
-                          <span className='font-mono text-xs font-bold text-[#6C5CE7] group-hover:underline block truncate'>
+                        <TableCell sx={{ py: 1.5 }}>
+                          <span className='font-mono text-xs font-bold text-[#6C5CE7] hover:underline block truncate'>
                             {order.codigo}
                           </span>
                           {order.documento_origen ? (
@@ -764,10 +883,10 @@ const WarehouseOperationsListView: React.FC<WarehouseOperationsListViewProps> = 
                           ) : (
                             <span className='text-xs text-[#9CA3AF] block'>Directo</span>
                           )}
-                        </td>
+                        </TableCell>
 
                         {visibleColumns.partner && (
-                          <td className='py-3.5 px-3'>
+                          <TableCell sx={{ py: 1.5 }}>
                             <span className='font-semibold text-[#1E1B2E] text-xs block truncate'>
                               {order.tercero_nombre}
                             </span>
@@ -778,11 +897,11 @@ const WarehouseOperationsListView: React.FC<WarehouseOperationsListViewProps> = 
                                 .join(', ')}
                               {order.lineas.length > 2 ? ` (+${order.lineas.length - 2})` : ''}
                             </span>
-                          </td>
+                          </TableCell>
                         )}
 
                         {visibleColumns.flujo && (
-                          <td className='py-3.5 px-3'>
+                          <TableCell sx={{ py: 1.5 }}>
                             <div className='flex items-center gap-1.5 text-xs text-[#1E1B2E] truncate'>
                               <span className='font-medium truncate'>
                                 {order.almacen_origen_nombre}
@@ -799,17 +918,17 @@ const WarehouseOperationsListView: React.FC<WarehouseOperationsListViewProps> = 
                                   : order.ubicacion_destino_nombre}
                               </span>
                             )}
-                          </td>
+                          </TableCell>
                         )}
 
                         {visibleColumns.fecha && (
-                          <td className='py-3.5 px-3 text-center text-xs text-[#374151] font-medium'>
+                          <TableCell align='center' sx={{ py: 1.5, fontSize: '0.75rem', color: '#374151', fontWeight: 500 }}>
                             {order.fecha_programada}
-                          </td>
+                          </TableCell>
                         )}
 
                         {visibleColumns.articulos && (
-                          <td className='py-3.5 px-3 text-right'>
+                          <TableCell align='right' sx={{ py: 1.5 }}>
                             <span className='font-bold text-xs text-[#1E1B2E] block'>
                               {order.total_articulos} unid.
                             </span>
@@ -817,11 +936,11 @@ const WarehouseOperationsListView: React.FC<WarehouseOperationsListViewProps> = 
                               {order.lineas.length}{' '}
                               {order.lineas.length === 1 ? 'línea' : 'líneas'}
                             </span>
-                          </td>
+                          </TableCell>
                         )}
 
                         {visibleColumns.estado && (
-                          <td className='py-3.5 px-3 text-center'>
+                          <TableCell align='center' sx={{ py: 1.5 }}>
                             <CustomChip
                               size='small'
                               round='true'
@@ -834,16 +953,34 @@ const WarehouseOperationsListView: React.FC<WarehouseOperationsListViewProps> = 
                                 color: st.color
                               }}
                             />
-                          </td>
+                          </TableCell>
                         )}
-                      </tr>
+                      </TableRow>
                     )
                   })
                 )}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
         )}
+
+        {/* Paginación Estandarizada MUI */}
+        <TablePagination
+          rowsPerPageOptions={[5, 10, 25, 50]}
+          component='div'
+          count={filteredOrders.length}
+          rowsPerPage={rowsPerPage}
+          page={page}
+          onPageChange={(_, newPage) => setPage(newPage)}
+          onRowsPerPageChange={e => {
+            setRowsPerPage(parseInt(e.target.value, 10))
+            setPage(0)
+          }}
+          labelRowsPerPage='Filas por página:'
+          labelDisplayedRows={({ from, to, count }) =>
+            `${from}-${to} de ${count !== -1 ? count : `más de ${to}`}`
+          }
+        />
       </Card>
 
       {/* Menú de Personalización de Columnas */}
