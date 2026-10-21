@@ -6,7 +6,7 @@ import TextField from '@mui/material/TextField'
 import Button from '@mui/material/Button'
 import MenuItem from '@mui/material/MenuItem'
 import CircularProgress from '@mui/material/CircularProgress'
-import Chip from '@mui/material/Chip'
+import CustomChip from '@core/components/mui/Chip'
 import IconButton from '@mui/material/IconButton'
 import Tooltip from '@mui/material/Tooltip'
 
@@ -417,28 +417,18 @@ export const CompanySettingsTab: React.FC<Props> = ({ company, onSave }) => {
                       </div>
                     </div>
                     <div className='flex items-center gap-1'>
-                      <Chip
+                      <CustomChip
                         label={acc.moneda}
                         size='small'
-                        sx={{
-                          height: 20,
-                          fontSize: '0.65rem',
-                          fontWeight: 800,
-                          backgroundColor: acc.moneda === 'USD' ? 'rgba(108, 92, 231, 0.12)' : 'rgba(16, 185, 129, 0.12)',
-                          color: acc.moneda === 'USD' ? '#6C5CE7' : '#10B981'
-                        }}
+                        variant='tonal'
+                        color={acc.moneda === 'USD' ? 'primary' : 'success'}
                       />
                       {acc.is_predeterminada && (
-                        <Chip
+                        <CustomChip
                           label='Principal'
                           size='small'
-                          sx={{
-                            height: 20,
-                            fontSize: '0.65rem',
-                            fontWeight: 700,
-                            backgroundColor: 'rgba(16, 185, 129, 0.12)',
-                            color: '#10B981'
-                          }}
+                          variant='tonal'
+                          color='success'
                         />
                       )}
                     </div>

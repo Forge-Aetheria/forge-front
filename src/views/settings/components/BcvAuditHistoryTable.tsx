@@ -2,7 +2,7 @@
 
 import React from 'react'
 import Typography from '@mui/material/Typography'
-import Chip from '@mui/material/Chip'
+import CustomChip from '@core/components/mui/Chip'
 
 import type { BcvRateAuditEntry } from '@/types/settingsTypes'
 
@@ -22,7 +22,7 @@ export const BcvAuditHistoryTable: React.FC<Props> = ({ entries }) => {
   return (
     <div className='overflow-x-auto rounded-2xl border border-[#E6E4F0]'>
       <table className='w-full text-left text-xs'>
-        <thead className='bg-[#F8F7FC] text-[#1E1B2E] font-bold border-b border-[#E6E4F0]'>
+        <thead className='bg-[#F4F3F8] text-[#1E1B2E] font-bold border-b border-[#E6E4F0]'>
           <tr>
             <th className='py-3 px-4'>Fecha / Hora</th>
             <th className='py-3 px-4 text-right'>Tasa Oficial (VES)</th>
@@ -44,19 +44,11 @@ export const BcvAuditHistoryTable: React.FC<Props> = ({ entries }) => {
                   {Number(entry.tasaVes).toFixed(2)} Bs.
                 </td>
                 <td className='py-3 px-4 text-center'>
-                  <Chip
+                  <CustomChip
                     size='small'
                     label={isAuto ? 'Automático BCV' : 'Manual'}
-                    sx={{
-                      borderRadius: '9999px',
-                      fontWeight: 700,
-                      fontSize: '0.68rem',
-                      height: 22,
-                      backgroundColor: isAuto ? '#E0F2FE' : '#FEF3C7',
-                      color: isAuto ? '#0284C7' : '#D97706',
-                      border: '1px solid',
-                      borderColor: isAuto ? '#BAE6FD' : '#FDE68A'
-                    }}
+                    variant='tonal'
+                    color={isAuto ? 'info' : 'warning'}
                   />
                 </td>
                 <td className='py-3 px-4 text-[#1E1B2E] font-medium'>

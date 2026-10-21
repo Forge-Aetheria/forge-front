@@ -7,7 +7,7 @@ import Typography from '@mui/material/Typography'
 import TextField from '@mui/material/TextField'
 import Button from '@mui/material/Button'
 import Avatar from '@mui/material/Avatar'
-import Chip from '@mui/material/Chip'
+import CustomChip from '@core/components/mui/Chip'
 import IconButton from '@mui/material/IconButton'
 import Tooltip from '@mui/material/Tooltip'
 import InputAdornment from '@mui/material/InputAdornment'
@@ -39,12 +39,12 @@ interface Props {
   onToggleStatus: (id: string) => Promise<void>
 }
 
-const ROLE_CONFIG: Record<SystemRole, { label: string; color: string; bg: string }> = {
-  ADMIN: { label: 'Administrador', color: '#6C5CE7', bg: '#F0EEF9' },
-  VENTAS: { label: 'Ventas', color: '#0284C7', bg: '#E0F2FE' },
-  COMPRAS: { label: 'Compras', color: '#8B5CF6', bg: '#EDE9FE' },
-  ALMACEN: { label: 'Almacén', color: '#D97706', bg: '#FEF3C7' },
-  CAJERO_POS: { label: 'Cajero POS', color: '#10B981', bg: '#E8F5E9' }
+const ROLE_CONFIG: Record<SystemRole, { label: string; color: 'primary' | 'info' | 'secondary' | 'warning' | 'success' }> = {
+  ADMIN: { label: 'Administrador', color: 'primary' },
+  VENTAS: { label: 'Ventas', color: 'info' },
+  COMPRAS: { label: 'Compras', color: 'secondary' },
+  ALMACEN: { label: 'Almacén', color: 'warning' },
+  CAJERO_POS: { label: 'Cajero POS', color: 'success' }
 }
 
 export const UsersManagementTab: React.FC<Props> = ({
@@ -119,9 +119,6 @@ export const UsersManagementTab: React.FC<Props> = ({
             <Typography variant='h6' className='font-bold text-[#1E1B2E]'>
               Control de Accesos y Roles del Personal (RBAC)
             </Typography>
-            <span className='text-xs text-[#6B7280]'>
-              Gestión de cuentas internas, asignación de permisos y estado de acceso
-            </span>
           </div>
 
           <div className='flex items-center gap-3 flex-wrap'>
@@ -171,7 +168,7 @@ export const UsersManagementTab: React.FC<Props> = ({
         {/* Tabla de Usuarios */}
         <div className='overflow-x-auto rounded-2xl border border-[#E6E4F0] mt-2'>
           <table className='w-full text-left text-xs'>
-            <thead className='bg-[#F8F7FC] text-[#1E1B2E] font-bold border-b border-[#E6E4F0]'>
+            <thead className='bg-[#F4F3F8] text-[#1E1B2E] font-bold border-b border-[#E6E4F0]'>
               <tr>
                 <th className='py-3.5 px-4'>Usuario / Nombre</th>
                 <th className='py-3.5 px-4'>Teléfono</th>
@@ -226,29 +223,21 @@ export const UsersManagementTab: React.FC<Props> = ({
 
                       {/* Rol Asignado */}
                       <td className='py-3 px-4'>
-                        <Chip
+                        <CustomChip
                           size='small'
                           label={roleCfg.label}
-                          sx={{
-                            borderRadius: '9999px',
-                            fontWeight: 700,
-                            fontSize: '0.72rem',
-                            height: 24,
-                            backgroundColor: roleCfg.bg,
-                            color: roleCfg.color,
-                            border: '1px solid #DCD8EC'
-                          }}
+                          variant='tonal'
+                          color={roleCfg.color}
                         />
                       </td>
 
                       {/* Estado */}
                       <td className='py-3 px-4 text-center'>
-                        <Chip
+                        <CustomChip
                           size='small'
                           label={isActive ? 'Activo' : 'Inactivo'}
-                          color={isActive ? 'success' : 'default'}
+                          color={isActive ? 'success' : 'secondary'}
                           variant='tonal'
-                          className='font-bold rounded-full text-[11px]'
                         />
                       </td>
 

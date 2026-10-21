@@ -8,7 +8,7 @@ import TextField from '@mui/material/TextField'
 import Button from '@mui/material/Button'
 import Switch from '@mui/material/Switch'
 import FormControlLabel from '@mui/material/FormControlLabel'
-import Chip from '@mui/material/Chip'
+import CustomChip from '@core/components/mui/Chip'
 import InputAdornment from '@mui/material/InputAdornment'
 import CircularProgress from '@mui/material/CircularProgress'
 
@@ -84,18 +84,11 @@ export const BcvSettingsTab: React.FC<Props> = ({
                 <span className='text-xs font-semibold text-[#6B7280] uppercase tracking-wider'>
                   Tasa Oficial en Vivo (BCV)
                 </span>
-                <Chip
+                <CustomChip
                   size='small'
+                  variant='tonal'
+                  color={isAuto ? 'info' : 'warning'}
                   label={isAuto ? 'Sincronizado' : 'Modo Manual'}
-                  sx={{
-                    borderRadius: '9999px',
-                    fontWeight: 700,
-                    fontSize: '0.72rem',
-                    backgroundColor: isAuto ? '#E0F2FE' : '#FEF3C7',
-                    color: isAuto ? '#0284C7' : '#D97706',
-                    border: '1px solid',
-                    borderColor: isAuto ? '#BAE6FD' : '#FDE68A'
-                  }}
                 />
               </div>
 
@@ -243,16 +236,12 @@ export const BcvSettingsTab: React.FC<Props> = ({
               <Typography variant='h6' className='font-bold text-[#1E1B2E]'>
                 Bitácora de Auditoría de Tasas Cambiarias
               </Typography>
-              <span className='text-xs text-[#6B7280]'>
-                Registro inmutable de todas las tasas oficiales aplicadas en el ERP
-              </span>
             </div>
-            <Chip
+            <CustomChip
               size='small'
               label={`${bcvConfig.historial.length} registros`}
               color='primary'
               variant='tonal'
-              className='rounded-full font-bold'
             />
           </div>
 

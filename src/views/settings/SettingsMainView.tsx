@@ -8,7 +8,7 @@ import CardContent from '@mui/material/CardContent'
 import Typography from '@mui/material/Typography'
 import Tabs from '@mui/material/Tabs'
 import Tab from '@mui/material/Tab'
-import Chip from '@mui/material/Chip'
+import CustomChip from '@core/components/mui/Chip'
 import Button from '@mui/material/Button'
 import Skeleton from '@mui/material/Skeleton'
 import Snackbar from '@mui/material/Snackbar'
@@ -275,25 +275,8 @@ const SettingsMainView: React.FC = () => {
       {/* Header Principal */}
       <div className='flex flex-col md:flex-row md:items-center justify-between gap-4'>
         <div>
-          <div className='flex items-center gap-3 flex-wrap'>
-            <Typography variant='h4' className='font-bold text-[#1E1B2E]'>
-              Ajustes del Sistema
-            </Typography>
-            <Chip
-              size='small'
-              label='Control Global'
-              sx={{
-                borderRadius: '9999px',
-                fontWeight: 700,
-                fontSize: '0.72rem',
-                backgroundColor: '#F0EEF9',
-                color: '#6C5CE7',
-                border: '1px solid #DCD8EC'
-              }}
-            />
-          </div>
-          <Typography variant='body2' className='text-[#6B7280] mt-1'>
-            Configuración de la empresa, divisas, control de usuarios y reglas fiscales
+          <Typography variant='h4' className='font-bold text-[#1E1B2E]'>
+            Ajustes del Sistema
           </Typography>
         </div>
 
@@ -309,18 +292,11 @@ const SettingsMainView: React.FC = () => {
               <i className='tabler-building text-[#6C5CE7] text-base' />
             )}
             <span className='text-xs font-bold text-[#1E1B2E]'>{company.nombreComercial}</span>
-            <Chip
+            <CustomChip
               size='small'
+              variant='tonal'
+              color='secondary'
               label={company.rif}
-              sx={{
-                height: 20,
-                fontSize: '0.68rem',
-                fontWeight: 700,
-                borderRadius: '9999px',
-                backgroundColor: '#F8F7FC',
-                color: '#6B7280',
-                border: '1px solid #E6E4F0'
-              }}
             />
           </div>
         )}
