@@ -7,8 +7,6 @@ import Typography from '@mui/material/Typography'
 import Card from '@mui/material/Card'
 import CardContent from '@mui/material/CardContent'
 import Button from '@mui/material/Button'
-import TextField from '@mui/material/TextField'
-import Chip from '@mui/material/Chip'
 import InputAdornment from '@mui/material/InputAdornment'
 import Snackbar from '@mui/material/Snackbar'
 import Alert from '@mui/material/Alert'
@@ -23,6 +21,9 @@ import Dialog from '@mui/material/Dialog'
 import DialogTitle from '@mui/material/DialogTitle'
 import DialogContent from '@mui/material/DialogContent'
 import DialogActions from '@mui/material/DialogActions'
+
+import CustomChip from '@core/components/mui/Chip'
+import CustomTextField from '@core/components/mui/TextField'
 
 import type {
   ProductTemplate,
@@ -503,14 +504,9 @@ const WarehouseOperationsListView: React.FC<WarehouseOperationsListViewProps> = 
             >
               <i className={`${cfg.icon} text-xl`} />
             </div>
-            <div>
-              <Typography variant='h4' className='font-bold text-[#1E1B2E]'>
-                {cfg.title}
-              </Typography>
-              <Typography variant='body2' className='text-[#6B7280] mt-0.5'>
-                {cfg.subtitle}
-              </Typography>
-            </div>
+            <Typography variant='h4' className='font-bold text-[#1E1B2E]'>
+              {cfg.title}
+            </Typography>
           </div>
         </div>
 
@@ -576,7 +572,7 @@ const WarehouseOperationsListView: React.FC<WarehouseOperationsListViewProps> = 
         }}
       >
         <CardContent className='p-4 flex items-center justify-between flex-wrap gap-3'>
-          <TextField
+          <CustomTextField
             size='small'
             placeholder='Buscar por referencia, proveedor/cliente, documento origen o producto...'
             value={search}
@@ -664,7 +660,6 @@ const WarehouseOperationsListView: React.FC<WarehouseOperationsListViewProps> = 
               startIcon={<i className='tabler-layout-columns text-base' />}
               onClick={e => setColumnAnchorEl(e.currentTarget)}
               sx={{
-                borderRadius: '8px',
                 borderColor: '#E6E4F0',
                 color: '#6C5CE7',
                 textTransform: 'none',
@@ -763,11 +758,11 @@ const WarehouseOperationsListView: React.FC<WarehouseOperationsListViewProps> = 
                             {order.codigo}
                           </span>
                           {order.documento_origen ? (
-                            <span className='text-[11px] font-mono text-[#6B7280] block truncate'>
+                            <span className='text-xs font-mono text-[#6B7280] block truncate'>
                               Doc: {order.documento_origen}
                             </span>
                           ) : (
-                            <span className='text-[11px] text-[#9CA3AF] block'>Directo</span>
+                            <span className='text-xs text-[#9CA3AF] block'>Directo</span>
                           )}
                         </td>
 
@@ -776,7 +771,7 @@ const WarehouseOperationsListView: React.FC<WarehouseOperationsListViewProps> = 
                             <span className='font-semibold text-[#1E1B2E] text-xs block truncate'>
                               {order.tercero_nombre}
                             </span>
-                            <span className='text-[11px] text-[#6B7280] block truncate'>
+                            <span className='text-xs text-[#6B7280] block truncate'>
                               {order.lineas
                                 .slice(0, 2)
                                 .map(l => l.producto_nombre)
@@ -798,7 +793,7 @@ const WarehouseOperationsListView: React.FC<WarehouseOperationsListViewProps> = 
                               </span>
                             </div>
                             {(order.ubicacion_destino_nombre || order.ubicacion_origen_nombre) && (
-                              <span className='text-[10px] font-mono text-[#6B7280] block truncate mt-0.5'>
+                              <span className='text-xs font-mono text-[#6B7280] block truncate mt-0.5'>
                                 {operationType === 'DELIVERY'
                                   ? order.ubicacion_origen_nombre
                                   : order.ubicacion_destino_nombre}
@@ -818,7 +813,7 @@ const WarehouseOperationsListView: React.FC<WarehouseOperationsListViewProps> = 
                             <span className='font-bold text-xs text-[#1E1B2E] block'>
                               {order.total_articulos} unid.
                             </span>
-                            <span className='text-[10px] text-[#6B7280] block'>
+                            <span className='text-xs text-[#6B7280] block'>
                               {order.lineas.length}{' '}
                               {order.lineas.length === 1 ? 'línea' : 'líneas'}
                             </span>
@@ -827,13 +822,13 @@ const WarehouseOperationsListView: React.FC<WarehouseOperationsListViewProps> = 
 
                         {visibleColumns.estado && (
                           <td className='py-3.5 px-3 text-center'>
-                            <Chip
+                            <CustomChip
                               size='small'
+                              round='true'
                               label={st.label}
                               sx={{
-                                borderRadius: '9999px',
                                 fontWeight: 700,
-                                fontSize: '0.68rem',
+                                fontSize: '0.75rem',
                                 height: 22,
                                 backgroundColor: st.bg,
                                 color: st.color
