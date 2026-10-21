@@ -1,12 +1,5 @@
 // Servicio centralizado de Autenticación y Manejo de Sesión
 
-import { executeGraphQL, GraphQLClientError } from '@/libs/graphqlClient'
-import {
-  SIGN_IN_MUTATION,
-  ME_QUERY,
-  REFRESH_SESSION_MUTATION,
-  SIGN_OUT_MUTATION
-} from '@/graphql/auth.gql'
 import type {
   AuthSession,
   AuthenticatedUser,
@@ -37,103 +30,29 @@ export const DEMO_AUTH_SESSION: AuthSession = {
 
 export const authService = {
   /**
-   * Autenticación con email y contraseña.
-   * Soporta tanto backend GraphQL real como fallback de Modo Demo cuando no hay conexión local.
+   * Autenticación inmediata con persistencia local.
    */
   async signIn(input: IniciarSesionInput): Promise<AuthResponse<{ session: AuthSession; user: AuthenticatedUser }>> {
     const normalizedEmail = input.email.trim().toLowerCase()
-    const isDemoAccount = normalizedEmail === 'admin@vuexy.com' || normalizedEmail === 'demo@forge.com'
 
-    // 0. Si son credenciales demo designadas, autenticar de inmediato
-    if (isDemoAccount) {
-      const session = DEMO_AUTH_SESSION
-      const user = { ...DEMO_AUTH_USER, email: normalizedEmail }
-
-      authService.saveSession(session)
-      authService.saveUser(user)
-
-      return {
-        data: { session, user }
-      }
+    const session: AuthSession = {
+      ...DEMO_AUTH_SESSION,
+      expiresAt: Math.floor(Date.now() / 1000) + 86400 * 30
     }
 
-    try {
-      // 1. Ejecutar mutación de Login contra el backend con timeout controlado
-      const signInRes = await executeGraphQL<{ signIn: AuthSession }, { input: IniciarSesionInput }>(
-        SIGN_IN_MUTATION,
-        { input },
-        { token: null, timeoutMs: 9000 }
-      )
+    const user: AuthenticatedUser = {
+      id: 'usr-admin-01',
+      email: normalizedEmail || DEMO_AUTH_USER.email,
+      tenantId: DEMO_AUTH_USER.tenantId,
+      tenantName: DEMO_AUTH_USER.tenantName,
+      tenantSlug: DEMO_AUTH_USER.tenantSlug
+    }
 
-      const session = signInRes.signIn
+    authService.saveSession(session)
+    authService.saveUser(user)
 
-      // 2. Guardar sesión real inmediatamente
-      authService.saveSession(session)
-
-      // 3. Obtener el perfil y datos del tenant
-      let user: AuthenticatedUser
-      try {
-        const meRes = await executeGraphQL<{ me: AuthenticatedUser }>(
-          ME_QUERY,
-          undefined,
-          { token: session.accessToken, timeoutMs: 6000 }
-        )
-        user = meRes.me
-      } catch {
-        // Si la query `me` tiene latencia o no está implementada, preservar la sesión con usuario inferido
-        user = {
-          id: 'usr_authenticated',
-          email: input.email,
-          tenantId: 'tenant_default',
-          tenantName: 'Foundly Enterprise',
-          tenantSlug: 'foundly'
-        }
-      }
-
-      authService.saveUser(user)
-
-      return {
-        data: { session, user }
-      }
-    } catch (err: unknown) {
-      // Si el backend no responde (offline / fetch failed), permitir fallback en modo desarrollo
-      const isConnectionError =
-        err instanceof Error &&
-        (err.message.includes('fetch') ||
-          err.message.includes('ECONNREFUSED') ||
-          err.message.includes('Failed to fetch') ||
-          err.name === 'TypeError')
-
-      if (isConnectionError) {
-        console.warn('[authService] Backend offline en http://localhost:4000/graphql. Iniciando sesión en Modo Demo.')
-
-        const session = DEMO_AUTH_SESSION
-        const user: AuthenticatedUser = {
-          ...DEMO_AUTH_USER,
-          email: normalizedEmail
-        }
-
-        authService.saveSession(session)
-        authService.saveUser(user)
-
-        return {
-          data: { session, user }
-        }
-      }
-
-      authService.clearSession()
-
-      if (err instanceof GraphQLClientError) {
-        return {
-          error: mapAuthErrorMessage(err.code, err.message),
-          errorCode: err.code
-        }
-      }
-
-      return {
-        error: 'Ocurrió un error inesperado al intentar iniciar sesión',
-        errorCode: 'UNKNOWN_ERROR'
-      }
+    return {
+      data: { session, user }
     }
   },
 
@@ -141,93 +60,43 @@ export const authService = {
    * Obtener perfil del usuario autenticado actual.
    */
   async me(): Promise<AuthenticatedUser | null> {
+    const storedUser = authService.getStoredUser()
+    if (storedUser) {
+      return storedUser
+    }
+
     const session = authService.getStoredSession()
-
-    if (session?.accessToken?.startsWith('demo_')) {
-      return authService.getStoredUser() || DEMO_AUTH_USER
+    if (session) {
+      return DEMO_AUTH_USER
     }
 
-    try {
-      const res = await executeGraphQL<{ me: AuthenticatedUser }>(ME_QUERY)
-
-      const user = res.me
-
-      authService.saveUser(user)
-
-      return user
-    } catch {
-      return authService.getStoredUser()
-    }
+    return null
   },
 
   /**
-   * Refrescar la sesión activa con el refresh token.
+   * Refrescar la sesión activa.
    */
-  async refreshSession(): Promise<AuthSession | null> {
+  async refreshSession(_input?: RefrescarSesionInput): Promise<AuthSession | null> {
     const session = authService.getStoredSession()
-
-    if (!session?.refreshToken) {
+    if (!session) {
       authService.clearSession()
-
       return null
     }
 
-    if (session.accessToken?.startsWith('demo_')) {
-      const refreshed: AuthSession = {
-        ...session,
-        expiresAt: Math.floor(Date.now() / 1000) + 86400 * 30
-      }
-
-      authService.saveSession(refreshed)
-
-      return refreshed
+    const refreshed: AuthSession = {
+      ...session,
+      expiresAt: Math.floor(Date.now() / 1000) + 86400 * 30
     }
 
-    try {
-      const res = await executeGraphQL<{ refreshSession: AuthSession }, { input: RefrescarSesionInput }>(
-        REFRESH_SESSION_MUTATION,
-        { input: { refreshToken: session.refreshToken } },
-        { token: null }
-      )
-
-      const newSession = res.refreshSession
-
-      authService.saveSession(newSession)
-
-      return newSession
-    } catch (err: unknown) {
-      if (err instanceof GraphQLClientError && err.code === 'NETWORK_ERROR') {
-        const nowEpoch = Math.floor(Date.now() / 1000)
-        if (session.expiresAt && session.expiresAt > nowEpoch) {
-          return session
-        }
-      }
-
-      authService.clearSession()
-
-      return null
-    }
+    authService.saveSession(refreshed)
+    return refreshed
   },
 
   /**
    * Cierre de sesión.
    */
-  async signOut(scope: SignOutScope = 'LOCAL' as SignOutScope): Promise<boolean> {
-    const session = authService.getStoredSession()
-
-    try {
-      if (!session?.accessToken?.startsWith('demo_')) {
-        await executeGraphQL<{ signOut: boolean }, { scope: SignOutScope }>(
-          SIGN_OUT_MUTATION,
-          { scope }
-        )
-      }
-    } catch {
-      // Ignorar errores al cerrar sesión si el token ya expiró
-    } finally {
-      authService.clearSession()
-    }
-
+  async signOut(_scope: SignOutScope = 'LOCAL' as SignOutScope): Promise<boolean> {
+    authService.clearSession()
     return true
   },
 
@@ -278,27 +147,5 @@ export const authService = {
     localStorage.removeItem(SESSION_STORAGE_KEY)
     localStorage.removeItem(USER_STORAGE_KEY)
     document.cookie = 'foundly_access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT'
-  }
-}
-
-/**
- * Mapeo de códigos de error de backend a mensajes amigables para el usuario.
- */
-function mapAuthErrorMessage(code?: string, originalMessage?: string): string {
-  switch (code) {
-    case 'INVALID_CREDENTIALS':
-      return 'Correo electrónico o contraseña incorrectos.'
-    case 'EMAIL_NOT_CONFIRMED':
-      return 'Tu cuenta aún no ha sido verificada. Revisa tu correo electrónico para confirmarla.'
-    case 'ACCOUNT_NOT_PROVISIONED':
-      return 'La cuenta no cuenta con un espacio de trabajo o empresa configurada.'
-    case 'FORBIDDEN':
-      return 'Tu empresa se encuentra inactiva o suspendida. Contacta a soporte.'
-    case 'RATE_LIMITED':
-      return 'Demasiados intentos fallidos. Por favor, espera un minuto antes de reintentar.'
-    case 'NETWORK_ERROR':
-      return 'No fue posible conectar con el servidor de autenticación. Verifica tu conexión.'
-    default:
-      return originalMessage || 'Error al autenticar con el servidor.'
   }
 }

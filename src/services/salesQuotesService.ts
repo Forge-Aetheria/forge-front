@@ -82,7 +82,6 @@ class SalesQuotesService {
 
   // Tasa BCV Oficial
   public async getActiveBcvRate(): Promise<BcvRate> {
-    await new Promise(r => setTimeout(r, 120));
     return { ...this.bcvRate };
   }
 
@@ -97,7 +96,6 @@ class SalesQuotesService {
 
   // Búsqueda de Clientes Desacoplada
   public async searchClients(query: string): Promise<ClientLookup[]> {
-    await new Promise(r => setTimeout(r, 200));
     const q = query.toLowerCase().trim();
     if (!q) return this.clients.slice(0, 5);
 
@@ -112,7 +110,6 @@ class SalesQuotesService {
 
   // Catálogo de Productos Desacoplado
   public async getProducts(): Promise<ProductLookup[]> {
-    await new Promise(r => setTimeout(r, 150));
     return [...this.products];
   }
 
@@ -187,7 +184,6 @@ class SalesQuotesService {
 
   // Listar Cotizaciones con Filtros (HU2)
   public async getQuotes(filters?: QuotesFilterState): Promise<Quote[]> {
-    await new Promise(r => setTimeout(r, 220));
     let result = [...this.quotes];
 
     if (filters) {
@@ -221,14 +217,12 @@ class SalesQuotesService {
 
   // Obtener por ID
   public async getQuoteById(id: string): Promise<Quote | null> {
-    await new Promise(r => setTimeout(r, 180));
     const found = this.quotes.find(q => q.id === id);
     return found ? { ...found } : null;
   }
 
   // Crear Cotización (HU1)
   public async createQuote(payload: CreateQuotePayload): Promise<Quote> {
-    await new Promise(r => setTimeout(r, 350));
     const client = this.clients.find(c => c.id === payload.cliente_id);
     if (!client) {
       throw new Error('El cliente seleccionado no existe o no es válido.');
@@ -326,7 +320,6 @@ class SalesQuotesService {
 
   // Actualizar Cotización (Borrador)
   public async updateQuote(id: string, payload: Partial<CreateQuotePayload>): Promise<Quote> {
-    await new Promise(r => setTimeout(r, 300));
     const idx = this.quotes.findIndex(q => q.id === id);
     if (idx === -1) throw new Error('Cotización no encontrada.');
 
@@ -424,7 +417,6 @@ class SalesQuotesService {
 
   // Aprobar Cotización (HU3)
   public async approveQuote(id: string): Promise<Quote> {
-    await new Promise(r => setTimeout(r, 250));
     const idx = this.quotes.findIndex(q => q.id === id);
     if (idx === -1) throw new Error('Cotización no encontrada.');
 
@@ -454,7 +446,6 @@ class SalesQuotesService {
 
   // Recalcular con Nueva Tasa BCV (HU3)
   public async recalculateQuoteBcvRate(id: string): Promise<Quote> {
-    await new Promise(r => setTimeout(r, 300));
     const idx = this.quotes.findIndex(q => q.id === id);
     if (idx === -1) throw new Error('Cotización no encontrada.');
 
@@ -496,7 +487,6 @@ class SalesQuotesService {
 
   // Anular Cotización con Motivo Obligatorio (HU4)
   public async cancelQuote(id: string, motivo: string): Promise<Quote> {
-    await new Promise(r => setTimeout(r, 250));
     if (!motivo || motivo.trim().length < 5) {
       throw new Error('Debe proporcionar un motivo de anulación de al menos 5 caracteres.');
     }
@@ -519,7 +509,6 @@ class SalesQuotesService {
 
   // Convertir a Orden de Venta y Comprometer Inventario (HU5)
   public async convertQuoteToSalesOrder(id: string): Promise<SalesOrderConversionResponse> {
-    await new Promise(r => setTimeout(r, 450));
     const idx = this.quotes.findIndex(q => q.id === id);
     if (idx === -1) throw new Error('Cotización no encontrada.');
 
@@ -586,7 +575,6 @@ class SalesQuotesService {
 
   // Crear Orden de Despacho / Entrega vinculada en Almacén (SPEC-009)
   public async createDeliveryForQuote(quoteId: string): Promise<{ success: boolean; codigo: string; operationId: string; message: string }> {
-    await new Promise(r => setTimeout(r, 300));
     const idx = this.quotes.findIndex(q => q.id === quoteId);
     if (idx === -1) throw new Error('Cotización no encontrada.');
 

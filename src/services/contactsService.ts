@@ -5,7 +5,6 @@ class ContactsService {
   private terceros: TerceroEntity[] = [...initialMockTerceros];
 
   public async getTerceros(filters?: ContactsFilterState): Promise<TerceroEntity[]> {
-    await new Promise(r => setTimeout(r, 250)); // Simulación de carga fluida
     let result = this.terceros.filter(t => t.status === 'ACTIVO');
 
     if (filters) {
@@ -73,14 +72,12 @@ class ContactsService {
   }
 
   public async getTerceroById(id: string): Promise<TerceroEntity | null> {
-    await new Promise(r => setTimeout(r, 150));
     const realId = id.split('__ref__')[0];
     const item = this.terceros.find(t => t.id === realId && t.status === 'ACTIVO');
     return item || null;
   }
 
   public async createTercero(data: TerceroFormData): Promise<TerceroEntity> {
-    await new Promise(r => setTimeout(r, 350));
     const newTercero: TerceroEntity = {
       id: `ter-${Date.now()}`,
       origen: data.origen || 'NACIONAL',
@@ -94,7 +91,6 @@ class ContactsService {
   }
 
   public async updateTercero(id: string, data: Partial<TerceroFormData>): Promise<TerceroEntity> {
-    await new Promise(r => setTimeout(r, 350));
     const realId = id.split('__ref__')[0];
     const index = this.terceros.findIndex(t => t.id === realId);
     if (index === -1) throw new Error('Entidad no encontrada');
@@ -107,7 +103,6 @@ class ContactsService {
   }
 
   public async deactivateTercero(id: string): Promise<void> {
-    await new Promise(r => setTimeout(r, 200));
     const realId = id.split('__ref__')[0];
     const index = this.terceros.findIndex(t => t.id === realId);
     if (index !== -1) {
@@ -117,7 +112,6 @@ class ContactsService {
   }
 
   public async deactivateMultipleTerceros(ids: string[]): Promise<void> {
-    await new Promise(r => setTimeout(r, 250));
     const idSet = new Set(ids.map(id => id.split('__ref__')[0]));
     this.terceros.forEach(t => {
       if (idSet.has(t.id)) {

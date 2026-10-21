@@ -220,7 +220,6 @@ class BankAccountsService {
     moneda?: string
     tipo?: string
   }): Promise<BankAccount[]> {
-    await new Promise(r => setTimeout(r, 100))
     let list = this.getStored().filter(acc => acc.status === 'ACTIVO')
 
     if (filters) {
@@ -268,7 +267,6 @@ class BankAccountsService {
   }
 
   public async createBankAccount(data: Omit<BankAccount, 'id' | 'status' | 'created_at' | 'updated_at'>): Promise<BankAccount> {
-    await new Promise(r => setTimeout(r, 150))
     const list = this.getStored()
 
     // Si viene marcada como predeterminada, quitar predeterminada previa en el mismo contacto o empresa
@@ -296,7 +294,6 @@ class BankAccountsService {
   }
 
   public async updateBankAccount(id: string, data: Partial<BankAccount>): Promise<BankAccount> {
-    await new Promise(r => setTimeout(r, 150))
     const list = this.getStored()
     const idx = list.findIndex(a => a.id === id)
     if (idx === -1) throw new Error('Cuenta bancaria no encontrada')
@@ -323,7 +320,6 @@ class BankAccountsService {
   }
 
   public async deleteBankAccount(id: string): Promise<void> {
-    await new Promise(r => setTimeout(r, 100))
     const list = this.getStored()
     const filtered = list.filter(a => a.id !== id)
     this.setStored(filtered)

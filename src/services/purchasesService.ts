@@ -85,7 +85,6 @@ class PurchasesService {
 
   // Tasa BCV Oficial (Sincronizada por CRON diario 7:00 AM)
   public async getActiveBcvRate(): Promise<BcvRate> {
-    await new Promise(r => setTimeout(r, 100))
     return { ...this.bcvRate }
   }
 
@@ -101,7 +100,6 @@ class PurchasesService {
 
   // Adaptador Desacoplado: GET /api/suppliers?search= (o /api/terceros?rol=PROVEEDOR)
   public async searchSuppliers(query: string): Promise<SupplierLookup[]> {
-    await new Promise(r => setTimeout(r, 180))
     const q = query.toLowerCase().trim()
     const activeSuppliers = this.suppliers.filter(s => s.rol_proveedor_activo)
     if (!q) return activeSuppliers
@@ -116,13 +114,11 @@ class PurchasesService {
   }
 
   public async getSuppliers(): Promise<SupplierLookup[]> {
-    await new Promise(r => setTimeout(r, 100))
     return [...this.suppliers]
   }
 
   // Adaptador Desacoplado: GET /api/products
   public async getPurchaseProducts(): Promise<PurchaseProductLookup[]> {
-    await new Promise(r => setTimeout(r, 140))
     return [...this.products]
   }
 
@@ -249,7 +245,6 @@ class PurchasesService {
   // HU2: Consultar y Listar Compras (GET /api/purchases/quotes)
   public async getPurchaseQuotes(filters?: PurchasesFilterState): Promise<PurchaseQuote[]> {
     this.hydrateFromStorage()
-    await new Promise(r => setTimeout(r, 200))
     let result = [...this.quotes]
 
     if (filters) {
@@ -285,14 +280,12 @@ class PurchasesService {
   // HU2: Obtener Detalle por ID (GET /api/purchases/quotes/{id})
   public async getPurchaseQuoteById(id: string): Promise<PurchaseQuote | null> {
     this.hydrateFromStorage()
-    await new Promise(r => setTimeout(r, 150))
     const found = this.quotes.find(q => q.id === id)
     return found ? { ...found } : null
   }
 
   // HU1: Crear Solicitud de Cotización / Presupuesto de Compra (POST /api/purchases/quotes)
   public async createPurchaseQuote(payload: CreatePurchaseQuotePayload): Promise<PurchaseQuote> {
-    await new Promise(r => setTimeout(r, 320))
     const flags = this.getFeatureFlags()
 
     const supplier = this.suppliers.find(s => s.id === payload.proveedor_id)
@@ -411,7 +404,6 @@ class PurchasesService {
 
   // Actualizar Solicitud existente en DRAFT o RFQ_SENT
   public async updatePurchaseQuote(id: string, payload: CreatePurchaseQuotePayload): Promise<PurchaseQuote> {
-    await new Promise(r => setTimeout(r, 300))
     const idx = this.quotes.findIndex(q => q.id === id)
     if (idx === -1) {
       throw new Error('La solicitud de compra no existe.')
@@ -518,7 +510,6 @@ class PurchasesService {
 
   // HU3: Recalcular con nueva tasa BCV y renovar vigencia (EARS-EV-09)
   public async recalculatePurchaseQuoteBcv(id: string): Promise<PurchaseQuote> {
-    await new Promise(r => setTimeout(r, 260))
     const idx = this.quotes.findIndex(q => q.id === id)
     if (idx === -1) {
       throw new Error('Solicitud de compra no encontrada.')
@@ -564,7 +555,6 @@ class PurchasesService {
 
   // HU3: Aprobar Presupuesto de Compra (PUT /api/purchases/quotes/{id}/status)
   public async approvePurchaseQuote(id: string): Promise<PurchaseQuote> {
-    await new Promise(r => setTimeout(r, 280))
     const idx = this.quotes.findIndex(q => q.id === id)
     if (idx === -1) {
       throw new Error('Solicitud de compra no encontrada.')
@@ -599,7 +589,6 @@ class PurchasesService {
 
   // HU4: Anular Solicitud/Orden de Compra (PUT /api/purchases/quotes/{id}/cancel - Soft Delete)
   public async cancelPurchaseQuote(id: string, motivo_anulacion: string): Promise<PurchaseQuote> {
-    await new Promise(r => setTimeout(r, 280))
     if (!motivo_anulacion || motivo_anulacion.trim().length < 5) {
       throw new Error('El motivo de anulación es obligatorio (mínimo 5 caracteres).')
     }
@@ -624,7 +613,6 @@ class PurchasesService {
 
   // HU5: Convertir a Orden de Compra en Firme (POST /api/purchases/orders/from-quote/{quote_id})
   public async convertQuoteToPurchaseOrder(quoteId: string): Promise<PurchaseOrderConversionResponse> {
-    await new Promise(r => setTimeout(r, 380))
     const idx = this.quotes.findIndex(q => q.id === quoteId)
     if (idx === -1) {
       throw new Error('La solicitud de compra no existe.')
@@ -708,7 +696,6 @@ class PurchasesService {
 
   // Crear Orden de Recepción vinculada en Almacén (SPEC-009)
   public async createReceptionForPurchase(purchaseId: string): Promise<{ success: boolean; codigo: string; operationId: string; message: string }> {
-    await new Promise(r => setTimeout(r, 300))
     const idx = this.quotes.findIndex(q => q.id === purchaseId)
     if (idx === -1) throw new Error('Orden de compra no encontrada.')
 
