@@ -43,6 +43,27 @@ export interface BackendPartner {
   updatedAt: string;
 }
 
+const RIF_PREFIX_VALUES: Record<string, number> = {
+  V: 1,
+  E: 2,
+  J: 3,
+  P: 4,
+  G: 5,
+  C: 3
+};
+const RIF_WEIGHTS = [3, 2, 7, 6, 5, 4, 3, 2];
+
+function computeRifCheckDigit(docType: string, body: string): string {
+  const prefixVal = RIF_PREFIX_VALUES[docType] || 3;
+  let sum = prefixVal * 4;
+  const padded = body.padStart(8, '0');
+  for (let i = 0; i < 8; i++) {
+    sum += Number(padded[i]) * RIF_WEIGHTS[i];
+  }
+  const digit = 11 - (sum % 11);
+  return digit >= 10 ? '0' : String(digit);
+}
+
 export function mapBackendPartnerToTercero(partner: BackendPartner): TerceroEntity {
   const isIndividual = partner.docType === 'V' || partner.docType === 'E';
   const docFormatted = partner.checkDigit
@@ -108,9 +129,7 @@ class ContactsService {
 
         if (res?.partners && Array.isArray(res.partners)) {
           const mappedPartners = res.partners.map(mapBackendPartnerToTercero);
-          // Si el backend tiene datos, actualizamos el almacén en memoria
           if (mappedPartners.length > 0) {
-            // Mantener cualquier tercero local que no esté en backend
             const backendIds = new Set(mappedPartners.map(p => p.id));
             const localOnly = this.terceros.filter(t => !backendIds.has(t.id) && t.id.startsWith('ter-'));
             this.terceros = [...mappedPartners, ...localOnly];
@@ -213,27 +232,44 @@ class ContactsService {
   }
 
   public async createTercero(data: TerceroFormData): Promise<TerceroEntity> {
-    // Extraer docType y docNumber del formato SENIAT (ej. J-12345678-9)
-    const cleanId = data.identificacion.replace(/[.-]/g, '');
-    const docTypeMatch = data.identificacion.match(/^([VvEeJjGgCcPp])/);
-    const docType = docTypeMatch ? docTypeMatch[1].toUpperCase() : 'J';
-    const digitsOnly = cleanId.replace(/^[A-Za-z]/, '');
-    const docNumber = digitsOnly.slice(0, 8) || '12345678';
-    const checkDigit = digitsOnly.length > 8 ? digitsOnly.slice(8, 9) : (['J', 'G', 'C'].includes(docType) ? '0' : undefined);
+    // Normalizar docType y docNumber del formato SENIAT (ej. J-12345678-9)
+    const cleanId = data.identificacion.replace(/[\s.\-_/]/g, '').toUpperCase();
+    const docTypeMatch = cleanId.match(/^([VEJPGC])/);
+    const docType = docTypeMatch ? docTypeMatch[1] : (data.tipo === 'INDIVIDUAL' ? 'V' : 'J');
+    const digitsOnly = cleanId.replace(/^[A-Z]/, '');
+    const docNumber = digitsOnly.slice(0, 8).padStart(8, '0');
+
+    // Calcular dígito verificador exacto SENIAT (módulo 11) si aplica
+    let checkDigit: string | undefined = undefined;
+    if (['J', 'G', 'C'].includes(docType)) {
+      checkDigit = computeRifCheckDigit(docType, docNumber);
+    } else if (digitsOnly.length > 8) {
+      checkDigit = digitsOnly.slice(8, 9);
+    }
+
+    // Regla de Negocio BR-02 del backend:
+    // Si la condición es CASH (contado), días y límite DEBEN ser estrictamente 0.
+    // Si tiene días > 0 o límite > 0, la condición comercial DEBE ser CREDIT (crédito).
+    const creditDaysNum = Number(data.plazo_pago_dias || 0);
+    const creditLimitNum = Number(data.limite_credito_usd || 0);
+    const hasCredit = creditDaysNum > 0 || creditLimitNum > 0;
+    const paymentCondition = hasCredit ? 'CREDIT' : 'CASH';
+    const finalCreditDays = hasCredit ? creditDaysNum : 0;
+    const finalCreditLimit = hasCredit ? String(creditLimitNum) : '0';
 
     try {
       const input = {
         docType,
         docNumber,
         checkDigit,
-        legalName: data.nombre_razon_social,
-        fiscalAddress: data.direccion || 'Caracas, Venezuela',
-        phone: data.telefono_principal || '04140000000',
-        email: data.email_principal || 'contacto@empresa.com',
+        legalName: data.nombre_razon_social.trim(),
+        fiscalAddress: data.direccion?.trim() || 'Caracas, Venezuela',
+        phone: data.telefono_principal?.trim() || '04140000000',
+        email: data.email_principal?.trim() || 'contacto@empresa.com',
         customerProfile: data.is_cliente ? {
-          paymentCondition: 'CASH',
-          creditDays: data.plazo_pago_dias || 0,
-          creditLimit: String(data.limite_credito_usd || 0),
+          paymentCondition,
+          creditDays: finalCreditDays,
+          creditLimit: finalCreditLimit,
           currency: 'USD'
         } : undefined
       };
