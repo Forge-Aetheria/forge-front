@@ -98,3 +98,24 @@ export const CREATE_PARTNER_MUTATION = `
   }
 `
 
+export const UPDATE_PARTNER_MUTATION = `
+  mutation UpdatePartner($id: ID!, $input: UpdatePartnerInput!) {
+    updatePartner(id: $id, input: $input) {
+      id
+      legalName
+      tradeName
+      docType
+      docNumber
+      checkDigit
+      email
+      phone
+      fiscalAddress
+      status
+      isCustomer
+      isSupplier
+      updatedAt
+    }
+  }
+`
+
+

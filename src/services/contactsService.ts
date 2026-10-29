@@ -1,7 +1,12 @@
 import { TerceroEntity, TerceroFormData, ContactsFilterState, ContactPerson } from '@/types/contactsTypes';
 import { initialMockTerceros } from '@/data/contacts/mockContactsData';
 import { executeGraphQL } from '@/libs/graphqlClient';
-import { GET_PARTNERS_QUERY, GET_PARTNER_QUERY, CREATE_PARTNER_MUTATION } from '@/graphql/contacts.gql';
+import {
+  GET_PARTNERS_QUERY,
+  GET_PARTNER_QUERY,
+  CREATE_PARTNER_MUTATION,
+  UPDATE_PARTNER_MUTATION
+} from '@/graphql/contacts.gql';
 
 export interface BackendPartner {
   id: string;
@@ -257,53 +262,68 @@ class ContactsService {
     const finalCreditDays = hasCredit ? creditDaysNum : 0;
     const finalCreditLimit = hasCredit ? String(creditLimitNum) : '0';
 
-    try {
-      const input = {
-        docType,
-        docNumber,
-        checkDigit,
-        legalName: data.nombre_razon_social.trim(),
-        fiscalAddress: data.direccion?.trim() || 'Caracas, Venezuela',
-        phone: data.telefono_principal?.trim() || '04140000000',
-        email: data.email_principal?.trim() || 'contacto@empresa.com',
-        customerProfile: data.is_cliente ? {
-          paymentCondition,
-          creditDays: finalCreditDays,
-          creditLimit: finalCreditLimit,
-          currency: 'USD'
-        } : undefined
-      };
+    const input = {
+      docType,
+      docNumber,
+      checkDigit,
+      legalName: data.nombre_razon_social.trim(),
+      fiscalAddress: data.direccion?.trim() || 'Caracas, Venezuela',
+      phone: data.telefono_principal?.trim() || '04140000000',
+      email: data.email_principal?.trim() || 'contacto@empresa.com',
+      customerProfile: data.is_cliente ? {
+        paymentCondition,
+        creditDays: finalCreditDays,
+        creditLimit: finalCreditLimit,
+        currency: 'USD'
+      } : undefined
+    };
 
-      const res = await executeGraphQL<{ createPartner: BackendPartner }>(
-        CREATE_PARTNER_MUTATION,
-        { input },
-        { timeoutMs: 6000 }
-      );
+    // Llamada directa al backend: SI FALLA, LANZAR EL ERROR DIRECTO A LA UI
+    const res = await executeGraphQL<{ createPartner: BackendPartner }>(
+      CREATE_PARTNER_MUTATION,
+      { input },
+      { timeoutMs: 10000 }
+    );
 
-      if (res?.createPartner) {
-        const mapped = mapBackendPartnerToTercero(res.createPartner);
-        this.terceros.unshift(mapped);
-        return mapped;
-      }
-    } catch (err) {
-      console.warn('[contactsService] No se pudo crear en backend, guardando localmente:', err);
+    if (res?.createPartner) {
+      const mapped = mapBackendPartnerToTercero(res.createPartner);
+      this.terceros.unshift(mapped);
+      return mapped;
     }
 
-    // Fallback local
-    const newTercero: TerceroEntity = {
-      id: `ter-${Date.now()}`,
-      origen: data.origen || 'NACIONAL',
-      ...data,
-      status: 'ACTIVO',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    };
-    this.terceros.unshift(newTercero);
-    return newTercero;
+    throw new Error('El backend no devolvió los datos del tercero creado.');
   }
 
   public async updateTercero(id: string, data: Partial<TerceroFormData>): Promise<TerceroEntity> {
     const realId = id.split('__ref__')[0];
+    const isUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(realId);
+
+    if (isUuid) {
+      const input: Record<string, unknown> = {};
+      if (data.nombre_razon_social) input.legalName = data.nombre_razon_social.trim();
+      if (data.direccion) input.fiscalAddress = data.direccion.trim();
+      if (data.telefono_principal) input.phone = data.telefono_principal.trim();
+      if (data.email_principal) input.email = data.email_principal.trim();
+
+      const res = await executeGraphQL<{ updatePartner: BackendPartner }>(
+        UPDATE_PARTNER_MUTATION,
+        { id: realId, input },
+        { timeoutMs: 10000 }
+      );
+
+      if (res?.updatePartner) {
+        const mapped = mapBackendPartnerToTercero(res.updatePartner);
+        const index = this.terceros.findIndex(t => t.id === realId);
+        if (index !== -1) {
+          this.terceros[index] = mapped;
+        } else {
+          this.terceros.unshift(mapped);
+        }
+        return mapped;
+      }
+    }
+
+    // Si es un ID local
     const index = this.terceros.findIndex(t => t.id === realId);
     if (index === -1) throw new Error('Entidad no encontrada');
     this.terceros[index] = {

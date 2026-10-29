@@ -569,52 +569,51 @@ class SalesQuotesService {
       throw new Error('Debe agregar al menos una línea de producto o servicio.');
     }
 
+    const isUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(payload.cliente_id);
+
+    // Si es un cliente real del backend, enviamos la mutación directa (sin fallback silencioso ante errores)
+    if (isUuid) {
+      const dueDate = new Date(Date.now() + payload.vigencia_dias * 24 * 60 * 60 * 1000).toISOString();
+      const gqlLines = payload.items.map(it => {
+        const rawLine = it.precio_unitario * it.cantidad;
+        const disc = (rawLine * (it.descuento_porcentaje || 0)) / 100;
+        return {
+          variantId: it.producto_id,
+          quantity: String(it.cantidad),
+          unitPrice: String(it.precio_unitario),
+          itemDiscount: disc > 0 ? String(disc) : undefined
+        };
+      });
+
+      const res = await executeGraphQL<{ createSalesQuote: BackendSalesQuote }>(
+        CREATE_SALES_QUOTE_MUTATION,
+        {
+          input: {
+            customerId: payload.cliente_id,
+            validUntil: dueDate,
+            notes: payload.observaciones || undefined,
+            lines: gqlLines
+          }
+        },
+        { timeoutMs: 10000 }
+      );
+
+      if (res?.createSalesQuote) {
+        const finalQuote = this.mapBackendQuoteToFrontend(res.createSalesQuote);
+        finalQuote.cliente = client;
+        this.quotes.unshift(finalQuote);
+        this.persistToStorage();
+        return finalQuote;
+      }
+
+      throw new Error('El backend no retornó los datos de la cotización creada.');
+    }
+
+    // Si es un cliente simulado local (mock)
     const flags = this.getFeatureFlags();
     const tasa = this.bcvRate.tasa;
     const aplicaIva = payload.aplica_iva ?? true;
 
-    // Intentar crear en backend si el cliente_id es un UUID válido de Partner
-    const isUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(payload.cliente_id);
-    if (isUuid) {
-      try {
-        const dueDate = new Date(Date.now() + payload.vigencia_dias * 24 * 60 * 60 * 1000).toISOString();
-        const gqlLines = payload.items.map(it => {
-          const rawLine = it.precio_unitario * it.cantidad;
-          const disc = (rawLine * (it.descuento_porcentaje || 0)) / 100;
-          return {
-            variantId: it.producto_id,
-            quantity: String(it.cantidad),
-            unitPrice: String(it.precio_unitario),
-            itemDiscount: disc > 0 ? String(disc) : undefined
-          };
-        });
-
-        const res = await executeGraphQL<{ createSalesQuote: BackendSalesQuote }>(
-          CREATE_SALES_QUOTE_MUTATION,
-          {
-            input: {
-              customerId: payload.cliente_id,
-              validUntil: dueDate,
-              notes: payload.observaciones || undefined,
-              lines: gqlLines
-            }
-          },
-          { timeoutMs: 7000 }
-        );
-
-        if (res?.createSalesQuote) {
-          const finalQuote = this.mapBackendQuoteToFrontend(res.createSalesQuote);
-          finalQuote.cliente = client;
-          this.quotes.unshift(finalQuote);
-          this.persistToStorage();
-          return finalQuote;
-        }
-      } catch (err) {
-        console.warn('[salesQuotesService] Backend createSalesQuote falló, guardando localmente:', err);
-      }
-    }
-
-    // Fallback local habitual
     const lines: QuoteLine[] = payload.items.map((it, idx) => {
       const prod = this.products.find(p => p.id === it.producto_id);
       const isPhysical = prod ? prod.is_physical_stock : true;
@@ -799,35 +798,30 @@ class SalesQuotesService {
   public async approveQuote(id: string): Promise<Quote> {
     const isUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(id);
     if (isUuid) {
-      try {
-        const idempotencyKey = generateUUID();
-        const res = await executeGraphQL<{ approveSalesQuote: { id: string; number: number; status: string } }>(
-          APPROVE_SALES_QUOTE_MUTATION,
-          { input: { quoteId: id, idempotencyKey } },
-          { timeoutMs: 7000 }
-        );
+      const idempotencyKey = generateUUID();
+      const res = await executeGraphQL<{ approveSalesQuote: { id: string; number: number; status: string } }>(
+        APPROVE_SALES_QUOTE_MUTATION,
+        { input: { quoteId: id, idempotencyKey } },
+        { timeoutMs: 10000 }
+      );
 
-        if (res?.approveSalesQuote) {
-          const ord = res.approveSalesQuote;
-          const idx = this.quotes.findIndex(q => q.id === id);
-          if (idx !== -1) {
-            this.quotes[idx] = {
-              ...this.quotes[idx],
-              estado: 'APPROVED',
-              orden_venta_id: ord.id,
-              correlativo_orden: `ORD-2026-${String(ord.number).padStart(4, '0')}`,
-              updated_at: new Date().toISOString()
-            };
-            this.persistToStorage();
-            return { ...this.quotes[idx] };
-          }
-        }
-      } catch (err) {
-        console.warn('[salesQuotesService] Backend approveSalesQuote falló, evaluando fallback local:', err);
-        if (err instanceof Error && !err.message.includes('fetch') && !err.message.includes('HTTP')) {
-          throw err;
+      if (res?.approveSalesQuote) {
+        const ord = res.approveSalesQuote;
+        const idx = this.quotes.findIndex(q => q.id === id);
+        if (idx !== -1) {
+          this.quotes[idx] = {
+            ...this.quotes[idx],
+            estado: 'APPROVED',
+            orden_venta_id: ord.id,
+            correlativo_orden: `ORD-2026-${String(ord.number).padStart(4, '0')}`,
+            updated_at: new Date().toISOString()
+          };
+          this.persistToStorage();
+          return { ...this.quotes[idx] };
         }
       }
+
+      throw new Error('No se pudo confirmar la aprobación de la cotización en el servidor.');
     }
 
     const idx = this.quotes.findIndex(q => q.id === id);
@@ -906,25 +900,18 @@ class SalesQuotesService {
 
     const isUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(id);
     if (isUuid) {
-      try {
-        const idempotencyKey = generateUUID();
-        await executeGraphQL(
-          CANCEL_SALES_QUOTE_MUTATION,
-          {
-            input: {
-              quoteId: id,
-              reason: motivo.trim(),
-              idempotencyKey
-            }
-          },
-          { timeoutMs: 7000 }
-        );
-      } catch (err) {
-        console.warn('[salesQuotesService] Backend cancelSalesQuote falló, evaluando fallback local:', err);
-        if (err instanceof Error && !err.message.includes('fetch') && !err.message.includes('HTTP')) {
-          throw err;
-        }
-      }
+      const idempotencyKey = generateUUID();
+      await executeGraphQL(
+        CANCEL_SALES_QUOTE_MUTATION,
+        {
+          input: {
+            quoteId: id,
+            reason: motivo.trim(),
+            idempotencyKey
+          }
+        },
+        { timeoutMs: 10000 }
+      );
     }
 
     const idx = this.quotes.findIndex(q => q.id === id);
