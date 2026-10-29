@@ -1,10 +1,127 @@
-import { TerceroEntity, TerceroFormData, ContactsFilterState } from '@/types/contactsTypes';
+import { TerceroEntity, TerceroFormData, ContactsFilterState, ContactPerson } from '@/types/contactsTypes';
 import { initialMockTerceros } from '@/data/contacts/mockContactsData';
+import { executeGraphQL } from '@/libs/graphqlClient';
+import { GET_PARTNERS_QUERY, GET_PARTNER_QUERY, CREATE_PARTNER_MUTATION } from '@/graphql/contacts.gql';
+
+export interface BackendPartner {
+  id: string;
+  legalName: string;
+  tradeName?: string | null;
+  docType: string;
+  docNumber: string;
+  checkDigit?: string | null;
+  email: string;
+  phone: string;
+  fiscalAddress: string;
+  status: string;
+  isCustomer: boolean;
+  isSupplier: boolean;
+  customerProfile?: {
+    paymentCondition?: string;
+    creditLimit?: string;
+    creditDays?: number;
+    currency?: string;
+  } | null;
+  contacts?: Array<{
+    id: string;
+    name: string;
+    email?: string | null;
+    phone?: string | null;
+    position?: string | null;
+    isPrimary?: boolean | null;
+  }> | null;
+  bankAccounts?: Array<{
+    id: string;
+    accountNumber: string;
+    bank?: {
+      id: string;
+      name: string;
+      code: string;
+    } | null;
+  }> | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export function mapBackendPartnerToTercero(partner: BackendPartner): TerceroEntity {
+  const isIndividual = partner.docType === 'V' || partner.docType === 'E';
+  const docFormatted = partner.checkDigit
+    ? `${partner.docType}-${partner.docNumber}-${partner.checkDigit}`
+    : `${partner.docType}-${partner.docNumber}`;
+
+  const contactos: ContactPerson[] = (partner.contacts || []).map((c, idx) => ({
+    id: c.id || `cp-${idx}`,
+    nombre: c.name,
+    cargo: c.position || 'Contacto Comercial',
+    telefono: c.phone || '',
+    email: c.email || '',
+    rol: 'VENTAS',
+    is_principal: Boolean(c.isPrimary)
+  }));
+
+  return {
+    id: partner.id,
+    codigo: partner.docNumber,
+    origen: 'NACIONAL',
+    tipo: isIndividual ? 'INDIVIDUAL' : 'EMPRESA',
+    nombre_razon_social: partner.legalName,
+    nombre_comercial: partner.tradeName || partner.legalName,
+    identificacion: docFormatted,
+    is_cliente: partner.isCustomer,
+    is_proveedor: partner.isSupplier,
+    is_contacto: true,
+    telefono_principal: partner.phone || '',
+    email_principal: partner.email || '',
+    direccion: partner.fiscalAddress || '',
+    ciudad: 'Caracas',
+    estado: 'Distrito Capital',
+    pais: 'Venezuela',
+    contactos_referentes: contactos,
+    direcciones_adicionales: [],
+    limite_credito_usd: partner.customerProfile?.creditLimit ? Number(partner.customerProfile.creditLimit) : 0,
+    plazo_pago_dias: partner.customerProfile?.creditDays || 0,
+    status: partner.status === 'INACTIVE' ? 'INACTIVO' : 'ACTIVO',
+    created_at: partner.createdAt,
+    updated_at: partner.updatedAt
+  };
+}
 
 class ContactsService {
   private terceros: TerceroEntity[] = [...initialMockTerceros];
+  private lastFetchTimestamp = 0;
 
-  public async getTerceros(filters?: ContactsFilterState): Promise<TerceroEntity[]> {
+  public async getTerceros(filters?: Partial<ContactsFilterState>, forceRefresh = false): Promise<TerceroEntity[]> {
+    const now = Date.now();
+    // Cache de 15 segundos para evitar saturación de queries
+    if (forceRefresh || now - this.lastFetchTimestamp > 15000) {
+      try {
+        const res = await executeGraphQL<{ partners: BackendPartner[] }>(
+          GET_PARTNERS_QUERY,
+          {
+            where: {
+              deletedAt: { equals: null }
+            },
+            take: 100
+          },
+          { timeoutMs: 5000 }
+        );
+
+        if (res?.partners && Array.isArray(res.partners)) {
+          const mappedPartners = res.partners.map(mapBackendPartnerToTercero);
+          // Si el backend tiene datos, actualizamos el almacén en memoria
+          if (mappedPartners.length > 0) {
+            // Mantener cualquier tercero local que no esté en backend
+            const backendIds = new Set(mappedPartners.map(p => p.id));
+            const localOnly = this.terceros.filter(t => !backendIds.has(t.id) && t.id.startsWith('ter-'));
+            this.terceros = [...mappedPartners, ...localOnly];
+          }
+          this.lastFetchTimestamp = now;
+        }
+      } catch (err) {
+        console.warn('[contactsService] Backend partners no disponible, usando caché local:', err);
+      }
+    }
+
     let result = this.terceros.filter(t => t.status === 'ACTIVO');
 
     if (filters) {
@@ -73,11 +190,70 @@ class ContactsService {
 
   public async getTerceroById(id: string): Promise<TerceroEntity | null> {
     const realId = id.split('__ref__')[0];
-    const item = this.terceros.find(t => t.id === realId && t.status === 'ACTIVO');
-    return item || null;
+    const cached = this.terceros.find(t => t.id === realId && t.status === 'ACTIVO');
+    if (cached) return cached;
+
+    // Intentar buscar en backend por UUID
+    try {
+      const res = await executeGraphQL<{ partner: BackendPartner }>(
+        GET_PARTNER_QUERY,
+        { id: realId },
+        { timeoutMs: 4000 }
+      );
+      if (res?.partner) {
+        const mapped = mapBackendPartnerToTercero(res.partner);
+        this.terceros.unshift(mapped);
+        return mapped;
+      }
+    } catch {
+      // Ignorar error y retornar null
+    }
+
+    return null;
   }
 
   public async createTercero(data: TerceroFormData): Promise<TerceroEntity> {
+    // Extraer docType y docNumber del formato SENIAT (ej. J-12345678-9)
+    const cleanId = data.identificacion.replace(/[.-]/g, '');
+    const docTypeMatch = data.identificacion.match(/^([VvEeJjGgCcPp])/);
+    const docType = docTypeMatch ? docTypeMatch[1].toUpperCase() : 'J';
+    const digitsOnly = cleanId.replace(/^[A-Za-z]/, '');
+    const docNumber = digitsOnly.slice(0, 8) || '12345678';
+    const checkDigit = digitsOnly.length > 8 ? digitsOnly.slice(8, 9) : (['J', 'G', 'C'].includes(docType) ? '0' : undefined);
+
+    try {
+      const input = {
+        docType,
+        docNumber,
+        checkDigit,
+        legalName: data.nombre_razon_social,
+        fiscalAddress: data.direccion || 'Caracas, Venezuela',
+        phone: data.telefono_principal || '04140000000',
+        email: data.email_principal || 'contacto@empresa.com',
+        customerProfile: data.is_cliente ? {
+          paymentCondition: 'CASH',
+          creditDays: data.plazo_pago_dias || 0,
+          creditLimit: String(data.limite_credito_usd || 0),
+          currency: 'USD'
+        } : undefined
+      };
+
+      const res = await executeGraphQL<{ createPartner: BackendPartner }>(
+        CREATE_PARTNER_MUTATION,
+        { input },
+        { timeoutMs: 6000 }
+      );
+
+      if (res?.createPartner) {
+        const mapped = mapBackendPartnerToTercero(res.createPartner);
+        this.terceros.unshift(mapped);
+        return mapped;
+      }
+    } catch (err) {
+      console.warn('[contactsService] No se pudo crear en backend, guardando localmente:', err);
+    }
+
+    // Fallback local
     const newTercero: TerceroEntity = {
       id: `ter-${Date.now()}`,
       origen: data.origen || 'NACIONAL',
