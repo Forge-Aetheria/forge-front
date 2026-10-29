@@ -27,7 +27,8 @@ import {
   CREATE_SALES_QUOTE_MUTATION,
   APPROVE_SALES_QUOTE_MUTATION,
   CANCEL_SALES_QUOTE_MUTATION,
-  GET_ACTIVE_BCV_RATE_QUERY
+  GET_ACTIVE_BCV_RATE_QUERY,
+  GET_VARIANTS_QUERY
 } from '@/graphql/sales.gql';
 
 const STORAGE_KEY_QUOTES = 'forge_sales_quotes';
@@ -237,61 +238,67 @@ class SalesQuotesService {
   // Catálogo de Productos Conectado a Variantes de Inventario
   public async getProducts(): Promise<ProductLookup[]> {
     try {
-      const templates = await getInventoryTemplates();
-      if (templates && templates.length > 0) {
-        const prods: ProductLookup[] = [];
+      const res = await executeGraphQL<{
+        variants: Array<{
+          id: string;
+          sku: string;
+          barcode?: string | null;
+          priceExtra: string;
+          standardCost: string;
+          isActive: boolean;
+          template: {
+            id: string;
+            name: string;
+            uomCode: string;
+            productType: string;
+            basePrice: string;
+            vatAliquot: string;
+          };
+          quants?: Array<{
+            id: string;
+            quantity: string;
+            reservedQuantity: string;
+          }> | null;
+        }>;
+      }>(GET_VARIANTS_QUERY, { take: 100 }, { timeoutMs: 5000 });
 
-        for (const t of templates) {
-          const isStorable = t.productType === 'storable';
-
-          if (!t.variants || t.variants.length === 0) {
-            prods.push({
-              id: t.id,
-              sku: t.defaultCode || `PRD-${t.id.slice(0, 6)}`,
-              nombre: t.name,
-              descripcion: t.notes || t.name,
-              tipo: isStorable ? 'PHYSICAL' : 'SERVICE',
-              is_physical_stock: isStorable,
-              manages_stock: isStorable,
-              stock_fisico: 100,
-              stock_comprometido: 0,
-              stock_disponible: 100,
-              precio_unitario_base: t.basePrice || 0,
-              alicuota_iva: (t.vatRate as '16' | '8' | '0' | 'EXEMPT') || '16'
-            });
-          } else {
-            for (const v of t.variants) {
-              const attrSuffix =
-                v.combinationValues && v.combinationValues.length > 0
-                  ? ` (${v.combinationValues.map(c => c.valueName).join(' / ')})`
-                  : '';
-
-              prods.push({
-                id: v.id,
-                sku: v.sku || t.defaultCode,
-                nombre: `${t.name}${attrSuffix}`,
-                descripcion: t.notes || t.name,
-                tipo: isStorable ? 'PHYSICAL' : 'SERVICE',
-                is_physical_stock: isStorable,
-                manages_stock: isStorable,
-                stock_fisico: v.physicalStock || 0,
-                stock_comprometido: v.reservedStock || 0,
-                stock_disponible:
-                  v.availableStock !== undefined ? v.availableStock : Math.max(0, (v.physicalStock || 0) - (v.reservedStock || 0)),
-                precio_unitario_base: (t.basePrice || 0) + (v.priceExtra || 0),
-                alicuota_iva: (t.vatRate as '16' | '8' | '0' | 'EXEMPT') || '16'
-              });
+      if (res?.variants && Array.isArray(res.variants) && res.variants.length > 0) {
+        const prods: ProductLookup[] = res.variants.map(v => {
+          const isPhysical = v.template.productType === 'STORABLE';
+          let stockFisico = 0;
+          let stockComprometido = 0;
+          if (v.quants && v.quants.length > 0) {
+            for (const q of v.quants) {
+              stockFisico += Number(q.quantity || 0);
+              stockComprometido += Number(q.reservedQuantity || 0);
             }
           }
-        }
 
-        if (prods.length > 0) {
-          this.products = prods;
-          return [...this.products];
-        }
+          const basePrice = Number(v.template.basePrice || 0);
+          const priceExtra = Number(v.priceExtra || 0);
+          const vatRate = v.template.vatAliquot === 'EXEMPT' ? 'EXEMPT' : '16';
+
+          return {
+            id: v.id,
+            sku: v.sku,
+            nombre: v.template.name,
+            descripcion: v.template.name,
+            tipo: isPhysical ? 'PHYSICAL' : 'SERVICE',
+            is_physical_stock: isPhysical,
+            manages_stock: isPhysical,
+            stock_fisico: stockFisico,
+            stock_comprometido: stockComprometido,
+            stock_disponible: Math.max(0, stockFisico - stockComprometido),
+            precio_unitario_base: basePrice + priceExtra,
+            alicuota_iva: vatRate as '16' | '8' | '0' | 'EXEMPT'
+          };
+        });
+
+        this.products = prods;
+        return [...this.products];
       }
     } catch (err) {
-      console.warn('[salesQuotesService] Fallback a productos locales:', err);
+      console.warn('[salesQuotesService] Backend variants query no disponible, usando fallback:', err);
     }
 
     return [...this.products];
@@ -573,6 +580,16 @@ class SalesQuotesService {
 
     // Si es un cliente real del backend, enviamos la mutación directa (sin fallback silencioso ante errores)
     if (isUuid) {
+      for (let i = 0; i < payload.items.length; i++) {
+        const it = payload.items[i];
+        const isVarUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(it.producto_id);
+        if (!isVarUuid) {
+          throw new Error(
+            `El producto en la línea ${i + 1} ("${it.producto_id}") no es una variante sincronizada con el backend (requiere UUID). Seleccione un producto del catálogo.`
+          );
+        }
+      }
+
       const dueDate = new Date(Date.now() + payload.vigencia_dias * 24 * 60 * 60 * 1000).toISOString();
       const gqlLines = payload.items.map(it => {
         const rawLine = it.precio_unitario * it.cantidad;

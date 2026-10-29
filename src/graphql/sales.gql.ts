@@ -183,3 +183,30 @@ export const GET_ACTIVE_BCV_RATE_QUERY = `
     }
   }
 `
+
+export const GET_VARIANTS_QUERY = `
+  query GetVariants($take: Int, $skip: Int) {
+    variants(take: $take, skip: $skip) {
+      id
+      sku
+      barcode
+      priceExtra
+      standardCost
+      isActive
+      template {
+        id
+        name
+        uomCode
+        productType
+        basePrice
+        vatAliquot
+      }
+      quants {
+        id
+        quantity
+        reservedQuantity
+      }
+    }
+  }
+`
+
