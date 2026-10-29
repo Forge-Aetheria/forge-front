@@ -212,18 +212,12 @@ const SettingsMainView: React.FC = () => {
     }
   }
 
-  // RBAC Guard: Only ADMIN (case-insensitive checking across profile, user.role, user.roles, or email)
-  const allRoles = [
-    profile?.rol,
-    user?.role,
-    ...(user?.roles || [])
-  ]
-    .filter(Boolean)
-    .map(r => String(r).toUpperCase())
+  // RBAC Guard: Only ADMIN or OWNER (Strict RBAC based on backend role)
+  const effectiveRole = profile?.rol
+    ? String(profile.rol).toUpperCase()
+    : String(user?.role || (user?.roles && user?.roles[0]) || 'UNASSIGNED').toUpperCase()
 
-  const isAdmin =
-    allRoles.includes('ADMIN') ||
-    Boolean(user?.email?.toLowerCase().includes('admin'))
+  const isAdmin = effectiveRole === 'ADMIN' || effectiveRole === 'OWNER'
 
   if (loading) {
     return (

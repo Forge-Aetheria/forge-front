@@ -37,7 +37,8 @@ const ROLE_DISPLAY_NAMES: Record<string, string> = {
   VENTAS: 'Asesor Comercial / Ventas',
   COMPRAS: 'Especialista de Compras',
   ALMACEN: 'Jefe de Almacén y Operaciones',
-  CAJERO_POS: 'Cajero de Punto de Venta'
+  CAJERO_POS: 'Cajero de Punto de Venta',
+  UNASSIGNED: 'Sin Rol Asignado'
 }
 
 const UserProfileView: React.FC = () => {
@@ -185,7 +186,8 @@ const UserProfileView: React.FC = () => {
     )
   }
 
-  const roleName = profile ? ROLE_DISPLAY_NAMES[profile.rol] || profile.rol : 'Usuario'
+  const isProfileAdmin = profile?.rol === 'ADMIN'
+  const roleName = profile ? ROLE_DISPLAY_NAMES[profile.rol] || profile.rol : 'Sin Rol Asignado'
 
   return (
     <div className='flex flex-col gap-6 p-1'>
@@ -199,7 +201,7 @@ const UserProfileView: React.FC = () => {
             <CustomChip
               size='small'
               label={roleName}
-              color='primary'
+              color={isProfileAdmin ? 'primary' : 'secondary'}
               variant='tonal'
             />
           </div>

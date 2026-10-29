@@ -45,7 +45,8 @@ const ROLE_LABELS: Record<string, string> = {
   VENTAS: 'Ventas',
   COMPRAS: 'Compras',
   ALMACEN: 'Almacén',
-  CAJERO_POS: 'Cajero POS'
+  CAJERO_POS: 'Cajero POS',
+  UNASSIGNED: 'Sin Rol Asignado'
 }
 
 const UserDropdown = () => {
@@ -102,17 +103,12 @@ const UserDropdown = () => {
     : 'U'
 
   const userDisplayName = profile?.nombre || user?.email?.split('@')[0] || 'Usuario'
-  const allRoles = [
-    profile?.rol,
-    user?.role,
-    ...(user?.roles || [])
-  ]
-    .filter(Boolean)
-    .map(r => String(r).toUpperCase())
+  const effectiveRole = profile?.rol
+    ? String(profile.rol).toUpperCase()
+    : String(user?.role || (user?.roles && user?.roles[0]) || 'UNASSIGNED').toUpperCase()
 
-  const isAdmin = allRoles.includes('ADMIN') || Boolean(user?.email?.toLowerCase().includes('admin'))
-  const userRole = allRoles[0] || (isAdmin ? 'ADMIN' : 'VENTAS')
-  const roleLabel = ROLE_LABELS[userRole] || (isAdmin ? 'Administrador' : 'Usuario')
+  const isAdmin = effectiveRole === 'ADMIN' || effectiveRole === 'OWNER'
+  const roleLabel = ROLE_LABELS[effectiveRole] || 'Sin Rol Asignado'
 
   return (
     <>

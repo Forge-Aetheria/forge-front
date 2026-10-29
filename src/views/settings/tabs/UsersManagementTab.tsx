@@ -44,7 +44,8 @@ const ROLE_CONFIG: Record<SystemRole, { label: string; color: 'primary' | 'info'
   VENTAS: { label: 'Ventas', color: 'info' },
   COMPRAS: { label: 'Compras', color: 'secondary' },
   ALMACEN: { label: 'Almacén', color: 'warning' },
-  CAJERO_POS: { label: 'Cajero POS', color: 'success' }
+  CAJERO_POS: { label: 'Cajero POS', color: 'success' },
+  UNASSIGNED: { label: 'Sin Rol', color: 'secondary' }
 }
 
 export const UsersManagementTab: React.FC<Props> = ({

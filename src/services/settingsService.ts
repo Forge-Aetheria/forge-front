@@ -201,10 +201,18 @@ const setStoredItem = <T>(key: string, val: T): void => {
 }
 
 export const normalizeSystemRole = (role?: string | null, roles?: string[] | null): SystemRole => {
-  const candidate = String(role || (roles && roles[0]) || 'ADMIN').toUpperCase()
-  const validRoles: SystemRole[] = ['ADMIN', 'VENTAS', 'COMPRAS', 'ALMACEN', 'CAJERO_POS']
+  const candidate = String(role || (roles && roles[0]) || '').trim().toUpperCase()
 
-  return validRoles.includes(candidate as SystemRole) ? (candidate as SystemRole) : 'ADMIN'
+  if (candidate === 'ADMIN' || candidate === 'OWNER' || candidate === 'SUPERADMIN') {
+    return 'ADMIN'
+  }
+
+  if (candidate === 'VENTAS' || candidate === 'SALES') return 'VENTAS'
+  if (candidate === 'COMPRAS' || candidate === 'PURCHASING') return 'COMPRAS'
+  if (candidate === 'ALMACEN' || candidate === 'WAREHOUSE') return 'ALMACEN'
+  if (candidate === 'CAJERO_POS' || candidate === 'POS' || candidate === 'CAJERO') return 'CAJERO_POS'
+
+  return 'UNASSIGNED'
 }
 
 export const settingsService = {
@@ -262,7 +270,7 @@ export const settingsService = {
               email: authUser.email || stored.email,
               telefono: authUser.phone !== undefined ? authUser.phone : stored.telefono,
               avatarUrl: authUser.avatarUrl || stored.avatarUrl,
-              rol: normalizeSystemRole(authUser.role, authUser.roles) || stored.rol,
+              rol: normalizeSystemRole(authUser.role, authUser.roles),
               tenantId: authUser.tenantId || stored.tenantId,
               tenantName: authUser.tenantName || stored.tenantName
             }

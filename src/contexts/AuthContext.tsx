@@ -78,8 +78,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           })
         }
 
-        // Refrescar usuario en segundo plano sólo si no se tiene en cache
-        if (!storedUser && storedSession) {
+        // Refrescar usuario en segundo plano siempre que haya sesión para mantener sincronizados roles y perfil
+        if (storedSession) {
           authService
             .me()
             .then(freshUser => {
