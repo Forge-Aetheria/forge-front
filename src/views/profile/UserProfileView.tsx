@@ -186,11 +186,8 @@ const UserProfileView: React.FC = () => {
     )
   }
 
-  const isProfileAdmin = String(profile?.rol || '').toUpperCase() === 'ADMIN'
-  const roleKey = String(profile?.rol || '').toUpperCase()
-  const roleName = profile
-    ? ROLE_DISPLAY_NAMES[roleKey] || (profile.rol.charAt(0).toUpperCase() + profile.rol.slice(1))
-    : 'Sin Rol Asignado'
+  const isProfileAdmin = profile?.rol === 'ADMIN'
+  const roleName = profile ? ROLE_DISPLAY_NAMES[profile.rol] || profile.rol : 'Sin Rol Asignado'
 
   return (
     <div className='flex flex-col gap-6 p-1'>

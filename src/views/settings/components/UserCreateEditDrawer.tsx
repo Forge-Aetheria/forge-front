@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect } from 'react'
 import Drawer from '@mui/material/Drawer'
 import Typography from '@mui/material/Typography'
 import IconButton from '@mui/material/IconButton'
@@ -10,12 +10,11 @@ import MenuItem from '@mui/material/MenuItem'
 import Button from '@mui/material/Button'
 import CircularProgress from '@mui/material/CircularProgress'
 
-import type { ErpUser, SystemRole, BackendRole, UserAccountStatus } from '@/types/settingsTypes'
+import type { ErpUser, SystemRole, UserAccountStatus } from '@/types/settingsTypes'
 
 interface Props {
   open: boolean
   isAdmin?: boolean
-  availableRoles?: BackendRole[]
   onClose: () => void
   userToEdit: ErpUser | null
   onSave: (data: {
@@ -29,50 +28,25 @@ interface Props {
   }) => Promise<void>
 }
 
-const FALLBACK_ROLES: { value: string; label: string; desc: string }[] = [
-  { value: 'admin', label: 'Administrador General', desc: 'Acceso total y configuración' },
-  { value: 'ventas', label: 'Asesor Comercial / Ventas', desc: 'Presupuestos y clientes' },
-  { value: 'compras', label: 'Especialista de Compras', desc: 'Cotizaciones y proveedores' },
-  { value: 'almacen', label: 'Almacén y Operaciones', desc: 'Recepciones, entregas e inventario' },
-  { value: 'cajero_pos', label: 'Cajero POS', desc: 'Terminal y arqueo de caja' }
+const ROLES: { value: SystemRole; label: string; desc: string }[] = [
+  { value: 'ADMIN', label: 'Administrador General', desc: 'Acceso total y configuración' },
+  { value: 'VENTAS', label: 'Asesor Comercial / Ventas', desc: 'Presupuestos y clientes' },
+  { value: 'COMPRAS', label: 'Especialista de Compras', desc: 'Cotizaciones y proveedores' },
+  { value: 'ALMACEN', label: 'Almacén y Operaciones', desc: 'Recepciones, entregas e inventario' },
+  { value: 'CAJERO_POS', label: 'Cajero POS', desc: 'Terminal y arqueo de caja' }
 ]
 
 export const UserCreateEditDrawer: React.FC<Props> = ({
   open,
   isAdmin = true,
-  availableRoles,
   onClose,
   userToEdit,
   onSave
 }) => {
-  const roleOptions = useMemo(() => {
-    if (availableRoles && availableRoles.length > 0) {
-      return availableRoles.map(r => {
-        const val = r.name
-        const norm = val.toUpperCase()
-        let label = val.charAt(0).toUpperCase() + val.slice(1)
-
-        if (norm === 'ADMIN' || norm === 'OWNER') label = 'Administrador General'
-        else if (norm === 'VENTAS' || norm === 'SALES') label = 'Asesor Comercial / Ventas'
-        else if (norm === 'COMPRAS' || norm === 'PURCHASING') label = 'Especialista de Compras'
-        else if (norm === 'ALMACEN' || norm === 'WAREHOUSE') label = 'Almacén y Operaciones'
-        else if (norm === 'CAJERO_POS' || norm === 'POS') label = 'Cajero POS'
-
-        return {
-          value: val,
-          label,
-          desc: r.description || (r.isSystem ? 'Rol del sistema' : 'Rol configurable')
-        }
-      })
-    }
-
-    return FALLBACK_ROLES
-  }, [availableRoles])
-
   const [nombre, setNombre] = useState('')
   const [email, setEmail] = useState('')
   const [telefono, setTelefono] = useState('')
-  const [rol, setRol] = useState<SystemRole>('admin')
+  const [rol, setRol] = useState<SystemRole>('VENTAS')
   const [estado, setEstado] = useState<UserAccountStatus>('ACTIVO')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -84,7 +58,8 @@ export const UserCreateEditDrawer: React.FC<Props> = ({
       setNombre(userToEdit.nombre)
       setEmail(userToEdit.email)
       setTelefono(userToEdit.telefono || '')
-      setRol(userToEdit.rol || (roleOptions[0]?.value as SystemRole) || 'admin')
+      const normalizedRol = (String(userToEdit.rol || '').toUpperCase() as SystemRole) || 'VENTAS'
+      setRol(normalizedRol)
       setEstado(userToEdit.estado)
       setPassword('')
       setPasswordError('')
@@ -93,13 +68,13 @@ export const UserCreateEditDrawer: React.FC<Props> = ({
       setNombre('')
       setEmail('')
       setTelefono('')
-      setRol((roleOptions[0]?.value as SystemRole) || 'admin')
+      setRol('VENTAS')
       setEstado('ACTIVO')
       setPassword('')
       setPasswordError('')
       setShowPassword(false)
     }
-  }, [userToEdit, roleOptions, open])
+  }, [userToEdit, open])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -219,7 +194,7 @@ export const UserCreateEditDrawer: React.FC<Props> = ({
             fullWidth
             sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px', backgroundColor: '#FAFAFC' } }}
           >
-            {roleOptions.map(r => (
+            {ROLES.map(r => (
               <MenuItem key={r.value} value={r.value} className='flex flex-col items-start py-2'>
                 <span className='font-bold text-sm text-[#1E1B2E]'>{r.label}</span>
                 <span className='text-xs text-[#6B7280]'>{r.desc}</span>
