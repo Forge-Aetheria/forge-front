@@ -8,7 +8,6 @@ import Typography from '@mui/material/Typography'
 import TextField from '@mui/material/TextField'
 import Button from '@mui/material/Button'
 import Avatar from '@mui/material/Avatar'
-import Chip from '@mui/material/Chip'
 import Divider from '@mui/material/Divider'
 import IconButton from '@mui/material/IconButton'
 import InputAdornment from '@mui/material/InputAdornment'
@@ -17,6 +16,8 @@ import Alert from '@mui/material/Alert'
 import CircularProgress from '@mui/material/CircularProgress'
 import Skeleton from '@mui/material/Skeleton'
 
+import CustomChip from '@core/components/mui/Chip'
+import { useAuth } from '@/contexts/AuthContext'
 import { settingsService } from '@/services/settingsService'
 import type { UserProfile } from '@/types/settingsTypes'
 
@@ -40,6 +41,7 @@ const ROLE_DISPLAY_NAMES: Record<string, string> = {
 }
 
 const UserProfileView: React.FC = () => {
+  const { refreshUser } = useAuth()
   const [loading, setLoading] = useState(true)
   const [profile, setProfile] = useState<UserProfile | null>(null)
 
@@ -105,6 +107,7 @@ const UserProfileView: React.FC = () => {
       })
 
       setProfile(updated)
+      await refreshUser()
       setToast({ open: true, message: 'Perfil actualizado exitosamente.', severity: 'success' })
     } catch {
       setToast({ open: true, message: 'Error al actualizar el perfil.', severity: 'error' })
@@ -193,17 +196,11 @@ const UserProfileView: React.FC = () => {
             <Typography variant='h4' className='font-bold text-[#1E1B2E]'>
               Mi Perfil
             </Typography>
-            <Chip
+            <CustomChip
               size='small'
               label={roleName}
-              sx={{
-                borderRadius: '9999px',
-                fontWeight: 700,
-                fontSize: '0.75rem',
-                backgroundColor: '#F0EEF9',
-                color: '#6C5CE7',
-                border: '1px solid #DCD8EC'
-              }}
+              color='primary'
+              variant='tonal'
             />
           </div>
           <Typography variant='body2' className='text-[#6B7280] mt-1'>
@@ -250,12 +247,11 @@ const UserProfileView: React.FC = () => {
                 {profile?.email}
               </Typography>
 
-              <Chip
+              <CustomChip
                 size='small'
                 label='Cuenta Activa'
                 color='success'
                 variant='tonal'
-                className='font-bold rounded-full text-xs'
               />
 
               <Divider sx={{ my: 3, width: '100%', borderColor: '#E6E4F0' }} />

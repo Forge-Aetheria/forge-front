@@ -11,9 +11,33 @@ export interface AuthSession {
 export interface AuthenticatedUser {
   id: string
   email: string
+  name?: string
+  phone?: string
+  avatarUrl?: string
+  role?: string
+  roles?: string[]
   tenantId: string
   tenantName: string
   tenantSlug: string
+  lastLoginAt?: string
+  createdAt?: string
+}
+
+export interface UpdateMyProfileInput {
+  name: string
+  phone?: string
+  avatarUrl?: string
+}
+
+export interface ChangeMyPasswordInput {
+  currentPassword: string
+  newPassword: string
+  closeOtherSessions?: boolean
+}
+
+export interface ChangeMyPasswordResult {
+  success: boolean
+  message: string
 }
 
 export interface IniciarSesionInput {
