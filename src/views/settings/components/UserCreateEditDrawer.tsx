@@ -58,7 +58,8 @@ export const UserCreateEditDrawer: React.FC<Props> = ({
       setNombre(userToEdit.nombre)
       setEmail(userToEdit.email)
       setTelefono(userToEdit.telefono || '')
-      setRol(userToEdit.rol)
+      const normalizedRol = (String(userToEdit.rol || '').toUpperCase() as SystemRole) || 'VENTAS'
+      setRol(normalizedRol)
       setEstado(userToEdit.estado)
       setPassword('')
       setPasswordError('')

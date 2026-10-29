@@ -200,6 +200,13 @@ const setStoredItem = <T>(key: string, val: T): void => {
   }
 }
 
+export const normalizeSystemRole = (role?: string | null, roles?: string[] | null): SystemRole => {
+  const candidate = String(role || (roles && roles[0]) || 'ADMIN').toUpperCase()
+  const validRoles: SystemRole[] = ['ADMIN', 'VENTAS', 'COMPRAS', 'ALMACEN', 'CAJERO_POS']
+
+  return validRoles.includes(candidate as SystemRole) ? (candidate as SystemRole) : 'ADMIN'
+}
+
 export const settingsService = {
   // 1. User Profile (Conexión GraphQL con forge-backend y fallback resiliente)
   getUserProfile: async (): Promise<UserProfile> => {
@@ -209,7 +216,7 @@ export const settingsService = {
 
       if (res?.me) {
         const me = res.me
-        const role = (me.role as SystemRole) || 'ADMIN'
+        const role = normalizeSystemRole(me.role, me.roles)
 
         const profile: UserProfile = {
           id: me.id,
@@ -228,7 +235,7 @@ export const settingsService = {
         setStoredItem(STORAGE_KEYS.USER_PROFILE, profile)
 
         if (typeof window !== 'undefined') {
-          localStorage.setItem('foundly_auth_user', JSON.stringify(me))
+          localStorage.setItem('foundly_auth_user', JSON.stringify({ ...me, role }))
         }
 
         return profile
@@ -255,7 +262,7 @@ export const settingsService = {
               email: authUser.email || stored.email,
               telefono: authUser.phone !== undefined ? authUser.phone : stored.telefono,
               avatarUrl: authUser.avatarUrl || stored.avatarUrl,
-              rol: (authUser.role as SystemRole) || stored.rol,
+              rol: normalizeSystemRole(authUser.role, authUser.roles) || stored.rol,
               tenantId: authUser.tenantId || stored.tenantId,
               tenantName: authUser.tenantName || stored.tenantName
             }

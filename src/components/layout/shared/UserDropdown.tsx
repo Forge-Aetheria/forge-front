@@ -102,9 +102,17 @@ const UserDropdown = () => {
     : 'U'
 
   const userDisplayName = profile?.nombre || user?.email?.split('@')[0] || 'Usuario'
-  const userRole = profile?.rol || (user?.email?.toLowerCase().includes('admin') ? 'ADMIN' : 'VENTAS')
-  const roleLabel = ROLE_LABELS[userRole] || 'Usuario'
-  const isAdmin = userRole === 'ADMIN'
+  const allRoles = [
+    profile?.rol,
+    user?.role,
+    ...(user?.roles || [])
+  ]
+    .filter(Boolean)
+    .map(r => String(r).toUpperCase())
+
+  const isAdmin = allRoles.includes('ADMIN') || Boolean(user?.email?.toLowerCase().includes('admin'))
+  const userRole = allRoles[0] || (isAdmin ? 'ADMIN' : 'VENTAS')
+  const roleLabel = ROLE_LABELS[userRole] || (isAdmin ? 'Administrador' : 'Usuario')
 
   return (
     <>

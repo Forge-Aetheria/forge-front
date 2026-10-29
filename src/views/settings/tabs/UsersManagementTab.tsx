@@ -187,7 +187,8 @@ export const UsersManagementTab: React.FC<Props> = ({
                 </tr>
               ) : (
                 filteredUsers.map(user => {
-                  const roleCfg = ROLE_CONFIG[user.rol] || ROLE_CONFIG.VENTAS
+                  const roleKey = String(user.rol || '').toUpperCase() as SystemRole
+                  const roleCfg = ROLE_CONFIG[roleKey] || ROLE_CONFIG.VENTAS
                   const isActive = user.estado === 'ACTIVO'
 
                   return (

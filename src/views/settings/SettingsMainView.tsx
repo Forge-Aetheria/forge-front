@@ -212,9 +212,18 @@ const SettingsMainView: React.FC = () => {
     }
   }
 
-  // RBAC Guard: Only ADMIN
-  const currentRole = profile?.rol || (user?.email?.toLowerCase().includes('admin') ? 'ADMIN' : 'VENTAS')
-  const isAdmin = currentRole === 'ADMIN'
+  // RBAC Guard: Only ADMIN (case-insensitive checking across profile, user.role, user.roles, or email)
+  const allRoles = [
+    profile?.rol,
+    user?.role,
+    ...(user?.roles || [])
+  ]
+    .filter(Boolean)
+    .map(r => String(r).toUpperCase())
+
+  const isAdmin =
+    allRoles.includes('ADMIN') ||
+    Boolean(user?.email?.toLowerCase().includes('admin'))
 
   if (loading) {
     return (
