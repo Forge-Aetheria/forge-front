@@ -7,7 +7,22 @@ import type {
 
 // Tipos de dominio para el módulo de Ajustes Generales y Perfil de Usuario (SPEC-007)
 
-export type SystemRole = 'ADMIN' | 'VENTAS' | 'COMPRAS' | 'ALMACEN' | 'CAJERO_POS' | 'UNASSIGNED'
+export type SystemRole =
+  | 'ADMIN'
+  | 'VENTAS'
+  | 'COMPRAS'
+  | 'ALMACEN'
+  | 'CAJERO_POS'
+  | 'UNASSIGNED'
+  | (string & {})
+
+export interface BackendRole {
+  id: string
+  name: string
+  description?: string | null
+  isSystem: boolean
+  createdAt: string
+}
 
 export type UserAccountStatus = 'ACTIVO' | 'INACTIVO'
 

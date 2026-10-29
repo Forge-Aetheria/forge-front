@@ -29,6 +29,7 @@ import type {
   ErpUser,
   FiscalRulesConfig,
   SystemRole,
+  BackendRole,
   UserAccountStatus
 } from '@/types/settingsTypes'
 
@@ -45,6 +46,7 @@ const SettingsMainView: React.FC = () => {
   const [bcvConfig, setBcvConfig] = useState<BcvRateConfig | null>(null)
   const [erpUsers, setErpUsers] = useState<ErpUser[]>([])
   const [fiscalRules, setFiscalRules] = useState<FiscalRulesConfig | null>(null)
+  const [availableRoles, setAvailableRoles] = useState<BackendRole[]>([])
 
   // Toast
   const [toast, setToast] = useState<{
@@ -57,12 +59,13 @@ const SettingsMainView: React.FC = () => {
     setLoading(true)
 
     try {
-      const [prof, comp, bcv, usrs, rules] = await Promise.all([
+      const [prof, comp, bcv, usrs, rules, backendRoles] = await Promise.all([
         settingsService.getUserProfile(),
         settingsService.getCompanySettings(),
         settingsService.getBcvSettings(),
         settingsService.getErpUsers(),
-        settingsService.getFiscalRules()
+        settingsService.getFiscalRules(),
+        settingsService.getAvailableRoles()
       ])
 
       setProfile(prof)
@@ -70,6 +73,7 @@ const SettingsMainView: React.FC = () => {
       setBcvConfig(bcv)
       setErpUsers(usrs)
       setFiscalRules(rules)
+      setAvailableRoles(backendRoles)
     } catch {
       setToast({ open: true, message: 'Error al cargar la configuración.', severity: 'error' })
     } finally {
@@ -381,6 +385,7 @@ const SettingsMainView: React.FC = () => {
           {activeTab === 2 && (
             <UsersManagementTab
               users={erpUsers}
+              availableRoles={availableRoles}
               isAdmin={isAdmin}
               onCreateUser={handleCreateErpUser}
               onUpdateUser={handleUpdateErpUser}

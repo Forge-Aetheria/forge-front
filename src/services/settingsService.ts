@@ -6,12 +6,14 @@ import {
   UPDATE_MY_PROFILE_MUTATION,
   CHANGE_MY_PASSWORD_MUTATION
 } from '@/graphql/auth.gql'
+import { ROLES_QUERY, ASSIGNABLE_ROLES_QUERY } from '@/graphql/iam.gql'
 import type { AuthenticatedUser, ChangeMyPasswordResult } from '@/types/authTypes'
 import type {
   UserProfile,
   UpdateProfileInput,
   ChangePasswordInput,
   SystemRole,
+  BackendRole,
   CompanySettings,
   BcvRateConfig,
   BcvRateAuditEntry,
@@ -30,8 +32,13 @@ const STORAGE_KEYS = {
   BCV_SETTINGS: 'foundly_bcv_settings',
   ERP_USERS: 'foundly_erp_users',
   FISCAL_RULES: 'foundly_fiscal_rules',
-  COMMERCIAL_POLICIES: 'foundly_commercial_policies'
+  COMMERCIAL_POLICIES: 'foundly_commercial_policies',
+  AVAILABLE_ROLES: 'foundly_available_roles'
 }
+
+export const DEFAULT_ROLES: BackendRole[] = [
+  { id: 'role-admin', name: 'admin', description: 'Rol administrativo del tenant con acceso total.', isSystem: true, createdAt: '2026-01-01' }
+]
 
 export const DEFAULT_COMMERCIAL_POLICIES: CommercialPoliciesSettings = {
   salesInvoicingPolicyDefault: 'ORDERED',
@@ -201,21 +208,58 @@ const setStoredItem = <T>(key: string, val: T): void => {
 }
 
 export const normalizeSystemRole = (role?: string | null, roles?: string[] | null): SystemRole => {
-  const candidate = String(role || (roles && roles[0]) || '').trim().toUpperCase()
+  const candidate = String(role || (roles && roles[0]) || '').trim()
+  const upper = candidate.toUpperCase()
 
-  if (candidate === 'ADMIN' || candidate === 'OWNER' || candidate === 'SUPERADMIN') {
+  if (upper === 'ADMIN' || upper === 'OWNER' || upper === 'SUPERADMIN') {
     return 'ADMIN'
   }
 
-  if (candidate === 'VENTAS' || candidate === 'SALES') return 'VENTAS'
-  if (candidate === 'COMPRAS' || candidate === 'PURCHASING') return 'COMPRAS'
-  if (candidate === 'ALMACEN' || candidate === 'WAREHOUSE') return 'ALMACEN'
-  if (candidate === 'CAJERO_POS' || candidate === 'POS' || candidate === 'CAJERO') return 'CAJERO_POS'
+  if (upper === 'UNASSIGNED' || !candidate) {
+    return 'UNASSIGNED'
+  }
 
-  return 'UNASSIGNED'
+  return candidate
 }
 
 export const settingsService = {
+  // 0. IAM Roles (Conexión con query assignableRoles / roles de forge-backend)
+  getAvailableRoles: async (): Promise<BackendRole[]> => {
+    try {
+      // 1. Intentar assignableRoles primero
+      try {
+        const res = await executeGraphQL<{ assignableRoles: BackendRole[] }>(
+          ASSIGNABLE_ROLES_QUERY,
+          undefined,
+          { timeoutMs: 5000 }
+        )
+
+        if (res?.assignableRoles && Array.isArray(res.assignableRoles) && res.assignableRoles.length > 0) {
+          setStoredItem(STORAGE_KEYS.AVAILABLE_ROLES, res.assignableRoles)
+
+          return res.assignableRoles
+        }
+      } catch {
+        // 2. Si assignableRoles falla, intentar roles
+        const resRoles = await executeGraphQL<{ roles: BackendRole[] }>(
+          ROLES_QUERY,
+          undefined,
+          { timeoutMs: 5000 }
+        )
+
+        if (resRoles?.roles && Array.isArray(resRoles.roles) && resRoles.roles.length > 0) {
+          setStoredItem(STORAGE_KEYS.AVAILABLE_ROLES, resRoles.roles)
+
+          return resRoles.roles
+        }
+      }
+    } catch (err) {
+      console.warn('[settingsService] Latencia o fallo al consultar roles del backend, usando caché local:', err)
+    }
+
+    return getStoredItem<BackendRole[]>(STORAGE_KEYS.AVAILABLE_ROLES, DEFAULT_ROLES)
+  },
+
   // 1. User Profile (Conexión GraphQL con forge-backend y fallback resiliente)
   getUserProfile: async (): Promise<UserProfile> => {
     // 1. Intentar obtener perfil en tiempo real desde el backend GraphQL (Query `me`)

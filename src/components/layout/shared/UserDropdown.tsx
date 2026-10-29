@@ -108,7 +108,11 @@ const UserDropdown = () => {
     : String(user?.role || (user?.roles && user?.roles[0]) || 'UNASSIGNED').toUpperCase()
 
   const isAdmin = effectiveRole === 'ADMIN' || effectiveRole === 'OWNER'
-  const roleLabel = ROLE_LABELS[effectiveRole] || 'Sin Rol Asignado'
+  const roleLabel =
+    ROLE_LABELS[effectiveRole] ||
+    (effectiveRole !== 'UNASSIGNED'
+      ? effectiveRole.charAt(0).toUpperCase() + effectiveRole.slice(1).toLowerCase()
+      : 'Sin Rol Asignado')
 
   return (
     <>

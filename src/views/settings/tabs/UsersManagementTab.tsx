@@ -13,10 +13,11 @@ import Tooltip from '@mui/material/Tooltip'
 import InputAdornment from '@mui/material/InputAdornment'
 
 import { UserCreateEditDrawer } from '../components/UserCreateEditDrawer'
-import type { ErpUser, SystemRole, UserAccountStatus } from '@/types/settingsTypes'
+import type { ErpUser, SystemRole, BackendRole, UserAccountStatus } from '@/types/settingsTypes'
 
 interface Props {
   users: ErpUser[]
+  availableRoles?: BackendRole[]
   isAdmin?: boolean
   onCreateUser: (data: {
     nombre: string
@@ -39,17 +40,52 @@ interface Props {
   onToggleStatus: (id: string) => Promise<void>
 }
 
-const ROLE_CONFIG: Record<SystemRole, { label: string; color: 'primary' | 'info' | 'secondary' | 'warning' | 'success' }> = {
-  ADMIN: { label: 'Administrador', color: 'primary' },
-  VENTAS: { label: 'Ventas', color: 'info' },
-  COMPRAS: { label: 'Compras', color: 'secondary' },
-  ALMACEN: { label: 'Almacén', color: 'warning' },
-  CAJERO_POS: { label: 'Cajero POS', color: 'success' },
-  UNASSIGNED: { label: 'Sin Rol', color: 'secondary' }
+const getRoleBadge = (roleName: string, availableRoles?: BackendRole[]) => {
+  const normalized = String(roleName || '').trim().toUpperCase()
+
+  if (normalized === 'ADMIN' || normalized === 'OWNER' || normalized === 'SUPERADMIN') {
+    return { label: 'Administrador', color: 'primary' as const }
+  }
+
+  if (normalized === 'VENTAS' || normalized === 'SALES') {
+    return { label: 'Ventas', color: 'info' as const }
+  }
+
+  if (normalized === 'COMPRAS' || normalized === 'PURCHASING') {
+    return { label: 'Compras', color: 'secondary' as const }
+  }
+
+  if (normalized === 'ALMACEN' || normalized === 'WAREHOUSE') {
+    return { label: 'Almacén', color: 'warning' as const }
+  }
+
+  if (normalized === 'CAJERO_POS' || normalized === 'POS') {
+    return { label: 'Cajero POS', color: 'success' as const }
+  }
+
+  if (normalized === 'UNASSIGNED') {
+    return { label: 'Sin Rol', color: 'secondary' as const }
+  }
+
+  // Buscar en availableRoles de la base de datos
+  const found = availableRoles?.find(r => r.name.toLowerCase() === roleName.toLowerCase())
+
+  if (found) {
+    return {
+      label: found.name.charAt(0).toUpperCase() + found.name.slice(1),
+      color: 'primary' as const
+    }
+  }
+
+  return {
+    label: roleName.charAt(0).toUpperCase() + roleName.slice(1),
+    color: 'secondary' as const
+  }
 }
 
 export const UsersManagementTab: React.FC<Props> = ({
   users,
+  availableRoles,
   isAdmin = true,
   onCreateUser,
   onUpdateUser,
@@ -188,8 +224,7 @@ export const UsersManagementTab: React.FC<Props> = ({
                 </tr>
               ) : (
                 filteredUsers.map(user => {
-                  const roleKey = String(user.rol || '').toUpperCase() as SystemRole
-                  const roleCfg = ROLE_CONFIG[roleKey] || ROLE_CONFIG.VENTAS
+                  const roleCfg = getRoleBadge(user.rol, availableRoles)
                   const isActive = user.estado === 'ACTIVO'
 
                   return (
@@ -300,6 +335,7 @@ export const UsersManagementTab: React.FC<Props> = ({
       <UserCreateEditDrawer
         open={drawerOpen}
         isAdmin={isAdmin}
+        availableRoles={availableRoles}
         onClose={() => setDrawerOpen(false)}
         userToEdit={selectedUser}
         onSave={handleSave}
