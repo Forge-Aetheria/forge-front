@@ -17,9 +17,46 @@ export const ME_QUERY = `
     me {
       id
       email
+      name
+      phone
+      avatarUrl
+      role
+      roles
       tenantId
       tenantName
       tenantSlug
+      lastLoginAt
+      createdAt
+    }
+  }
+`
+
+export const UPDATE_MY_PROFILE_MUTATION = `
+  mutation UpdateMyProfile($input: UpdateMyProfileInput!) {
+    updateMyProfile(input: $input) {
+      profile {
+        id
+        email
+        name
+        phone
+        avatarUrl
+        role
+        roles
+        tenantId
+        tenantName
+        tenantSlug
+        lastLoginAt
+        createdAt
+      }
+    }
+  }
+`
+
+export const CHANGE_MY_PASSWORD_MUTATION = `
+  mutation ChangeMyPassword($input: ChangeMyPasswordInput!) {
+    changeMyPassword(input: $input) {
+      success
+      message
     }
   }
 `

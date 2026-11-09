@@ -212,9 +212,12 @@ const SettingsMainView: React.FC = () => {
     }
   }
 
-  // RBAC Guard: Only ADMIN
-  const currentRole = profile?.rol || (user?.email?.toLowerCase().includes('admin') ? 'ADMIN' : 'VENTAS')
-  const isAdmin = currentRole === 'ADMIN'
+  // RBAC Guard: Only ADMIN or OWNER (Strict RBAC based on backend role)
+  const effectiveRole = profile?.rol
+    ? String(profile.rol).toUpperCase()
+    : String(user?.role || (user?.roles && user?.roles[0]) || 'UNASSIGNED').toUpperCase()
+
+  const isAdmin = effectiveRole === 'ADMIN' || effectiveRole === 'OWNER'
 
   if (loading) {
     return (

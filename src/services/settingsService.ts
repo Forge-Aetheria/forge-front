@@ -1,9 +1,17 @@
 // Servicio desacoplado de Ajustes Generales y Perfil de Usuario con persistencia localStorage (SPEC-007)
 
+import { executeGraphQL } from '@/libs/graphqlClient'
+import {
+  ME_QUERY,
+  UPDATE_MY_PROFILE_MUTATION,
+  CHANGE_MY_PASSWORD_MUTATION
+} from '@/graphql/auth.gql'
+import type { AuthenticatedUser, ChangeMyPasswordResult } from '@/types/authTypes'
 import type {
   UserProfile,
   UpdateProfileInput,
   ChangePasswordInput,
+  SystemRole,
   CompanySettings,
   BcvRateConfig,
   BcvRateAuditEntry,
@@ -192,9 +200,59 @@ const setStoredItem = <T>(key: string, val: T): void => {
   }
 }
 
+export const normalizeSystemRole = (role?: string | null, roles?: string[] | null): SystemRole => {
+  const candidate = String(role || (roles && roles[0]) || '').trim().toUpperCase()
+
+  if (candidate === 'ADMIN' || candidate === 'OWNER' || candidate === 'SUPERADMIN') {
+    return 'ADMIN'
+  }
+
+  if (candidate === 'VENTAS' || candidate === 'SALES') return 'VENTAS'
+  if (candidate === 'COMPRAS' || candidate === 'PURCHASING') return 'COMPRAS'
+  if (candidate === 'ALMACEN' || candidate === 'WAREHOUSE') return 'ALMACEN'
+  if (candidate === 'CAJERO_POS' || candidate === 'POS' || candidate === 'CAJERO') return 'CAJERO_POS'
+
+  return 'UNASSIGNED'
+}
+
 export const settingsService = {
-  // 1. User Profile
+  // 1. User Profile (Conexión GraphQL con forge-backend y fallback resiliente)
   getUserProfile: async (): Promise<UserProfile> => {
+    // 1. Intentar obtener perfil en tiempo real desde el backend GraphQL (Query `me`)
+    try {
+      const res = await executeGraphQL<{ me: AuthenticatedUser }>(ME_QUERY, undefined, { timeoutMs: 5000 })
+
+      if (res?.me) {
+        const me = res.me
+        const role = normalizeSystemRole(me.role, me.roles)
+
+        const profile: UserProfile = {
+          id: me.id,
+          nombre: me.name || me.email.split('@')[0],
+          email: me.email,
+          telefono: me.phone || '',
+          avatarUrl: me.avatarUrl || '/images/avatars/1.png',
+          rol: role,
+          tenantId: me.tenantId,
+          tenantName: me.tenantName,
+          ultimoIngreso: me.lastLoginAt ? new Date(me.lastLoginAt).toLocaleString('es-VE') : undefined,
+          creadoEn: me.createdAt ? new Date(me.createdAt).toLocaleDateString('es-VE') : 'Reciente'
+        }
+
+        // Cache local
+        setStoredItem(STORAGE_KEYS.USER_PROFILE, profile)
+
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('foundly_auth_user', JSON.stringify({ ...me, role }))
+        }
+
+        return profile
+      }
+    } catch (err) {
+      console.warn('[settingsService] Backend offline o latencia en me, usando caché local:', err)
+    }
+
+    // Fallback: leer de almacenamiento local
     const stored = getStoredItem<UserProfile>(STORAGE_KEYS.USER_PROFILE, DEFAULT_PROFILE)
 
     if (typeof window !== 'undefined') {
@@ -205,19 +263,16 @@ export const settingsService = {
           const authUser = JSON.parse(rawAuthUser)
 
           if (authUser?.email) {
-            const users = getStoredItem<ErpUser[]>(STORAGE_KEYS.ERP_USERS, DEFAULT_USERS)
-            const matched = users.find(u => u.email.toLowerCase() === authUser.email.toLowerCase())
-
-            if (matched) {
-              return {
-                ...stored,
-                id: matched.id,
-                nombre: matched.nombre,
-                email: matched.email,
-                telefono: matched.telefono,
-                avatarUrl: matched.avatarUrl || stored.avatarUrl,
-                rol: matched.rol
-              }
+            return {
+              ...stored,
+              id: authUser.id || stored.id,
+              nombre: authUser.name || stored.nombre,
+              email: authUser.email || stored.email,
+              telefono: authUser.phone !== undefined ? authUser.phone : stored.telefono,
+              avatarUrl: authUser.avatarUrl || stored.avatarUrl,
+              rol: normalizeSystemRole(authUser.role, authUser.roles),
+              tenantId: authUser.tenantId || stored.tenantId,
+              tenantName: authUser.tenantName || stored.tenantName
             }
           }
         }
@@ -230,18 +285,67 @@ export const settingsService = {
   },
 
   updateUserProfile: async (input: UpdateProfileInput): Promise<UserProfile> => {
+    // 1. Intentar actualizar en backend GraphQL (Mutación `updateMyProfile`)
+    let updatedBackendProfile: AuthenticatedUser | null = null
+
+    try {
+      const res = await executeGraphQL<
+        { updateMyProfile: { profile: AuthenticatedUser } },
+        { input: { name: string; phone?: string; avatarUrl?: string } }
+      >(
+        UPDATE_MY_PROFILE_MUTATION,
+        {
+          input: {
+            name: input.nombre.trim(),
+            phone: input.telefono?.trim() || undefined,
+            avatarUrl: input.avatarUrl || undefined
+          }
+        },
+        { timeoutMs: 6000 }
+      )
+
+      if (res?.updateMyProfile?.profile) {
+        updatedBackendProfile = res.updateMyProfile.profile
+      }
+    } catch (err) {
+      console.warn('[settingsService] Fallback a persistencia local para updateUserProfile:', err)
+    }
+
     const current = getStoredItem<UserProfile>(STORAGE_KEYS.USER_PROFILE, DEFAULT_PROFILE)
+
     const updated: UserProfile = {
       ...current,
-      nombre: input.nombre.trim(),
-      telefono: input.telefono?.trim(),
-      avatarUrl: input.avatarUrl || current.avatarUrl
+      nombre: updatedBackendProfile?.name || input.nombre.trim(),
+      telefono: updatedBackendProfile?.phone !== undefined ? updatedBackendProfile.phone : input.telefono?.trim(),
+      avatarUrl: updatedBackendProfile?.avatarUrl || input.avatarUrl || current.avatarUrl
     }
 
     setStoredItem(STORAGE_KEYS.USER_PROFILE, updated)
 
-    // Synchronize also in ERP users directory
+    if (typeof window !== 'undefined') {
+      try {
+        const rawAuthUser = localStorage.getItem('foundly_auth_user')
+
+        if (rawAuthUser) {
+          const authUser = JSON.parse(rawAuthUser)
+
+          const newAuthUser = {
+            ...authUser,
+            name: updated.nombre,
+            phone: updated.telefono,
+            avatarUrl: updated.avatarUrl
+          }
+
+          localStorage.setItem('foundly_auth_user', JSON.stringify(newAuthUser))
+        }
+      } catch {
+        // Ignorar
+      }
+    }
+
+    // Sincronizar también en directorio local de usuarios ERP
     const users = getStoredItem<ErpUser[]>(STORAGE_KEYS.ERP_USERS, DEFAULT_USERS)
+
     const syncUsers = users.map(u =>
       u.id === updated.id
         ? { ...u, nombre: updated.nombre, telefono: updated.telefono, avatarUrl: updated.avatarUrl }
@@ -262,7 +366,38 @@ export const settingsService = {
       return { success: false, message: 'La confirmación de la contraseña no coincide.' }
     }
 
-    // In a mock environment, we simulate a successful change
+    // 1. Intentar actualizar contraseña en backend GraphQL (Mutación `changeMyPassword`)
+    try {
+      const res = await executeGraphQL<
+        { changeMyPassword: ChangeMyPasswordResult },
+        { input: { currentPassword: string; newPassword: string; closeOtherSessions?: boolean } }
+      >(
+        CHANGE_MY_PASSWORD_MUTATION,
+        {
+          input: {
+            currentPassword: input.currentPassword,
+            newPassword: input.newPassword,
+            closeOtherSessions: false
+          }
+        },
+        { timeoutMs: 6000 }
+      )
+
+      if (res?.changeMyPassword) {
+        return {
+          success: res.changeMyPassword.success,
+          message: res.changeMyPassword.message || 'Contraseña actualizada exitosamente.'
+        }
+      }
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Error al cambiar la contraseña en el servidor.'
+
+      return {
+        success: false,
+        message: errorMessage
+      }
+    }
+
     return { success: true, message: 'Contraseña actualizada exitosamente.' }
   },
 
@@ -482,6 +617,7 @@ export const settingsService = {
       STORAGE_KEYS.COMMERCIAL_POLICIES,
       DEFAULT_COMMERCIAL_POLICIES
     )
+
     const updated: CommercialPoliciesSettings = { ...current, ...input }
 
     setStoredItem(STORAGE_KEYS.COMMERCIAL_POLICIES, updated)
