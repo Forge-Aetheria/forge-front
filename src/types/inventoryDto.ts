@@ -56,11 +56,25 @@ export interface GqlProductTemplate {
   uomCode: string
   productType: 'STORABLE' | 'CONSUMABLE' | 'SERVICE'
   basePrice: string | number
-  vatAliquot?: 'GENERAL_16' | 'REDUCED_8' | 'EXEMPT_0' | 'ADDITIONAL_31' | null
+  vatAliquot?: 'GENERAL_16' | 'REDUCED_8' | 'EXEMPT_0' | 'ADDITIONAL_31' | 'LUXURY_31' | null
   withholdingIslr?: string | null
   category: GqlProductCategory
   attributes: GqlProductAttribute[]
   variants: GqlProductVariant[]
+  canBeSold?: boolean | null
+  canBePurchased?: boolean | null
+  targetMargin?: string | number | null
+  notes?: string | null
+  imageUrl?: string | null
+  weight?: string | number | null
+  volume?: string | number | null
+  deliveryPolicy?: string | null
+  invoicingPolicy?: string | null
+  purchaseControlPolicy?: string | null
+  isLandedCost?: boolean | null
+  defaultSplitMethod?: string | null
+  createdAt?: string | null
+  updatedAt?: string | null
 }
 
 export interface GqlStockValuationLayer {

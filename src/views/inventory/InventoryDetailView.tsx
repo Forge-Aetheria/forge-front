@@ -11,7 +11,7 @@ import Grid from '@mui/material/Grid'
 import Typography from '@mui/material/Typography'
 import Button from '@mui/material/Button'
 import IconButton from '@mui/material/IconButton'
-import CustomChip from '@core/components/mui/Chip'
+
 import Avatar from '@mui/material/Avatar'
 import Divider from '@mui/material/Divider'
 import Tooltip from '@mui/material/Tooltip'
@@ -32,6 +32,8 @@ import DialogContent from '@mui/material/DialogContent'
 import DialogActions from '@mui/material/DialogActions'
 import Snackbar from '@mui/material/Snackbar'
 import Alert from '@mui/material/Alert'
+
+import CustomChip from '@core/components/mui/Chip'
 
 import CustomTextField from '@core/components/mui/TextField'
 
@@ -138,6 +140,7 @@ const InventoryDetailView: React.FC<Props> = ({ id }) => {
   // Modals
   const [adjustModalOpen, setAdjustModalOpen] = useState(false)
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+
   const [toast, setToast] = useState<{ open: boolean; message: string; severity: 'success' | 'error' | 'info' }>({
     open: false,
     message: '',
@@ -237,6 +240,7 @@ const InventoryDetailView: React.FC<Props> = ({ id }) => {
       setTemplate(itemData)
       setMovements(movData)
       setFiscalEnabled(fiscal.enabled)
+
       if (catsData.length > 0) {
         setCategoryOptions(catsData.map(c => c.name))
       }
@@ -284,6 +288,7 @@ const InventoryDetailView: React.FC<Props> = ({ id }) => {
   const currentIndex = allTemplates.findIndex(t => t.id === id)
   const totalTemplates = allTemplates.length
   const prevTemplate = currentIndex > 0 ? allTemplates[currentIndex - 1] : null
+
   const nextTemplate =
     currentIndex >= 0 && currentIndex < allTemplates.length - 1 ? allTemplates[currentIndex + 1] : null
 
@@ -990,6 +995,7 @@ const InventoryDetailView: React.FC<Props> = ({ id }) => {
                             checked={isLandedCost}
                             onChange={e => {
                               setIsLandedCost(e.target.checked)
+
                               if (e.target.checked) {
                                 setCanBePurchased(true)
                               }

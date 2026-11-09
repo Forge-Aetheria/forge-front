@@ -177,3 +177,116 @@ export const CONFIRM_STOCK_MOVE_MUTATION = `
     }
   }
 `
+
+export const GET_CATEGORIES_QUERY = `
+  query GetCategories($take: Int, $skip: Int) {
+    categories(take: $take, skip: $skip) {
+      id
+      name
+      completeName
+      code
+    }
+  }
+`
+
+export const CREATE_PRODUCT_TEMPLATE_MUTATION = `
+  mutation CreateProductTemplate($input: CreateProductTemplateInput!) {
+    createProductTemplate(input: $input) {
+      id
+      name
+      categoryId
+      category {
+        id
+        name
+        completeName
+      }
+      basePrice
+      uomCode
+      productType
+      vatAliquot
+      withholdingIslr
+      targetMargin
+      notes
+      imageUrl
+      canBeSold
+      canBePurchased
+      weight
+      volume
+      deliveryPolicy
+      invoicingPolicy
+      purchaseControlPolicy
+      isLandedCost
+      defaultSplitMethod
+      variants {
+        id
+        sku
+        barcode
+        priceExtra
+        standardCost
+        isActive
+        values {
+          id
+          attributeValue {
+            id
+            name
+            htmlColor
+            attribute {
+              id
+              name
+            }
+          }
+        }
+      }
+      createdAt
+      updatedAt
+    }
+  }
+`
+
+export const UPDATE_PRODUCT_TEMPLATE_MUTATION = `
+  mutation UpdateProductTemplate($id: ID!, $input: UpdateProductTemplateInput!) {
+    updateProductTemplate(id: $id, input: $input) {
+      id
+      name
+      categoryId
+      category {
+        id
+        name
+        completeName
+      }
+      basePrice
+      uomCode
+      productType
+      vatAliquot
+      withholdingIslr
+      targetMargin
+      notes
+      imageUrl
+      canBeSold
+      canBePurchased
+      weight
+      volume
+      deliveryPolicy
+      invoicingPolicy
+      purchaseControlPolicy
+      isLandedCost
+      defaultSplitMethod
+      variants {
+        id
+        sku
+        barcode
+        priceExtra
+        standardCost
+        isActive
+      }
+      updatedAt
+    }
+  }
+`
+
+export const DELETE_PRODUCT_TEMPLATE_MUTATION = `
+  mutation DeleteProductTemplate($id: ID!) {
+    deleteProductTemplate(id: $id)
+  }
+`
+
