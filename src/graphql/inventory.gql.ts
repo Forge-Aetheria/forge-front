@@ -159,6 +159,7 @@ export const CREATE_STOCK_MOVE_MUTATION = `
       referenceDoc
       locationSrcId
       locationDstId
+      createdAt
     }
   }
 `
@@ -168,16 +169,67 @@ export const CONFIRM_STOCK_MOVE_MUTATION = `
     confirmStockMove(moveId: $moveId, input: $input) {
       id
       state
+      moveType
+      quantity
+      referenceDoc
       valuations {
         id
         bcvRate
         unitCostUsd
         unitCostVes
+        quantity
       }
     }
   }
 `
 
+export const GET_STOCK_LOCATIONS_QUERY = `
+  query GetStockLocations($take: Int, $skip: Int) {
+    stockLocations(take: $take, skip: $skip) {
+      id
+      name
+      completePath
+      usage
+      warehouseId
+      isFrozen
+    }
+  }
+`
+
+export const GET_STOCK_QUANTS_QUERY = `
+  query GetStockQuants($take: Int, $skip: Int) {
+    stockQuants(take: $take, skip: $skip) {
+      id
+      variantId
+      locationId
+      quantity
+      reservedQuantity
+      location {
+        id
+        name
+        completePath
+      }
+    }
+  }
+`
+
+export const GET_VARIANT_AVAILABILITY_QUERY = `
+  query GetVariantAvailability($variantId: ID!) {
+    inventoryVariantAvailability(variantId: $variantId) {
+      variantId
+      physicalStock
+      reservedStock
+      incomingStock
+      availableStock
+      quants {
+        id
+        locationId
+        quantity
+        reservedQuantity
+      }
+    }
+  }
+`
 export const GET_CATEGORIES_QUERY = `
   query GetCategories($take: Int, $skip: Int) {
     categories(take: $take, skip: $skip) {

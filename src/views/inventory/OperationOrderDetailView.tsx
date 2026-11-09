@@ -1,8 +1,10 @@
 'use client'
 
 import { useState, useEffect, useMemo, useCallback } from 'react'
+
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+
 import Card from '@mui/material/Card'
 import CardContent from '@mui/material/CardContent'
 import Typography from '@mui/material/Typography'
@@ -37,7 +39,6 @@ import {
 import type {
   WarehouseOperationOrder,
   WarehouseOperationType,
-  WarehouseOperationLine,
   Warehouse
 } from '@/types/inventoryTypes'
 
@@ -97,6 +98,7 @@ export const OperationOrderDetailView = ({ id, defaultType = 'RECEIPT' }: Props)
 
   // Ruta base según el tipo de operación
   const currentType = isCreate ? tipo : order?.tipo || defaultType
+
   const baseRoute = useMemo(() => {
     switch (currentType) {
       case 'RECEIPT':
@@ -128,6 +130,7 @@ export const OperationOrderDetailView = ({ id, defaultType = 'RECEIPT' }: Props)
     const fetchCatalog = async () => {
       try {
         const [whs, templates] = await Promise.all([getWarehouses(), getInventoryTemplates()])
+
         setWarehouses(whs)
 
         if (whs.length > 0) {
@@ -136,9 +139,11 @@ export const OperationOrderDetailView = ({ id, defaultType = 'RECEIPT' }: Props)
         }
 
         const vOpts: VariantOption[] = []
+
         templates.forEach(t => {
           t.variants.forEach(v => {
             const attrLabel = v.combinationValues.map(a => a.valueName).join('/') || 'Estándar'
+
             vOpts.push({
               templateId: t.id,
               variantId: v.id,
@@ -174,8 +179,10 @@ export const OperationOrderDetailView = ({ id, defaultType = 'RECEIPT' }: Props)
     if (isCreate) return
 
     setLoading(true)
+
     try {
       const data = await getWarehouseOperationOrderById(id)
+
       if (data) {
         setOrder(data)
         setTipo(data.tipo)
@@ -218,23 +225,27 @@ export const OperationOrderDetailView = ({ id, defaultType = 'RECEIPT' }: Props)
         message: 'Por favor ingresa el nombre del contacto o tercero.',
         severity: 'error'
       })
-      return
+      
+return
     }
 
     const validLines = lines.filter(l => l.variantOption && Number(l.cantidad) > 0)
+
     if (validLines.length === 0) {
       setToast({
         open: true,
         message: 'Debes incluir al menos un artículo con cantidad mayor a 0.',
         severity: 'error'
       })
-      return
+      
+return
     }
 
     const originWh = warehouses.find(w => w.id === originWhId)
     const destWh = warehouses.find(w => w.id === destWhId)
 
     setSubmitting(true)
+
     try {
       const created = await createWarehouseOperationOrder({
         tipo,
@@ -280,6 +291,7 @@ export const OperationOrderDetailView = ({ id, defaultType = 'RECEIPT' }: Props)
   const handleValidateOrder = async () => {
     if (!order) return
     setSubmitting(true)
+
     try {
       await validateWarehouseOperationOrder(order.id)
       setToast({
@@ -289,10 +301,12 @@ export const OperationOrderDetailView = ({ id, defaultType = 'RECEIPT' }: Props)
       })
       setValidateModalOpen(false)
       loadOrder()
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'No se pudo validar la operación.'
+
       setToast({
         open: true,
-        message: err?.message || 'No se pudo validar la operación.',
+        message,
         severity: 'error'
       })
     } finally {
@@ -303,6 +317,7 @@ export const OperationOrderDetailView = ({ id, defaultType = 'RECEIPT' }: Props)
   const handleCancelOrder = async () => {
     if (!order) return
     setSubmitting(true)
+
     try {
       await cancelWarehouseOperationOrder(order.id)
       setToast({
@@ -742,6 +757,7 @@ export const OperationOrderDetailView = ({ id, defaultType = 'RECEIPT' }: Props)
                           value={line.cantidad}
                           onChange={e => {
                             const val = e.target.value
+
                             setLines(prev =>
                               prev.map(l => (l.tempId === line.tempId ? { ...l, cantidad: val } : l))
                             )

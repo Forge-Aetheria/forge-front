@@ -12,11 +12,21 @@ import {
   GET_TEMPLATE_BY_ID_QUERY,
   GET_KARDEX_QUERY,
   GET_CATEGORIES_QUERY,
+  GET_STOCK_LOCATIONS_QUERY,
+  GET_STOCK_QUANTS_QUERY,
+  GET_VARIANT_AVAILABILITY_QUERY,
   CREATE_PRODUCT_TEMPLATE_MUTATION,
   UPDATE_PRODUCT_TEMPLATE_MUTATION,
   DELETE_PRODUCT_TEMPLATE_MUTATION
 } from '@/graphql/inventory.gql'
-import type { GqlProductTemplate, GqlKardexPage, GqlStockMove } from '@/types/inventoryDto'
+import type {
+  GqlProductTemplate,
+  GqlKardexPage,
+  GqlStockMove,
+  GqlStockLocation,
+  GqlVariantAvailability,
+  GqlStockQuant
+} from '@/types/inventoryDto'
 import {
   mapGqlTemplateToFrontend,
   serializeCreateTemplateInput,
@@ -217,6 +227,83 @@ export const resolveCategoryId = async (categoryName?: string): Promise<string> 
 
   // Fallback controlado si el backend no responde
   return 'c1'
+}
+
+let cachedStockLocations: GqlStockLocation[] | null = null
+
+export const fetchStockLocations = async (): Promise<GqlStockLocation[]> => {
+  if (cachedStockLocations && cachedStockLocations.length > 0) {
+    return cachedStockLocations
+  }
+
+  try {
+    const res = await executeGraphQL<{ stockLocations: GqlStockLocation[] }>(
+      GET_STOCK_LOCATIONS_QUERY,
+      { take: 100 },
+      { timeoutMs: 5000 }
+    )
+
+    if (res?.stockLocations && Array.isArray(res.stockLocations)) {
+      cachedStockLocations = res.stockLocations
+
+      return res.stockLocations
+    }
+  } catch (err) {
+    console.warn('[inventoryService] Error al cargar stockLocations de backend:', err)
+  }
+
+  return []
+}
+
+export const fetchVariantAvailability = async (variantId: string): Promise<GqlVariantAvailability | null> => {
+  try {
+    const res = await executeGraphQL<{ inventoryVariantAvailability: GqlVariantAvailability }>(
+      GET_VARIANT_AVAILABILITY_QUERY,
+      { variantId },
+      { timeoutMs: 4000 }
+    )
+
+    if (res?.inventoryVariantAvailability) {
+      return res.inventoryVariantAvailability
+    }
+  } catch (err) {
+    console.warn('[inventoryService] Error al consultar disponibilidad de variante:', err)
+  }
+
+  return null
+}
+
+export const fetchStockQuants = async (variantId?: string): Promise<GqlStockQuant[]> => {
+  try {
+    const res = await executeGraphQL<{ stockQuants: GqlStockQuant[] }>(
+      GET_STOCK_QUANTS_QUERY,
+      {
+        take: 100,
+        where: variantId ? { variantId: { equals: variantId } } : undefined
+      },
+      { timeoutMs: 5000 }
+    )
+
+    if (res?.stockQuants && Array.isArray(res.stockQuants)) {
+      return res.stockQuants
+    }
+  } catch (err) {
+    console.warn('[inventoryService] Error al consultar stockQuants:', err)
+  }
+
+  return []
+}
+
+export const resolveDefaultStockLocations = async (): Promise<{ internalLocationId: string }> => {
+  const locs = await fetchStockLocations()
+
+  if (locs.length > 0) {
+    const internal = locs.find(l => l.usage === 'INTERNAL') || locs[0]
+
+    return { internalLocationId: internal.id }
+  }
+
+  return { internalLocationId: 'loc-default-internal' }
 }
 
 export const createProductTemplate = async (

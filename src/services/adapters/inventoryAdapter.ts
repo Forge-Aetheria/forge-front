@@ -332,3 +332,83 @@ export const mapGqlVariantToFrontend = (gqlVar: GqlProductVariant, templateId: s
     availableStock: Math.max(0, physicalStock - reservedStock)
   }
 }
+
+/**
+ * Genera una clave de idempotencia UUIDv4 válida requerida por confirmStockMove.
+ */
+export const generateIdempotencyKey = (): string => {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID()
+  }
+
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+    const r = (Math.random() * 16) | 0
+    const v = c === 'x' ? r : (r & 0x3) | 0x8
+
+    return v.toString(16)
+  })
+}
+
+/**
+ * Mapea el tipo de operación operativa al enum MoveType de backend.
+ */
+export const mapOperationTypeToMoveType = (
+  tipo: 'RECEIPT' | 'DELIVERY' | 'INTERNAL_TRANSFER' | string
+): 'INCOMING' | 'OUTGOING' | 'INTERNAL_TRANSFER' => {
+  if (tipo === 'RECEIPT') return 'INCOMING'
+  if (tipo === 'DELIVERY') return 'OUTGOING'
+
+  return 'INTERNAL_TRANSFER'
+}
+
+export interface CreateStockMoveGqlInput {
+  variantId: string
+  locationSrcId: string
+  locationDstId: string
+  quantity: string
+  moveType: 'INCOMING' | 'OUTGOING' | 'INTERNAL_TRANSFER'
+  referenceDoc?: string
+}
+
+export interface ConfirmStockMoveGqlInput {
+  idempotencyKey: string
+  unitCostUsd: string
+  unitCostVes: string
+  bcvRate: string
+}
+
+export const serializeCreateStockMoveInput = (params: {
+  variantId: string
+  locationSrcId: string
+  locationDstId: string
+  quantity: number | string
+  moveType: 'INCOMING' | 'OUTGOING' | 'INTERNAL_TRANSFER'
+  referenceDoc?: string
+}): CreateStockMoveGqlInput => {
+  return {
+    variantId: params.variantId,
+    locationSrcId: params.locationSrcId,
+    locationDstId: params.locationDstId,
+    quantity: formatDecimalString(params.quantity),
+    moveType: params.moveType,
+    referenceDoc: params.referenceDoc ? params.referenceDoc.trim() : undefined
+  }
+}
+
+export const serializeConfirmStockMoveInput = (params: {
+  idempotencyKey?: string
+  unitCostUsd: number | string
+  bcvRate: number | string
+}): ConfirmStockMoveGqlInput => {
+  const bcv = typeof params.bcvRate === 'number' ? params.bcvRate : parseFloat(params.bcvRate) || 1
+  const costUsd = typeof params.unitCostUsd === 'number' ? params.unitCostUsd : parseFloat(params.unitCostUsd) || 0
+  const costVes = costUsd * bcv
+
+  return {
+    idempotencyKey: params.idempotencyKey || generateIdempotencyKey(),
+    unitCostUsd: formatDecimalString(costUsd),
+    unitCostVes: formatDecimalString(costVes),
+    bcvRate: formatDecimalString(bcv)
+  }
+}
+
