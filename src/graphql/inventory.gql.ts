@@ -230,7 +230,6 @@ export const GET_VARIANT_AVAILABILITY_QUERY = `
     }
   }
 `
-
 export const GET_CATEGORIES_QUERY = `
   query GetCategories($take: Int, $skip: Int) {
     categories(take: $take, skip: $skip) {
