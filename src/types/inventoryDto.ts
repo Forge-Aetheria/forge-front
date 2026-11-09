@@ -21,8 +21,38 @@ export interface GqlVariantValue {
 
 export interface GqlStockQuant {
   id: string
+  variantId?: string
+  locationId?: string
   quantity: string | number
   reservedQuantity: string | number
+  location?: {
+    id: string
+    name: string
+    completePath: string
+  }
+}
+
+export interface GqlStockLocation {
+  id: string
+  name: string
+  completePath: string
+  usage?: string
+  warehouseId?: string | null
+  isFrozen?: boolean | null
+}
+
+export interface GqlVariantAvailability {
+  variantId: string
+  physicalStock: string | number
+  reservedStock: string | number
+  incomingStock: string | number
+  availableStock: string | number
+  quants?: Array<{
+    id: string
+    locationId: string
+    quantity: string | number
+    reservedQuantity: string | number
+  }>
 }
 
 export interface GqlProductVariant {

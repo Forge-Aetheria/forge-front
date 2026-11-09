@@ -5,13 +5,23 @@ import type {
   WarehouseOperationStatus,
   WarehouseOperationLine
 } from '@/types/inventoryTypes'
+import { executeGraphQL } from '@/libs/graphqlClient'
+import { CREATE_STOCK_MOVE_MUTATION, CONFIRM_STOCK_MOVE_MUTATION } from '@/graphql/inventory.gql'
+import {
+  mapOperationTypeToMoveType,
+  serializeCreateStockMoveInput,
+  serializeConfirmStockMoveInput,
+  generateIdempotencyKey
+} from '@/services/adapters/inventoryAdapter'
+import { fetchStockLocations, resolveDefaultStockLocations } from '@/services/inventoryService'
 import {
   loadStoredOperationOrders,
   saveStoredOperationOrders,
   loadStoredTemplates,
   saveStoredTemplates,
   loadStoredMovements,
-  saveStoredMovements
+  saveStoredMovements,
+  getActiveBcvRate
 } from './inventoryStorage'
 import {
   calculateWeightedAverageCost,
@@ -26,7 +36,9 @@ export const getWarehouseOperationOrderById = async (
 ): Promise<WarehouseOperationOrder | null> => {
   const orders = loadStoredOperationOrders()
   const order = orders.find(o => o.id === id || o.codigo === id) || null
-  return Promise.resolve(order)
+
+  
+return Promise.resolve(order)
 }
 
 export const getWarehouseOperationOrders = async (
@@ -166,6 +178,76 @@ export const validateWarehouseOperationOrder = async (
     }
   }
 
+  // Resolver ubicaciones y tasa oficial BCV para mutaciones transaccionales de backend
+  const activeRate = (await getActiveBcvRate()) || 1
+  const stockLocations = await fetchStockLocations()
+  const defaultLoc = await resolveDefaultStockLocations()
+  const moveType = mapOperationTypeToMoveType(order.tipo)
+
+  let locationSrcId = defaultLoc.internalLocationId
+  let locationDstId = defaultLoc.internalLocationId
+
+  if (stockLocations.length > 0) {
+    const internal = stockLocations.find(l => l.usage === 'INTERNAL') || stockLocations[0]
+    const supplier = stockLocations.find(l => l.usage === 'SUPPLIER') || internal
+    const customer = stockLocations.find(l => l.usage === 'CUSTOMER') || internal
+
+    if (order.tipo === 'RECEIPT') {
+      locationSrcId = supplier.id
+      locationDstId = internal.id
+    } else if (order.tipo === 'DELIVERY') {
+      locationSrcId = internal.id
+      locationDstId = customer.id
+    } else {
+      locationSrcId = internal.id
+      locationDstId = stockLocations.length > 1 ? stockLocations[1].id : internal.id
+    }
+  }
+
+  // Ejecutar movimientos transaccionales en backend GraphQL para variantes sincronizadas
+  for (const line of updatedLines) {
+    if (line.cantidad_procesada <= 0) continue
+
+    const isVarUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(
+      line.variante_id
+    )
+
+    if (isVarUuid) {
+      const createInput = serializeCreateStockMoveInput({
+        variantId: line.variante_id,
+        locationSrcId,
+        locationDstId,
+        quantity: line.cantidad_procesada,
+        moveType,
+        referenceDoc: order.codigo || order.documento_origen || undefined
+      })
+
+      const createRes = await executeGraphQL<{ createStockMove: { id: string } }>(
+        CREATE_STOCK_MOVE_MUTATION,
+        { input: createInput },
+        { timeoutMs: 10000 }
+      )
+
+      if (createRes?.createStockMove?.id) {
+        const moveId = createRes.createStockMove.id
+        const idempotencyKey = generateIdempotencyKey()
+        const unitCostUsd = line.costo_unitario_usd || 0
+
+        const confirmInput = serializeConfirmStockMoveInput({
+          idempotencyKey,
+          unitCostUsd,
+          bcvRate: activeRate
+        })
+
+        await executeGraphQL<{ confirmStockMove: { id: string; state: string } }>(
+          CONFIRM_STOCK_MOVE_MUTATION,
+          { moveId, input: confirmInput },
+          { timeoutMs: 10000 }
+        )
+      }
+    }
+  }
+
   // Apply stock changes & generate Kardex movements
   updatedLines.forEach(line => {
     if (line.cantidad_procesada <= 0) return
@@ -201,7 +283,9 @@ export const validateWarehouseOperationOrder = async (
         // En modo flexible, el stock físico puede ser negativo
         newPhysical = variant.physicalStock - line.cantidad_procesada
       }
+
       newReserved = Math.max(0, variant.reservedStock - line.cantidad_procesada)
+
       // En despachos el costo promedio de las existencias restantes no cambia
     }
 
@@ -232,10 +316,12 @@ export const validateWarehouseOperationOrder = async (
       order.tipo === 'RECEIPT' || order.tipo === 'INTERNAL_TRANSFER'
         ? line.cantidad_procesada
         : 0
+
     const qtySalida =
       order.tipo === 'DELIVERY' || order.tipo === 'INTERNAL_TRANSFER'
         ? line.cantidad_procesada
         : 0
+
     const unitCost = order.tipo === 'RECEIPT' ? lineUnitCost : (variant.costPrice || lineUnitCost)
     const movQty = qtyEntrada > 0 ? qtyEntrada : qtySalida
     const movVal = Number((movQty * unitCost).toFixed(2))

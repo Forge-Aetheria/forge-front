@@ -29,6 +29,9 @@ import {
   GET_ACTIVE_BCV_RATE_QUERY,
   GET_VARIANTS_QUERY
 } from '@/graphql/sales.gql';
+import { CREATE_STOCK_MOVE_MUTATION } from '@/graphql/inventory.gql';
+import { serializeCreateStockMoveInput } from '@/services/adapters/inventoryAdapter';
+import { fetchStockLocations, resolveDefaultStockLocations } from '@/services/inventoryService';
 
 const STORAGE_KEY_QUOTES = 'forge_sales_quotes';
 
@@ -1113,6 +1116,39 @@ return { ...updated };
     }));
 
     const docOrigen = q.correlativo_orden || q.correlativo;
+
+    // Crear movimiento transaccional OUTGOING en backend si las variantes son UUIDs reales
+    try {
+      const stockLocations = await fetchStockLocations();
+      const defaultLoc = await resolveDefaultStockLocations();
+      const internalLoc = stockLocations.find(l => l.usage === 'INTERNAL') || { id: defaultLoc.internalLocationId };
+      const customerLoc = stockLocations.find(l => l.usage === 'CUSTOMER') || internalLoc;
+
+      for (const line of storableLines) {
+        const isVarUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(
+          line.producto_id
+        );
+
+        if (isVarUuid) {
+          const moveInput = serializeCreateStockMoveInput({
+            variantId: line.producto_id,
+            locationSrcId: internalLoc.id,
+            locationDstId: customerLoc.id,
+            quantity: line.cantidad,
+            moveType: 'OUTGOING',
+            referenceDoc: docOrigen
+          });
+
+          await executeGraphQL(
+            CREATE_STOCK_MOVE_MUTATION,
+            { input: moveInput },
+            { timeoutMs: 10000 }
+          );
+        }
+      }
+    } catch (err) {
+      console.warn('[salesQuotesService] No se pudo crear stockMove en backend para despacho de venta:', err);
+    }
 
     const opOrder = await createWarehouseOperationOrder({
       tipo: 'DELIVERY',
