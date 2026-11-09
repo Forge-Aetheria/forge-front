@@ -4,17 +4,24 @@ import type {
   StockMovement,
   StockAdjustmentRecord,
   AdjustmentReason,
-  WarehouseOperationsDashboard,
-  FiscalConfig
+  WarehouseOperationsDashboard
 } from '@/types/inventoryTypes'
 import { executeGraphQL } from '@/libs/graphqlClient'
 import {
   GET_TEMPLATES_QUERY,
   GET_TEMPLATE_BY_ID_QUERY,
-  GET_KARDEX_QUERY
+  GET_KARDEX_QUERY,
+  GET_CATEGORIES_QUERY,
+  CREATE_PRODUCT_TEMPLATE_MUTATION,
+  UPDATE_PRODUCT_TEMPLATE_MUTATION,
+  DELETE_PRODUCT_TEMPLATE_MUTATION
 } from '@/graphql/inventory.gql'
 import type { GqlProductTemplate, GqlKardexPage, GqlStockMove } from '@/types/inventoryDto'
-import { mapGqlTemplateToFrontend } from '@/services/adapters/inventoryAdapter'
+import {
+  mapGqlTemplateToFrontend,
+  serializeCreateTemplateInput,
+  serializeUpdateTemplateInput
+} from '@/services/adapters/inventoryAdapter'
 import {
   getActiveBcvRate,
   getFiscalConfig,
@@ -94,9 +101,11 @@ export const getInventoryTemplates = async (forceRefresh = false): Promise<Produ
 
       if (res?.templates?.nodes && res.templates.nodes.length > 0) {
         const mapped = res.templates.nodes.map(mapGqlTemplateToFrontend)
+
         cachedTemplates = mapped
         saveStoredTemplates(mapped)
-        return mapped
+        
+return mapped
       }
     } catch {
       // Fallback controlado a datos persistidos si el backend no está disponible o no hay red
@@ -105,8 +114,10 @@ export const getInventoryTemplates = async (forceRefresh = false): Promise<Produ
     }
 
     const stored = loadStoredTemplates()
+
     cachedTemplates = stored
-    return stored
+    
+return stored
   })()
 
   return fetchTemplatesPromise
@@ -154,76 +165,123 @@ export const getVariantKardex = async (variantId: string): Promise<GqlStockMove[
   return []
 }
 
+export interface BackendCategoryNode {
+  id: string
+  name: string
+  completeName?: string
+  code?: string
+}
+
+let cachedBackendCategories: BackendCategoryNode[] | null = null
+
+export const fetchBackendCategories = async (): Promise<BackendCategoryNode[]> => {
+  if (cachedBackendCategories && cachedBackendCategories.length > 0) {
+    return cachedBackendCategories
+  }
+
+  try {
+    const res = await executeGraphQL<{ categories: BackendCategoryNode[] }>(
+      GET_CATEGORIES_QUERY,
+      { take: 100 },
+      { timeoutMs: 5000 }
+    )
+
+    if (res?.categories && Array.isArray(res.categories)) {
+      cachedBackendCategories = res.categories
+      
+return res.categories
+    }
+  } catch (err) {
+    console.warn('[inventoryService] No se pudieron cargar categorías de backend:', err)
+  }
+
+  return []
+}
+
+export const resolveCategoryId = async (categoryName?: string): Promise<string> => {
+  const backendCats = await fetchBackendCategories()
+
+  if (backendCats.length > 0) {
+    if (categoryName) {
+      const trimmed = categoryName.trim().toLowerCase()
+
+      const matched = backendCats.find(
+        c => c.name.toLowerCase() === trimmed || c.completeName?.toLowerCase() === trimmed
+      )
+
+      if (matched) return matched.id
+    }
+
+    return backendCats[0].id
+  }
+
+  // Fallback controlado si el backend no responde
+  return 'c1'
+}
+
 export const createProductTemplate = async (
   payload: Omit<ProductTemplate, 'id' | 'createdAt' | 'updatedAt'>
 ): Promise<ProductTemplate> => {
-  const templates = loadStoredTemplates()
-  const movements = loadStoredMovements()
+  // 1. Resolver el categoryId válido del backend
+  const categoryId = await resolveCategoryId(payload.categoryName)
 
-  // Verify unique master SKU
-  const duplicateMaster = templates.some(
-    t => t.defaultCode.trim().toLowerCase() === payload.defaultCode.trim().toLowerCase()
+  // 2. Serializar payload para la mutación atómica GraphQL
+  const input = serializeCreateTemplateInput(payload, categoryId)
+
+  // 3. Ejecutar la mutación atómica contra forge-backend
+  const res = await executeGraphQL<{ createProductTemplate: GqlProductTemplate }>(
+    CREATE_PRODUCT_TEMPLATE_MUTATION,
+    { input },
+    { timeoutMs: 10000 }
   )
 
-  if (duplicateMaster) {
-    throw new Error(`El SKU "${payload.defaultCode}" ya está en uso por otro artículo.`)
+  if (res?.createProductTemplate) {
+    const createdTemplate = mapGqlTemplateToFrontend(res.createProductTemplate)
+
+    if (payload.categoryName && createdTemplate.categoryName === 'General') {
+      createdTemplate.categoryName = payload.categoryName
+    }
+
+    invalidateTemplatesCache()
+
+    return createdTemplate
   }
 
-  const now = new Date().toISOString()
-  const newId = `prod-${Date.now().toString().slice(-5)}`
-
-  const newTemplate: ProductTemplate = {
-    ...payload,
-    id: newId,
-    createdAt: now,
-    updatedAt: now,
-    variants: payload.variants.map((v, idx) => ({
-      ...v,
-      id: v.id || `var-${Date.now().toString().slice(-4)}-${idx + 1}`,
-      templateId: newId,
-      availableStock: Math.max(0, v.physicalStock - (v.reservedStock || 0))
-    }))
-  }
-
-  // Register initial Kardex entries for variants with initial physical stock > 0
-  if (newTemplate.productType !== 'service') {
-    newTemplate.variants.forEach(variant => {
-      if (variant.physicalStock > 0) {
-        movements.unshift({
-          id: `mov-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-          fecha: now,
-          producto_id: newTemplate.id,
-          producto_nombre: newTemplate.name,
-          variante_id: variant.id,
-          variante_sku: variant.sku,
-          uom_code: newTemplate.uomCode,
-          tipo_movimiento: 'INITIAL_INVENTORY',
-          documento_referencia: `INV-ALTA-${newTemplate.defaultCode}`,
-          cantidad_entrada: variant.physicalStock,
-          cantidad_salida: 0,
-          costo_unitario_usd: variant.costPrice || newTemplate.standardCost,
-          saldo_resultante: variant.physicalStock,
-          motivo: 'Existencia inicial al registrar el producto en catálogo',
-          almacen: 'Almacén Central',
-          usuario_responsable: 'Administrador ERP'
-        })
-      }
-    })
-    saveStoredMovements(movements)
-  }
-
-  const updated = [newTemplate, ...templates]
-
-  saveStoredTemplates(updated)
-  invalidateTemplatesCache()
-
-  return Promise.resolve(newTemplate)
+  throw new Error('El backend no retornó los datos del artículo creado.')
 }
 
 export const updateProductTemplate = async (
   id: string,
   payload: Partial<ProductTemplate>
 ): Promise<ProductTemplate> => {
+  const isUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(id)
+
+  if (isUuid) {
+    let categoryId: string | undefined
+
+    if (payload.categoryName) {
+      categoryId = await resolveCategoryId(payload.categoryName)
+    }
+
+    const input = serializeUpdateTemplateInput(payload, categoryId)
+
+    const res = await executeGraphQL<{ updateProductTemplate: GqlProductTemplate }>(
+      UPDATE_PRODUCT_TEMPLATE_MUTATION,
+      { id, input },
+      { timeoutMs: 10000 }
+    )
+
+    if (res?.updateProductTemplate) {
+      const mapped = mapGqlTemplateToFrontend(res.updateProductTemplate)
+
+      invalidateTemplatesCache()
+
+      return mapped
+    }
+
+    throw new Error('El backend no retornó los datos actualizados del producto.')
+  }
+
   const templates = loadStoredTemplates()
   const index = templates.findIndex(t => t.id === id)
 
@@ -245,6 +303,7 @@ export const updateProductTemplate = async (
   }
 
   const existing = templates[index]
+
   const updatedTemplate: ProductTemplate = {
     ...existing,
     ...payload,
@@ -265,6 +324,20 @@ export const updateProductTemplate = async (
 }
 
 export const deleteProductTemplate = async (id: string): Promise<void> => {
+  const isUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(id)
+
+  if (isUuid) {
+    await executeGraphQL<{ deleteProductTemplate: boolean }>(
+      DELETE_PRODUCT_TEMPLATE_MUTATION,
+      { id },
+      { timeoutMs: 10000 }
+    )
+
+    invalidateTemplatesCache()
+
+    return
+  }
+
   const templates = loadStoredTemplates()
   const filtered = templates.filter(t => t.id !== id)
 
@@ -447,6 +520,7 @@ export const getWarehouseOperationsDashboard = async (): Promise<WarehouseOperat
   const activeOrders = orders.filter(
     op => op.estado !== 'COMPLETED' && op.estado !== 'CANCELLED'
   )
+
   const receipts = activeOrders.filter(op => op.tipo === 'RECEIPT')
   const deliveries = activeOrders.filter(op => op.tipo === 'DELIVERY')
   const transfers = activeOrders.filter(op => op.tipo === 'INTERNAL_TRANSFER')
