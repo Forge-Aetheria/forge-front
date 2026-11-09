@@ -1,4 +1,4 @@
-import { TerceroEntity, TerceroFormData, ContactsFilterState, ContactPerson } from '@/types/contactsTypes';
+import type { TerceroEntity, TerceroFormData, ContactsFilterState, ContactPerson } from '@/types/contactsTypes';
 import { initialMockTerceros } from '@/data/contacts/mockContactsData';
 import { executeGraphQL } from '@/libs/graphqlClient';
 import {
@@ -56,21 +56,27 @@ const RIF_PREFIX_VALUES: Record<string, number> = {
   G: 5,
   C: 3
 };
+
 const RIF_WEIGHTS = [3, 2, 7, 6, 5, 4, 3, 2];
 
 function computeRifCheckDigit(docType: string, body: string): string {
   const prefixVal = RIF_PREFIX_VALUES[docType] || 3;
   let sum = prefixVal * 4;
   const padded = body.padStart(8, '0');
+
   for (let i = 0; i < 8; i++) {
     sum += Number(padded[i]) * RIF_WEIGHTS[i];
   }
+
   const digit = 11 - (sum % 11);
-  return digit >= 10 ? '0' : String(digit);
+
+  
+return digit >= 10 ? '0' : String(digit);
 }
 
 export function mapBackendPartnerToTercero(partner: BackendPartner): TerceroEntity {
   const isIndividual = partner.docType === 'V' || partner.docType === 'E';
+
   const docFormatted = partner.checkDigit
     ? `${partner.docType}-${partner.docNumber}-${partner.checkDigit}`
     : `${partner.docType}-${partner.docNumber}`;
@@ -118,6 +124,8 @@ class ContactsService {
 
   public async getTerceros(filters?: Partial<ContactsFilterState>, forceRefresh = false): Promise<TerceroEntity[]> {
     const now = Date.now();
+
+
     // Cache de 15 segundos para evitar saturación de queries
     if (forceRefresh || now - this.lastFetchTimestamp > 15000) {
       try {
@@ -134,11 +142,14 @@ class ContactsService {
 
         if (res?.partners && Array.isArray(res.partners)) {
           const mappedPartners = res.partners.map(mapBackendPartnerToTercero);
+
           if (mappedPartners.length > 0) {
             const backendIds = new Set(mappedPartners.map(p => p.id));
             const localOnly = this.terceros.filter(t => !backendIds.has(t.id) && t.id.startsWith('ter-'));
+
             this.terceros = [...mappedPartners, ...localOnly];
           }
+
           this.lastFetchTimestamp = now;
         }
       } catch (err) {
@@ -152,6 +163,7 @@ class ContactsService {
       if (filters.tipo && filters.tipo !== 'ALL') {
         result = result.filter(t => t.tipo === filters.tipo);
       }
+
       if (filters.clasificacion && filters.clasificacion !== 'ALL') {
         if (filters.clasificacion === 'CLIENTE') {
           result = result.filter(t => t.is_cliente);
@@ -159,6 +171,7 @@ class ContactsService {
           result = result.filter(t => t.is_proveedor);
         }
       }
+
       if (filters.search && filters.search.trim().length > 0) {
         const q = filters.search.toLowerCase().trim();
         const searchResults: TerceroEntity[] = [];
@@ -215,6 +228,7 @@ class ContactsService {
   public async getTerceroById(id: string): Promise<TerceroEntity | null> {
     const realId = id.split('__ref__')[0];
     const cached = this.terceros.find(t => t.id === realId && t.status === 'ACTIVO');
+
     if (cached) return cached;
 
     // Intentar buscar en backend por UUID
@@ -224,10 +238,13 @@ class ContactsService {
         { id: realId },
         { timeoutMs: 4000 }
       );
+
       if (res?.partner) {
         const mapped = mapBackendPartnerToTercero(res.partner);
+
         this.terceros.unshift(mapped);
-        return mapped;
+        
+return mapped;
       }
     } catch {
       // Ignorar error y retornar null
@@ -246,6 +263,7 @@ class ContactsService {
 
     // Calcular dígito verificador exacto SENIAT (módulo 11) si aplica
     let checkDigit: string | undefined = undefined;
+
     if (['J', 'G', 'C'].includes(docType)) {
       checkDigit = computeRifCheckDigit(docType, docNumber);
     } else if (digitsOnly.length > 8) {
@@ -287,8 +305,10 @@ class ContactsService {
 
     if (res?.createPartner) {
       const mapped = mapBackendPartnerToTercero(res.createPartner);
+
       this.terceros.unshift(mapped);
-      return mapped;
+      
+return mapped;
     }
 
     throw new Error('El backend no devolvió los datos del tercero creado.');
@@ -300,6 +320,7 @@ class ContactsService {
 
     if (isUuid) {
       const input: Record<string, unknown> = {};
+
       if (data.nombre_razon_social) input.legalName = data.nombre_razon_social.trim();
       if (data.direccion) input.fiscalAddress = data.direccion.trim();
       if (data.telefono_principal) input.phone = data.telefono_principal.trim();
@@ -314,29 +335,35 @@ class ContactsService {
       if (res?.updatePartner) {
         const mapped = mapBackendPartnerToTercero(res.updatePartner);
         const index = this.terceros.findIndex(t => t.id === realId);
+
         if (index !== -1) {
           this.terceros[index] = mapped;
         } else {
           this.terceros.unshift(mapped);
         }
-        return mapped;
+
+        
+return mapped;
       }
     }
 
     // Si es un ID local
     const index = this.terceros.findIndex(t => t.id === realId);
+
     if (index === -1) throw new Error('Entidad no encontrada');
     this.terceros[index] = {
       ...this.terceros[index],
       ...data,
       updated_at: new Date().toISOString()
     };
-    return this.terceros[index];
+    
+return this.terceros[index];
   }
 
   public async deactivateTercero(id: string): Promise<void> {
     const realId = id.split('__ref__')[0];
     const index = this.terceros.findIndex(t => t.id === realId);
+
     if (index !== -1) {
       this.terceros[index].status = 'INACTIVO';
       this.terceros[index].updated_at = new Date().toISOString();
@@ -345,6 +372,7 @@ class ContactsService {
 
   public async deactivateMultipleTerceros(ids: string[]): Promise<void> {
     const idSet = new Set(ids.map(id => id.split('__ref__')[0]));
+
     this.terceros.forEach(t => {
       if (idSet.has(t.id)) {
         t.status = 'INACTIVO';

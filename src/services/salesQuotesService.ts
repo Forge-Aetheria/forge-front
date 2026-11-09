@@ -1,4 +1,4 @@
-import {
+import type {
   BcvRate,
   ClientLookup,
   CreateQuotePayload,
@@ -19,7 +19,6 @@ import {
 } from '@/data/sales/quotes/mockQuotesData';
 import { createWarehouseOperationOrder } from '@/services/inventory/operationOrdersService';
 import { contactsService } from '@/services/contactsService';
-import { getInventoryTemplates } from '@/services/inventoryService';
 import { executeGraphQL } from '@/libs/graphqlClient';
 import {
   GET_SALES_QUOTES_QUERY,
@@ -37,10 +36,14 @@ function generateUUID(): string {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
     return crypto.randomUUID();
   }
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+
+  
+return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
     const r = (Math.random() * 16) | 0;
     const v = c === 'x' ? r : (r & 0x3) | 0x8;
-    return v.toString(16);
+
+    
+return v.toString(16);
   });
 }
 
@@ -111,10 +114,13 @@ class SalesQuotesService {
 
   private hydrateFromStorage(): void {
     if (typeof window === 'undefined') return;
+
     try {
       const saved = localStorage.getItem(STORAGE_KEY_QUOTES);
+
       if (saved) {
         const parsed = JSON.parse(saved);
+
         if (Array.isArray(parsed) && parsed.length > 0) {
           this.quotes = parsed;
         }
@@ -126,6 +132,7 @@ class SalesQuotesService {
 
   private persistToStorage(): void {
     if (typeof window === 'undefined') return;
+
     try {
       localStorage.setItem(STORAGE_KEY_QUOTES, JSON.stringify(this.quotes));
     } catch {
@@ -137,6 +144,7 @@ class SalesQuotesService {
   public getFeatureFlags(): SalesFeatureFlags {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('forge_sales_feature_flags');
+
       if (saved) {
         try {
           return { ...defaultSalesFeatureFlags, ...JSON.parse(saved) };
@@ -145,13 +153,16 @@ class SalesQuotesService {
         }
       }
     }
-    return defaultSalesFeatureFlags;
+
+    
+return defaultSalesFeatureFlags;
   }
 
   public setFeatureFlags(flags: Partial<SalesFeatureFlags>): void {
     if (typeof window !== 'undefined') {
       const current = this.getFeatureFlags();
       const updated = { ...current, ...flags };
+
       localStorage.setItem('forge_sales_feature_flags', JSON.stringify(updated));
     }
   }
@@ -175,7 +186,9 @@ class SalesQuotesService {
     } catch {
       // Fallback silencioso a la tasa en memoria / mock
     }
-    return { ...this.bcvRate };
+
+    
+return { ...this.bcvRate };
   }
 
   public async updateBcvRate(nuevaTasa: number): Promise<BcvRate> {
@@ -184,7 +197,8 @@ class SalesQuotesService {
       tasa: nuevaTasa,
       sincronizado_at: new Date().toISOString()
     };
-    return { ...this.bcvRate };
+    
+return { ...this.bcvRate };
   }
 
   // Búsqueda de Clientes Conectada al Directorio de Terceros (Partners)
@@ -211,6 +225,7 @@ class SalesQuotesService {
 
         // Mantener sincronizado el caché local
         const existingIds = new Set(this.clients.map(c => c.id));
+
         for (const m of mapped) {
           if (!existingIds.has(m.id)) {
             this.clients.push(m);
@@ -224,6 +239,7 @@ class SalesQuotesService {
     }
 
     const q = query.toLowerCase().trim();
+
     if (!q) return this.clients.slice(0, 10);
 
     return this.clients.filter(
@@ -267,6 +283,7 @@ class SalesQuotesService {
           const isPhysical = v.template.productType === 'STORABLE';
           let stockFisico = 0;
           let stockComprometido = 0;
+
           if (v.quants && v.quants.length > 0) {
             for (const q of v.quants) {
               stockFisico += Number(q.quantity || 0);
@@ -295,7 +312,8 @@ class SalesQuotesService {
         });
 
         this.products = prods;
-        return [...this.products];
+        
+return [...this.products];
       }
     } catch (err) {
       console.warn('[salesQuotesService] Backend variants query no disponible, usando fallback:', err);
@@ -327,6 +345,7 @@ class SalesQuotesService {
 
       if (flags.TAXES_ENABLED && aplicaIva) {
         const isExempt = item.alicuota_iva === 'EXEMPT' || item.alicuota_iva === '0';
+
         if (isExempt) {
           monto_exento_usd += netLine;
         } else {
@@ -492,10 +511,12 @@ class SalesQuotesService {
 
       if (res?.salesQuotes && Array.isArray(res.salesQuotes)) {
         const mappedQuotes: Quote[] = res.salesQuotes.map(q => this.mapBackendQuoteToFrontend(q));
+
         if (mappedQuotes.length > 0) {
           // Mantener borradores locales que no hayan sido sincronizados aún
           const backendIds = new Set(mappedQuotes.map(bq => bq.id));
           const localDrafts = this.quotes.filter(lq => !backendIds.has(lq.id) && lq.id.startsWith('quote-'));
+
           this.quotes = [...mappedQuotes, ...localDrafts];
           this.persistToStorage();
         }
@@ -510,11 +531,14 @@ class SalesQuotesService {
       if (filters.estado && filters.estado !== 'ALL') {
         result = result.filter(q => q.estado === filters.estado);
       }
+
       if (filters.cliente_id && filters.cliente_id !== 'ALL') {
         result = result.filter(q => q.cliente.id === filters.cliente_id);
       }
+
       if (filters.search && filters.search.trim().length > 0) {
         const q = filters.search.toLowerCase().trim();
+
         result = result.filter(
           item =>
             item.correlativo.toLowerCase().includes(q) ||
@@ -523,9 +547,11 @@ class SalesQuotesService {
             (item.cliente.nombre_comercial && item.cliente.nombre_comercial.toLowerCase().includes(q))
         );
       }
+
       if (filters.fecha_desde) {
         result = result.filter(item => item.fecha_emision >= filters.fecha_desde!);
       }
+
       if (filters.fecha_hasta) {
         result = result.filter(item => item.fecha_emision <= filters.fecha_hasta!);
       }
@@ -538,6 +564,7 @@ class SalesQuotesService {
   // Obtener por ID
   public async getQuoteById(id: string): Promise<Quote | null> {
     const isUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(id);
+
     if (isUuid) {
       try {
         const res = await executeGraphQL<{ salesQuote: BackendSalesQuote }>(
@@ -545,16 +572,20 @@ class SalesQuotesService {
           { id },
           { timeoutMs: 4000 }
         );
+
         if (res?.salesQuote) {
           const mapped = this.mapBackendQuoteToFrontend(res.salesQuote);
           const idx = this.quotes.findIndex(q => q.id === id);
+
           if (idx !== -1) {
             this.quotes[idx] = mapped;
           } else {
             this.quotes.unshift(mapped);
           }
+
           this.persistToStorage();
-          return mapped;
+          
+return mapped;
         }
       } catch (err) {
         console.warn('[salesQuotesService] Backend salesQuote no disponible, usando memoria:', err);
@@ -562,12 +593,15 @@ class SalesQuotesService {
     }
 
     const found = this.quotes.find(q => q.id === id);
-    return found ? { ...found } : null;
+
+    
+return found ? { ...found } : null;
   }
 
   // Crear Cotización (HU1)
   public async createQuote(payload: CreateQuotePayload): Promise<Quote> {
     const client = this.clients.find(c => c.id === payload.cliente_id);
+
     if (!client) {
       throw new Error('El cliente seleccionado no existe o no es válido.');
     }
@@ -583,6 +617,7 @@ class SalesQuotesService {
       for (let i = 0; i < payload.items.length; i++) {
         const it = payload.items[i];
         const isVarUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(it.producto_id);
+
         if (!isVarUuid) {
           throw new Error(
             `El producto en la línea ${i + 1} ("${it.producto_id}") no es una variante sincronizada con el backend (requiere UUID). Seleccione un producto del catálogo.`
@@ -591,10 +626,13 @@ class SalesQuotesService {
       }
 
       const dueDate = new Date(Date.now() + payload.vigencia_dias * 24 * 60 * 60 * 1000).toISOString();
+
       const gqlLines = payload.items.map(it => {
         const rawLine = it.precio_unitario * it.cantidad;
         const disc = (rawLine * (it.descuento_porcentaje || 0)) / 100;
-        return {
+
+        
+return {
           variantId: it.producto_id,
           quantity: String(it.cantidad),
           unitPrice: String(it.precio_unitario),
@@ -617,10 +655,12 @@ class SalesQuotesService {
 
       if (res?.createSalesQuote) {
         const finalQuote = this.mapBackendQuoteToFrontend(res.createSalesQuote);
+
         finalQuote.cliente = client;
         this.quotes.unshift(finalQuote);
         this.persistToStorage();
-        return finalQuote;
+        
+return finalQuote;
       }
 
       throw new Error('El backend no retornó los datos de la cotización creada.');
@@ -667,6 +707,7 @@ class SalesQuotesService {
     const dueDate = new Date(Date.now() + payload.vigencia_dias * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
     const isIssued = Boolean(payload.emitir_inmediatamente);
+
     const correlativo = isIssued
       ? `COT-2026-${String(this.quoteCounter++).padStart(4, '0')}`
       : 'BORRADOR';
@@ -709,22 +750,27 @@ class SalesQuotesService {
 
     this.quotes.unshift(newQuote);
     this.persistToStorage();
-    return { ...newQuote };
+    
+return { ...newQuote };
   }
 
   // Actualizar Cotización (Borrador)
   public async updateQuote(id: string, payload: Partial<CreateQuotePayload>): Promise<Quote> {
     const idx = this.quotes.findIndex(q => q.id === id);
+
     if (idx === -1) throw new Error('Cotización no encontrada.');
 
     const current = this.quotes[idx];
+
     if (current.estado !== 'DRAFT') {
       throw new Error('Solo se pueden editar cotizaciones en estado Borrador.');
     }
 
     let client = current.cliente;
+
     if (payload.cliente_id && payload.cliente_id !== client.id) {
       const foundClient = this.clients.find(c => c.id === payload.cliente_id);
+
       if (foundClient) client = foundClient;
     }
 
@@ -733,6 +779,7 @@ class SalesQuotesService {
     const aplicaIva = payload.aplica_iva !== undefined ? payload.aplica_iva : current.aplica_iva;
 
     let lines = current.items;
+
     if (payload.items && payload.items.length > 0) {
       lines = payload.items.map((it, i) => {
         const prod = this.products.find(p => p.id === it.producto_id);
@@ -768,6 +815,7 @@ class SalesQuotesService {
 
     const totals = this.calculateTotals(lines, tasa, flags, aplicaIva);
     const isIssued = Boolean(payload.emitir_inmediatamente);
+
     const correlativo =
       isIssued && current.correlativo === 'BORRADOR'
         ? `COT-2026-${String(this.quoteCounter++).padStart(4, '0')}`
@@ -808,14 +856,17 @@ class SalesQuotesService {
 
     this.quotes[idx] = updated;
     this.persistToStorage();
-    return { ...updated };
+    
+return { ...updated };
   }
 
   // Aprobar Cotización (HU3)
   public async approveQuote(id: string): Promise<Quote> {
     const isUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(id);
+
     if (isUuid) {
       const idempotencyKey = generateUUID();
+
       const res = await executeGraphQL<{ approveSalesQuote: { id: string; number: number; status: string } }>(
         APPROVE_SALES_QUOTE_MUTATION,
         { input: { quoteId: id, idempotencyKey } },
@@ -825,6 +876,7 @@ class SalesQuotesService {
       if (res?.approveSalesQuote) {
         const ord = res.approveSalesQuote;
         const idx = this.quotes.findIndex(q => q.id === id);
+
         if (idx !== -1) {
           this.quotes[idx] = {
             ...this.quotes[idx],
@@ -834,7 +886,8 @@ class SalesQuotesService {
             updated_at: new Date().toISOString()
           };
           this.persistToStorage();
-          return { ...this.quotes[idx] };
+          
+return { ...this.quotes[idx] };
         }
       }
 
@@ -842,6 +895,7 @@ class SalesQuotesService {
     }
 
     const idx = this.quotes.findIndex(q => q.id === id);
+
     if (idx === -1) throw new Error('Cotización no encontrada.');
 
     const q = this.quotes[idx];
@@ -865,12 +919,14 @@ class SalesQuotesService {
 
     this.quotes[idx] = updated;
     this.persistToStorage();
-    return { ...updated };
+    
+return { ...updated };
   }
 
   // Recalcular con Nueva Tasa BCV (HU3)
   public async recalculateQuoteBcvRate(id: string): Promise<Quote> {
     const idx = this.quotes.findIndex(q => q.id === id);
+
     if (idx === -1) throw new Error('Cotización no encontrada.');
 
     const q = this.quotes[idx];
@@ -906,7 +962,8 @@ class SalesQuotesService {
 
     this.quotes[idx] = updated;
     this.persistToStorage();
-    return { ...updated };
+    
+return { ...updated };
   }
 
   // Anular Cotización con Motivo Obligatorio (HU4)
@@ -916,8 +973,10 @@ class SalesQuotesService {
     }
 
     const isUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(id);
+
     if (isUuid) {
       const idempotencyKey = generateUUID();
+
       await executeGraphQL(
         CANCEL_SALES_QUOTE_MUTATION,
         {
@@ -932,9 +991,11 @@ class SalesQuotesService {
     }
 
     const idx = this.quotes.findIndex(q => q.id === id);
+
     if (idx === -1) throw new Error('Cotización no encontrada.');
 
     const q = this.quotes[idx];
+
     const updated: Quote = {
       ...q,
       estado: 'CANCELED',
@@ -944,15 +1005,18 @@ class SalesQuotesService {
 
     this.quotes[idx] = updated;
     this.persistToStorage();
-    return { ...updated };
+    
+return { ...updated };
   }
 
   // Convertir a Orden de Venta y Comprometer Inventario (HU5)
   public async convertQuoteToSalesOrder(id: string): Promise<SalesOrderConversionResponse> {
     const idx = this.quotes.findIndex(q => q.id === id);
+
     if (idx === -1) throw new Error('Cotización no encontrada.');
 
     const q = this.quotes[idx];
+
     if (q.estado !== 'APPROVED') {
       throw new Error('Solo se pueden convertir a Orden de Venta presupuestos en estado APROBADO.');
     }
@@ -963,6 +1027,7 @@ class SalesQuotesService {
     for (const item of q.items) {
       if (item.is_physical_stock) {
         const prod = this.products.find(p => p.id === item.producto_id);
+
         if (prod && flags.STOCK_VALIDATION_MODE === 'STRICT') {
           if (item.cantidad > prod.stock_disponible) {
             throw new Error(
@@ -977,9 +1042,11 @@ class SalesQuotesService {
     for (const item of q.items) {
       if (item.is_physical_stock) {
         const prodIdx = this.products.findIndex(p => p.id === item.producto_id);
+
         if (prodIdx !== -1) {
           const prod = this.products[prodIdx];
           const newComprometido = prod.stock_comprometido + item.cantidad;
+
           this.products[prodIdx] = {
             ...prod,
             stock_comprometido: newComprometido,
@@ -1018,14 +1085,17 @@ class SalesQuotesService {
     quoteId: string
   ): Promise<{ success: boolean; codigo: string; operationId: string; message: string }> {
     const idx = this.quotes.findIndex(q => q.id === quoteId);
+
     if (idx === -1) throw new Error('Cotización no encontrada.');
 
     const q = this.quotes[idx];
+
     if (q.estado !== 'APPROVED' && !q.orden_venta_id) {
       throw new Error('Solo se pueden generar entregas para cotizaciones aprobadas o con orden de venta.');
     }
 
     const storableLines = q.items.filter(it => it.is_physical_stock);
+
     if (storableLines.length === 0) {
       throw new Error('Esta cotización no contiene artículos físicos o inventariables para despachar.');
     }
@@ -1080,21 +1150,27 @@ class SalesQuotesService {
     lines: { producto_id: string; cantidad: number }[]
   ): void {
     this.hydrateFromStorage();
+
     const idx = this.quotes.findIndex(
       q => q.correlativo === originRef || q.correlativo_orden === originRef || q.id === originRef
     );
+
     if (idx === -1) return;
 
     const q = this.quotes[idx];
+
     const updatedItems = q.items.map(item => {
       const match = lines.find(l => l.producto_id === item.producto_id);
+
       if (match) {
         return {
           ...item,
           cantidad_entregada: (item.cantidad_entregada || 0) + match.cantidad
         };
       }
-      return item;
+
+      
+return item;
     });
 
     this.quotes[idx] = {
@@ -1114,23 +1190,29 @@ class SalesQuotesService {
     billedLines?: { producto_id: string; cantidad: number }[]
   ): void {
     this.hydrateFromStorage();
+
     const idx = this.quotes.findIndex(
       q => q.correlativo === originRef || q.correlativo_orden === originRef || q.id === originRef
     );
+
     if (idx === -1) return;
 
     const q = this.quotes[idx];
     let updatedItems = q.items;
+
     if (billedLines && billedLines.length > 0) {
       updatedItems = q.items.map(item => {
         const match = billedLines.find(l => l.producto_id === item.producto_id);
+
         if (match) {
           return {
             ...item,
             cantidad_facturada: (item.cantidad_facturada || 0) + match.cantidad
           };
         }
-        return item;
+
+        
+return item;
       });
     }
 

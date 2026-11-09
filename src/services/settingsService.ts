@@ -617,6 +617,7 @@ export const settingsService = {
       STORAGE_KEYS.COMMERCIAL_POLICIES,
       DEFAULT_COMMERCIAL_POLICIES
     )
+
     const updated: CommercialPoliciesSettings = { ...current, ...input }
 
     setStoredItem(STORAGE_KEYS.COMMERCIAL_POLICIES, updated)
