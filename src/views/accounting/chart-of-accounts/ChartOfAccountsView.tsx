@@ -1,6 +1,9 @@
 'use client'
 
 import React, { useState, useEffect, useMemo } from 'react'
+
+import { useSearchParams } from 'next/navigation'
+
 import Card from '@mui/material/Card'
 import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
@@ -10,7 +13,7 @@ import MenuItem from '@mui/material/MenuItem'
 import Checkbox from '@mui/material/Checkbox'
 import Menu from '@mui/material/Menu'
 import Divider from '@mui/material/Divider'
-import CustomChip from '@core/components/mui/Chip'
+
 import TablePagination from '@mui/material/TablePagination'
 import Table from '@mui/material/Table'
 import TableBody from '@mui/material/TableBody'
@@ -26,7 +29,8 @@ import Skeleton from '@mui/material/Skeleton'
 import Tabs from '@mui/material/Tabs'
 import Tab from '@mui/material/Tab'
 
-import { useSearchParams } from 'next/navigation'
+import CustomChip from '@core/components/mui/Chip'
+
 
 import { accountingService } from '@/services/accountingService'
 import type { Account, AccountType } from '@/types/accountingTypes'
@@ -59,12 +63,28 @@ export const ChartOfAccountsView: React.FC = () => {
     saldoVes: true,
     conciliable: true
   }
+
   const [visibleColumns, setVisibleColumns] = useState(DEFAULT_VISIBLE_COLUMNS)
   const [columnAnchorEl, setColumnAnchorEl] = useState<null | HTMLElement>(null)
 
   // Selección Múltiple y Acciones en Lote
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [batchMenuAnchorEl, setBatchMenuAnchorEl] = useState<null | HTMLElement>(null)
+  const [seeding, setSeeding] = useState(false)
+
+  const handleSeedChart = async () => {
+    try {
+      setSeeding(true)
+      const seeded = await accountingService.seedDefaultChartOfAccounts()
+
+      setAccounts(seeded)
+      setToastMessage('Plan de Cuentas PUC semillado exitosamente.')
+    } catch {
+      setToastMessage('Error al semillar el plan de cuentas.')
+    } finally {
+      setSeeding(false)
+    }
+  }
 
 
   const loadAccounts = async () => {
@@ -223,9 +243,11 @@ export const ChartOfAccountsView: React.FC = () => {
   const handleToggleSelectAll = () => {
     if (isAllSelected) {
       const pageIds = new Set(paginatedAccounts.map(a => a.id))
+
       setSelectedIds(prev => prev.filter(id => !pageIds.has(id)))
     } else {
       const pageIds = paginatedAccounts.map(a => a.id)
+
       setSelectedIds(prev => Array.from(new Set([...prev, ...pageIds])))
     }
   }
@@ -239,6 +261,7 @@ export const ChartOfAccountsView: React.FC = () => {
   const handleCopySelected = () => {
     const selectedAccounts = accounts.filter(a => selectedIds.includes(a.id))
     const text = selectedAccounts.map(a => `${a.codigo} - ${a.nombre}`).join('\n')
+
     navigator.clipboard.writeText(text)
     setToastMessage(`${selectedIds.length} cuentas copiadas al portapapeles.`)
     setBatchMenuAnchorEl(null)
@@ -287,6 +310,26 @@ export const ChartOfAccountsView: React.FC = () => {
                 Acciones
               </Button>
             </Box>
+          )}
+
+          {accounts.length === 0 && !loading && (
+            <Button
+              variant='outlined'
+              color='primary'
+              startIcon={<i className='tabler-database-import' />}
+              onClick={handleSeedChart}
+              disabled={seeding}
+              sx={{
+                borderRadius: '9999px',
+                textTransform: 'none',
+                fontWeight: 600,
+                px: 3,
+                borderColor: '#6C5CE7',
+                color: '#6C5CE7'
+              }}
+            >
+              {seeding ? 'Semillando PUC...' : 'Semillar PUC por Defecto'}
+            </Button>
           )}
 
           <Button
