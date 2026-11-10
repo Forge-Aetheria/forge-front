@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+
 import Drawer from '@mui/material/Drawer'
 import Typography from '@mui/material/Typography'
 import IconButton from '@mui/material/IconButton'
@@ -9,8 +10,10 @@ import TextField from '@mui/material/TextField'
 import MenuItem from '@mui/material/MenuItem'
 import Button from '@mui/material/Button'
 import CircularProgress from '@mui/material/CircularProgress'
+import Alert from '@mui/material/Alert'
 
 import type { ErpUser, SystemRole, UserAccountStatus } from '@/types/settingsTypes'
+import { settingsService } from '@/services/settingsService'
 
 interface Props {
   open: boolean
@@ -51,7 +54,26 @@ export const UserCreateEditDrawer: React.FC<Props> = ({
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [passwordError, setPasswordError] = useState('')
+  const [formError, setFormError] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [dynamicRoles, setDynamicRoles] = useState<{ value: SystemRole; label: string; desc: string }[]>(ROLES)
+
+  useEffect(() => {
+    settingsService
+      .getAssignableRoles()
+      .then(roles => {
+        if (roles && roles.length > 0) {
+          const mapped = roles.map(r => ({
+            value: (r.name.toUpperCase().replace(/\s+/g, '_') as SystemRole) || 'VENTAS',
+            label: r.name,
+            desc: r.description || 'Rol del sistema'
+          }))
+
+          setDynamicRoles(mapped)
+        }
+      })
+      .catch(() => {})
+  }, [])
 
   useEffect(() => {
     if (userToEdit) {
@@ -59,6 +81,7 @@ export const UserCreateEditDrawer: React.FC<Props> = ({
       setEmail(userToEdit.email)
       setTelefono(userToEdit.telefono || '')
       const normalizedRol = (String(userToEdit.rol || '').toUpperCase() as SystemRole) || 'VENTAS'
+
       setRol(normalizedRol)
       setEstado(userToEdit.estado)
       setPassword('')
@@ -94,6 +117,7 @@ export const UserCreateEditDrawer: React.FC<Props> = ({
     }
 
     setSubmitting(true)
+    setFormError('')
 
     try {
       await onSave({
@@ -106,6 +130,10 @@ export const UserCreateEditDrawer: React.FC<Props> = ({
         password: userToEdit && password.trim() ? password.trim() : undefined
       })
       onClose()
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Error al guardar el usuario.'
+
+      setFormError(msg)
     } finally {
       setSubmitting(false)
     }
@@ -149,6 +177,12 @@ export const UserCreateEditDrawer: React.FC<Props> = ({
 
         {/* Body Form */}
         <form onSubmit={handleSubmit} className='p-6 flex-1 overflow-y-auto flex flex-col gap-4'>
+          {formError && (
+            <Alert severity='error' variant='standard' onClose={() => setFormError('')} sx={{ borderRadius: '12px' }}>
+              {formError}
+            </Alert>
+          )}
+
           <TextField
             size='small'
             label='Nombre Completo'
@@ -194,7 +228,7 @@ export const UserCreateEditDrawer: React.FC<Props> = ({
             fullWidth
             sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px', backgroundColor: '#FAFAFC' } }}
           >
-            {ROLES.map(r => (
+            {dynamicRoles.map(r => (
               <MenuItem key={r.value} value={r.value} className='flex flex-col items-start py-2'>
                 <span className='font-bold text-sm text-[#1E1B2E]'>{r.label}</span>
                 <span className='text-xs text-[#6B7280]'>{r.desc}</span>

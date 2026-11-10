@@ -1,16 +1,19 @@
 'use client'
 
 import React, { useState, useMemo } from 'react'
+
 import Card from '@mui/material/Card'
 import CardContent from '@mui/material/CardContent'
 import Typography from '@mui/material/Typography'
 import TextField from '@mui/material/TextField'
 import Button from '@mui/material/Button'
 import Avatar from '@mui/material/Avatar'
-import CustomChip from '@core/components/mui/Chip'
+
 import IconButton from '@mui/material/IconButton'
 import Tooltip from '@mui/material/Tooltip'
 import InputAdornment from '@mui/material/InputAdornment'
+
+import CustomChip from '@core/components/mui/Chip'
 
 import { UserCreateEditDrawer } from '../components/UserCreateEditDrawer'
 import type { ErpUser, SystemRole, UserAccountStatus } from '@/types/settingsTypes'

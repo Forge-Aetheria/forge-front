@@ -2,13 +2,17 @@
 
 // React Imports
 import { createContext, useContext, useEffect, useState, useMemo, type ReactNode } from 'react'
+
 import { useRouter } from 'next/navigation'
 
 // Type Imports
-import type { AuthenticatedUser, AuthSession, AuthState, IniciarSesionInput } from '@/types/authTypes'
+import type { AuthState, IniciarSesionInput } from '@/types/authTypes'
 import { authService } from '@/services/authService'
+import { settingsService } from '@/services/settingsService'
 
 interface AuthContextType extends AuthState {
+  permissions: string[]
+  hasPermission: (permission: string) => boolean
   signIn: (input: IniciarSesionInput) => Promise<{ success: boolean; error?: string }>
   signOut: () => Promise<void>
   refreshUser: () => Promise<void>
@@ -25,6 +29,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     isLoading: true,
     isAuthenticated: false
   })
+
+  const [permissions, setPermissions] = useState<string[]>([])
+
+  const hasPermission = (perm: string): boolean => {
+    if (state.user?.role === 'ADMIN' || (state.user?.roles && state.user.roles.includes('ADMIN'))) {
+      return true
+    }
+
+    return permissions.includes(perm)
+  }
 
   // Cargar sesión existente al montar
   useEffect(() => {
@@ -88,9 +102,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               }
             })
             .catch(() => {})
+
+          settingsService
+            .getMyPermissions()
+            .then(perms => {
+              if (isMounted && perms.length > 0) {
+                setPermissions(perms)
+              }
+            })
+            .catch(() => {})
         }
       } catch (err) {
         console.error('Error al inicializar sesión:', err)
+
         if (isMounted) {
           setState({
             user: null,
@@ -133,6 +157,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signOut = async () => {
     setState(prev => ({ ...prev, isLoading: true }))
     await authService.signOut()
+    setPermissions([])
     setState({
       user: null,
       session: null,
@@ -148,17 +173,29 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (freshUser) {
       setState(prev => ({ ...prev, user: freshUser }))
     }
+
+    try {
+      const perms = await settingsService.getMyPermissions()
+
+      if (perms.length > 0) {
+        setPermissions(perms)
+      }
+    } catch {
+      // Ignorar
+    }
   }
 
   const value = useMemo(
     () => ({
       ...state,
+      permissions,
+      hasPermission,
       signIn,
       signOut,
       refreshUser
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [state]
+    [state, permissions]
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

@@ -6,6 +6,22 @@ import {
   UPDATE_MY_PROFILE_MUTATION,
   CHANGE_MY_PASSWORD_MUTATION
 } from '@/graphql/auth.gql'
+import {
+  GET_TENANT_USERS_QUERY,
+  GET_ASSIGNABLE_ROLES_QUERY,
+  INVITE_TENANT_USER_MUTATION,
+  UPDATE_TENANT_USER_MUTATION,
+  SET_TENANT_USER_ROLES_MUTATION,
+  ACTIVATE_TENANT_USER_MUTATION,
+  DEACTIVATE_TENANT_USER_MUTATION,
+  GET_MY_PERMISSIONS_QUERY
+} from '@/graphql/iam.gql'
+import {
+  mapGqlUserToErpUser,
+  generateIdempotencyKey,
+  type GqlTenantUser,
+  type GqlRole
+} from '@/services/adapters/iamAdapter'
 import type { AuthenticatedUser, ChangeMyPasswordResult } from '@/types/authTypes'
 import type {
   UserProfile,
@@ -467,12 +483,118 @@ export const settingsService = {
     )
   },
 
-  // 4. ERP Users & Roles (RBAC)
+  // 4. ERP Users & Roles (RBAC con backend GraphQL BE-IAM-02)
+  getAssignableRoles: async (): Promise<GqlRole[]> => {
+    try {
+      const res = await executeGraphQL<{ assignableRoles: GqlRole[] }>(
+        GET_ASSIGNABLE_ROLES_QUERY,
+        { take: 50 },
+        { timeoutMs: 5000 }
+      )
+
+      if (res?.assignableRoles && Array.isArray(res.assignableRoles)) {
+        return res.assignableRoles
+      }
+    } catch (err) {
+      console.warn('[settingsService] Fallback a roles predeterminados:', err)
+    }
+
+    return [
+      { id: 'role-admin', name: 'Administrador', description: 'Acceso total al sistema', isSystem: true },
+      { id: 'role-ventas', name: 'Ventas', description: 'Cotizaciones y pedidos', isSystem: true },
+      { id: 'role-compras', name: 'Compras', description: 'Abastecimiento y órdenes', isSystem: true },
+      { id: 'role-almacen', name: 'Almacén', description: 'Inventario y kárdex', isSystem: true },
+      { id: 'role-cajero', name: 'Cajero POS', description: 'Punto de venta y turnos', isSystem: true }
+    ]
+  },
+
+  getMyPermissions: async (): Promise<string[]> => {
+    try {
+      const res = await executeGraphQL<{ myPermissions: string[] }>(
+        GET_MY_PERMISSIONS_QUERY,
+        undefined,
+        { timeoutMs: 4000 }
+      )
+
+      if (res?.myPermissions && Array.isArray(res.myPermissions)) {
+        return res.myPermissions
+      }
+    } catch {
+      // Ignorar
+    }
+
+    return []
+  },
+
   getErpUsers: async (): Promise<ErpUser[]> => {
+    try {
+      const res = await executeGraphQL<{ tenantUsers: GqlTenantUser[] }>(
+        GET_TENANT_USERS_QUERY,
+        { take: 100 },
+        { timeoutMs: 5000 }
+      )
+
+      if (res?.tenantUsers && Array.isArray(res.tenantUsers)) {
+        const mappedUsers = res.tenantUsers.map(mapGqlUserToErpUser)
+
+        if (mappedUsers.length > 0) {
+          const backendIds = new Set(mappedUsers.map(u => u.id))
+          const stored = getStoredItem<ErpUser[]>(STORAGE_KEYS.ERP_USERS, DEFAULT_USERS)
+          const localOnly = stored.filter(u => !backendIds.has(u.id) && u.id.startsWith('usr-'))
+          const combined = [...mappedUsers, ...localOnly]
+
+          setStoredItem(STORAGE_KEYS.ERP_USERS, combined)
+
+          return combined
+        }
+      }
+    } catch (err) {
+      console.warn('[settingsService] Error al consultar tenantUsers de backend:', err)
+    }
+
     return getStoredItem<ErpUser[]>(STORAGE_KEYS.ERP_USERS, DEFAULT_USERS)
   },
 
   createErpUser: async (input: CreateUserInput): Promise<ErpUser> => {
+    // 1. Intentar resolver el roleId si se envió solo el rol conceptual
+    try {
+      const roles = await settingsService.getAssignableRoles()
+      let targetRole = roles.find(r => r.name.toLowerCase() === input.rol.toLowerCase())
+
+      if (!targetRole && input.rol === 'ADMIN') {
+        targetRole = roles.find(r => r.name.toUpperCase().includes('ADMIN') || r.isSystem)
+      }
+
+      const initialRoleId = targetRole?.id || roles[0]?.id
+
+      if (initialRoleId && initialRoleId.length > 10) {
+        const res = await executeGraphQL<{ inviteTenantUser: { ok: boolean; message: string } }>(
+          INVITE_TENANT_USER_MUTATION,
+          {
+            input: {
+              email: input.email.trim().toLowerCase(),
+              name: input.nombre.trim(),
+              phone: input.telefono?.trim() || undefined,
+              initialRoleId
+            }
+          },
+          { timeoutMs: 10000 }
+        )
+
+        if (res?.inviteTenantUser?.ok) {
+          // Refrescar usuarios de backend
+          const refreshed = await settingsService.getErpUsers()
+          const created = refreshed.find(u => u.email.toLowerCase() === input.email.toLowerCase())
+
+          if (created) return created
+        }
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Error al registrar usuario en el servidor.'
+
+      throw new Error(msg)
+    }
+
     const users = getStoredItem<ErpUser[]>(STORAGE_KEYS.ERP_USERS, DEFAULT_USERS)
 
     if (users.some(u => u.email.toLowerCase() === input.email.toLowerCase())) {
@@ -501,6 +623,72 @@ export const settingsService = {
   },
 
   updateErpUser: async (id: string, input: UpdateUserInput): Promise<ErpUser> => {
+    const isUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(id)
+
+    if (isUuid) {
+      // 1. Actualizar datos básicos (nombre y teléfono)
+      try {
+        await executeGraphQL(
+          UPDATE_TENANT_USER_MUTATION,
+          {
+            input: {
+              userId: id,
+              name: input.nombre.trim(),
+              phone: input.telefono?.trim() || undefined
+            }
+          },
+          { timeoutMs: 8000 }
+        )
+
+        // 2. Resolver y actualizar roles si aplica
+        const roles = await settingsService.getAssignableRoles()
+
+        const targetRole = roles.find(
+          r => r.name.toLowerCase() === input.rol.toLowerCase() || (input.rol === 'ADMIN' && r.name.toUpperCase().includes('ADMIN'))
+        )
+
+        if (targetRole) {
+          const idempotencyKey = generateIdempotencyKey()
+
+          await executeGraphQL(
+            SET_TENANT_USER_ROLES_MUTATION,
+            {
+              input: {
+                userId: id,
+                roleIds: [targetRole.id],
+                idempotencyKey
+              }
+            },
+            { timeoutMs: 8000 }
+          )
+        }
+
+        // 3. Actualizar estado (activo / inactivo)
+        if (input.estado === 'INACTIVO') {
+          await executeGraphQL(
+            DEACTIVATE_TENANT_USER_MUTATION,
+            { input: { userId: id, reason: 'Desactivado por administrador' } },
+            { timeoutMs: 8000 }
+          )
+        } else if (input.estado === 'ACTIVO') {
+          await executeGraphQL(
+            ACTIVATE_TENANT_USER_MUTATION,
+            { input: { userId: id } },
+            { timeoutMs: 8000 }
+          )
+        }
+
+        const refreshed = await settingsService.getErpUsers()
+        const updated = refreshed.find(u => u.id === id)
+
+        if (updated) return updated
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : 'Error al actualizar el usuario en el servidor.'
+
+        throw new Error(msg)
+      }
+    }
+
     const users = getStoredItem<ErpUser[]>(STORAGE_KEYS.ERP_USERS, DEFAULT_USERS)
     const target = users.find(u => u.id === id)
 
@@ -547,6 +735,39 @@ export const settingsService = {
   },
 
   toggleErpUserStatus: async (id: string): Promise<ErpUser> => {
+    const isUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(id)
+
+    if (isUuid) {
+      const users = await settingsService.getErpUsers()
+      const target = users.find(u => u.id === id)
+
+      if (!target) throw new Error('Usuario no encontrado.')
+
+      try {
+        if (target.estado === 'ACTIVO') {
+          await executeGraphQL(
+            DEACTIVATE_TENANT_USER_MUTATION,
+            { input: { userId: id, reason: 'Desactivación administrativa' } },
+            { timeoutMs: 8000 }
+          )
+        } else {
+          await executeGraphQL(
+            ACTIVATE_TENANT_USER_MUTATION,
+            { input: { userId: id } },
+            { timeoutMs: 8000 }
+          )
+        }
+
+        const refreshed = await settingsService.getErpUsers()
+
+        return refreshed.find(u => u.id === id)!
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : 'Error al cambiar el estado del usuario en el servidor.'
+
+        throw new Error(msg)
+      }
+    }
+
     const users = getStoredItem<ErpUser[]>(STORAGE_KEYS.ERP_USERS, DEFAULT_USERS)
     const target = users.find(u => u.id === id)
 
