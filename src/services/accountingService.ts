@@ -8,7 +8,6 @@ import type {
   EntryStatus,
   AccountingInvoice,
   InvoiceAccountingType,
-  InvoiceDocumentType,
   InvoiceStatus,
   InvoicePaymentAssociation,
   AppliedCreditNote,
@@ -23,6 +22,33 @@ import type {
 } from '@/types/accountingTypes'
 import { salesQuotesService } from '@/services/salesQuotesService'
 import { purchasesService } from '@/services/purchasesService'
+import { executeGraphQL } from '@/libs/graphqlClient'
+import {
+  GET_ACCOUNTS_QUERY,
+  CREATE_ACCOUNT_MUTATION,
+  UPDATE_ACCOUNT_MUTATION,
+  DEACTIVATE_ACCOUNT_MUTATION,
+  SEED_DEFAULT_CHART_MUTATION,
+  GET_JOURNALS_QUERY,
+  CREATE_JOURNAL_MUTATION,
+  GET_JOURNAL_ENTRIES_QUERY,
+  CREATE_JOURNAL_ENTRY_MUTATION,
+  POST_JOURNAL_ENTRY_MUTATION,
+  CANCEL_JOURNAL_ENTRY_MUTATION,
+  REVERSE_JOURNAL_ENTRY_MUTATION
+} from '@/graphql/accounting.gql'
+import {
+  formatDecimalString,
+  generateIdempotencyKey,
+  validateDoubleEntry,
+  mapGqlAccountToFrontend,
+  mapFrontendTypeToGqlAccountType,
+  mapGqlJournalToFrontend,
+  mapGqlEntryToFrontend,
+  type GqlAccount,
+  type GqlJournal,
+  type GqlJournalEntry
+} from '@/services/adapters/accountingAdapter'
 
 const STORAGE_KEYS = {
   ACCOUNTS: 'foundly_accounting_accounts',
@@ -648,12 +674,81 @@ const setStored = <T>(key: string, val: T): void => {
 // 6. SERVICIO PRINCIPAL DE CONTABILIDAD Y TESORERÍA
 // ---------------------------------------------------------------------------
 export const accountingService = {
-  // Cuentas Contables (PUC)
+  // Cuentas Contables (PUC con backend GraphQL BE-ACC-01)
   getAccounts: async (): Promise<Account[]> => {
+    try {
+      const res = await executeGraphQL<{ accounts: GqlAccount[] }>(
+        GET_ACCOUNTS_QUERY,
+        { take: 200 },
+        { timeoutMs: 5000 }
+      )
+
+      if (res?.accounts && Array.isArray(res.accounts)) {
+        const mapped = res.accounts.map(mapGqlAccountToFrontend)
+
+        if (mapped.length > 0) {
+          const backendIds = new Set(mapped.map(a => a.id))
+          const stored = getStored<Account[]>(STORAGE_KEYS.ACCOUNTS, DEFAULT_ACCOUNTS)
+          const localOnly = stored.filter(a => !backendIds.has(a.id) && a.id.startsWith('acc-'))
+          const combined = [...mapped, ...localOnly].sort((a, b) => a.codigo.localeCompare(b.codigo))
+
+          setStored(STORAGE_KEYS.ACCOUNTS, combined)
+
+          return combined
+        }
+      }
+    } catch (err) {
+      console.warn('[accountingService] Error al consultar accounts de backend:', err)
+    }
+
     return getStored<Account[]>(STORAGE_KEYS.ACCOUNTS, DEFAULT_ACCOUNTS)
   },
 
   createAccount: async (input: Omit<Account, 'id' | 'saldoUsd' | 'saldoVes'>): Promise<Account> => {
+    const gqlType = mapFrontendTypeToGqlAccountType(input.tipo)
+
+    const normalSide =
+      input.tipo === 'INCOME' ||
+      input.tipo === 'LIABILITY_CURRENT' ||
+      input.tipo === 'LIABILITY_NON_CURRENT' ||
+      input.tipo === 'EQUITY'
+        ? 'CREDIT'
+        : 'DEBIT'
+
+    let currencyScope = 'ANY'
+
+    if (input.moneda === 'USD') currencyScope = 'USD_ONLY'
+    else if (input.moneda === 'VES') currencyScope = 'VES_ONLY'
+
+    try {
+      const res = await executeGraphQL<{ createAccount: GqlAccount }>(
+        CREATE_ACCOUNT_MUTATION,
+        {
+          input: {
+            code: input.codigo.trim(),
+            name: input.nombre.trim(),
+            type: gqlType,
+            normalSide,
+            currencyScope,
+            requiresReconciliation: Boolean(input.permiteConciliacion)
+          }
+        },
+        { timeoutMs: 8000 }
+      )
+
+      if (res?.createAccount) {
+        const created = mapGqlAccountToFrontend(res.createAccount)
+        const accounts = getStored<Account[]>(STORAGE_KEYS.ACCOUNTS, DEFAULT_ACCOUNTS)
+        const updated = [...accounts, created].sort((a, b) => a.codigo.localeCompare(b.codigo))
+
+        setStored(STORAGE_KEYS.ACCOUNTS, updated)
+
+        return created
+      }
+    } catch (err: unknown) {
+      console.warn('[accountingService] Fallback a local para createAccount:', err)
+    }
+
     const accounts = getStored<Account[]>(STORAGE_KEYS.ACCOUNTS, DEFAULT_ACCOUNTS)
 
     const newAcc: Account = {
@@ -671,6 +766,44 @@ export const accountingService = {
   },
 
   updateAccount: async (id: string, input: Partial<Account>): Promise<Account> => {
+    const isUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(id)
+
+    if (isUuid) {
+      try {
+        let currencyScope: string | undefined
+
+        if (input.moneda === 'USD') currencyScope = 'USD_ONLY'
+        else if (input.moneda === 'VES') currencyScope = 'VES_ONLY'
+        else if (input.moneda === 'AMBAS') currencyScope = 'ANY'
+
+        const res = await executeGraphQL<{ updateAccount: GqlAccount }>(
+          UPDATE_ACCOUNT_MUTATION,
+          {
+            id,
+            input: {
+              id,
+              name: input.nombre?.trim() || undefined,
+              currencyScope,
+              requiresReconciliation: input.permiteConciliacion !== undefined ? input.permiteConciliacion : undefined
+            }
+          },
+          { timeoutMs: 8000 }
+        )
+
+        if (res?.updateAccount) {
+          const updated = mapGqlAccountToFrontend(res.updateAccount)
+          const accounts = getStored<Account[]>(STORAGE_KEYS.ACCOUNTS, DEFAULT_ACCOUNTS)
+          const next = accounts.map(a => (a.id === id ? { ...a, ...updated } : a))
+
+          setStored(STORAGE_KEYS.ACCOUNTS, next)
+
+          return updated
+        }
+      } catch (err: unknown) {
+        console.warn('[accountingService] Fallback local para updateAccount:', err)
+      }
+    }
+
     const accounts = getStored<Account[]>(STORAGE_KEYS.ACCOUNTS, DEFAULT_ACCOUNTS)
     const updated = accounts.map(a => (a.id === id ? { ...a, ...input } : a))
 
@@ -679,13 +812,80 @@ export const accountingService = {
     return updated.find(a => a.id === id)!
   },
 
-  // Diarios Contables
+  deactivateAccount: async (id: string): Promise<void> => {
+    const isUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(id)
+
+    if (isUuid) {
+      try {
+        await executeGraphQL(DEACTIVATE_ACCOUNT_MUTATION, { id }, { timeoutMs: 8000 })
+      } catch (err) {
+        console.warn('[accountingService] Error al desactivar cuenta en backend:', err)
+      }
+    }
+
+    const accounts = getStored<Account[]>(STORAGE_KEYS.ACCOUNTS, DEFAULT_ACCOUNTS)
+    const next = accounts.map(a => (a.id === id ? { ...a, activo: false } : a))
+
+    setStored(STORAGE_KEYS.ACCOUNTS, next)
+  },
+
+  seedDefaultChartOfAccounts: async (): Promise<Account[]> => {
+    try {
+      const res = await executeGraphQL<{ seedDefaultChartOfAccounts: GqlAccount[] }>(
+        SEED_DEFAULT_CHART_MUTATION,
+        undefined,
+        { timeoutMs: 12000 }
+      )
+
+      if (res?.seedDefaultChartOfAccounts && Array.isArray(res.seedDefaultChartOfAccounts)) {
+        const seeded = res.seedDefaultChartOfAccounts.map(mapGqlAccountToFrontend)
+
+        setStored(STORAGE_KEYS.ACCOUNTS, seeded)
+
+        return seeded
+      }
+    } catch (err) {
+      console.warn('[accountingService] Error al semillar cuentas de backend:', err)
+    }
+
+    setStored(STORAGE_KEYS.ACCOUNTS, DEFAULT_ACCOUNTS)
+
+    return DEFAULT_ACCOUNTS
+  },
+
+  // Diarios Contables (con backend GraphQL BE-ACC-01)
   getJournals: async (): Promise<Journal[]> => {
+    try {
+      const res = await executeGraphQL<{ journals: GqlJournal[] }>(
+        GET_JOURNALS_QUERY,
+        { take: 50 },
+        { timeoutMs: 5000 }
+      )
+
+      if (res?.journals && Array.isArray(res.journals)) {
+        const mapped = res.journals.map(mapGqlJournalToFrontend)
+
+        if (mapped.length > 0) {
+          const backendIds = new Set(mapped.map(j => j.id))
+          const stored = getStored<Journal[]>(STORAGE_KEYS.JOURNALS, DEFAULT_JOURNALS)
+          const localOnly = stored.filter(j => !backendIds.has(j.id) && j.id.startsWith('jou-'))
+          const combined = [...mapped, ...localOnly]
+
+          setStored(STORAGE_KEYS.JOURNALS, combined)
+
+          return combined
+        }
+      }
+    } catch (err) {
+      console.warn('[accountingService] Error al consultar diarios de backend:', err)
+    }
+
     return getStored<Journal[]>(STORAGE_KEYS.JOURNALS, DEFAULT_JOURNALS)
   },
 
   getJournalById: async (id: string): Promise<Journal | null> => {
-    const journals = getStored<Journal[]>(STORAGE_KEYS.JOURNALS, DEFAULT_JOURNALS)
+    const journals = await accountingService.getJournals()
+
     return journals.find(j => j.id === id) || null
   },
 
@@ -701,7 +901,43 @@ export const accountingService = {
     colorIdentificador?: string
     icono?: string
   }): Promise<Journal> => {
+    let gqlType = 'GENERAL'
+
+    if (input.tipo === 'VENTAS') gqlType = 'SALE'
+    else if (input.tipo === 'COMPRAS') gqlType = 'PURCHASE'
+    else if (input.tipo === 'CAJA') gqlType = 'CASH'
+    else if (input.tipo === 'BANCO' || input.tipo === 'BANCO_VES' || input.tipo === 'BANCO_USD') gqlType = 'BANK'
+
+    try {
+      const res = await executeGraphQL<{ createJournal: GqlJournal }>(
+        CREATE_JOURNAL_MUTATION,
+        {
+          input: {
+            code: input.codigo.trim().toUpperCase(),
+            name: input.nombre.trim(),
+            type: gqlType,
+            currency: input.moneda === 'USD' ? 'USD' : input.moneda === 'VES' ? 'VES' : undefined,
+            color: input.colorIdentificador || '#6C5CE7'
+          }
+        },
+        { timeoutMs: 8000 }
+      )
+
+      if (res?.createJournal) {
+        const created = mapGqlJournalToFrontend(res.createJournal)
+        const journals = getStored<Journal[]>(STORAGE_KEYS.JOURNALS, DEFAULT_JOURNALS)
+        const updated = [...journals, created]
+
+        setStored(STORAGE_KEYS.JOURNALS, updated)
+
+        return created
+      }
+    } catch (err) {
+      console.warn('[accountingService] Fallback local para createJournal:', err)
+    }
+
     const journals = getStored<Journal[]>(STORAGE_KEYS.JOURNALS, DEFAULT_JOURNALS)
+
     const newJournal: Journal = {
       id: `jou-${Date.now()}`,
       nombre: input.nombre.trim(),
@@ -725,23 +961,30 @@ export const accountingService = {
                 ? 'tabler-receipt'
                 : 'tabler-adjustments-alt')
     }
+
     const updated = [...journals, newJournal]
+
     setStored(STORAGE_KEYS.JOURNALS, updated)
+
     return newJournal
   },
 
   updateJournal: async (id: string, partial: Partial<Journal>): Promise<Journal> => {
     const journals = getStored<Journal[]>(STORAGE_KEYS.JOURNALS, DEFAULT_JOURNALS)
     const updated = journals.map(j => (j.id === id ? { ...j, ...partial } : j))
+
     setStored(STORAGE_KEYS.JOURNALS, updated)
     const found = updated.find(j => j.id === id)
+
     if (!found) throw new Error('Diario contable no encontrado')
-    return found
+    
+return found
   },
 
   deleteJournal: async (id: string): Promise<void> => {
     const journals = getStored<Journal[]>(STORAGE_KEYS.JOURNALS, DEFAULT_JOURNALS)
     const updated = journals.filter(j => j.id !== id)
+
     setStored(STORAGE_KEYS.JOURNALS, updated)
   },
 
@@ -771,11 +1014,13 @@ export const accountingService = {
 
       if (invoice.tipo === 'CUSTOMER') {
         const ref = invoice.origenQuoteId || invoice.documentoOrigen
+
         if (ref) {
           salesQuotesService.recordInvoiceLink(ref, invoice.id, invoice.numeroFactura, billedLines)
         }
       } else if (invoice.tipo === 'SUPPLIER') {
         const ref = invoice.origenPurchaseId || invoice.documentoOrigen
+
         if (ref) {
           purchasesService.recordSupplierInvoiceLink(ref, invoice.id, invoice.numeroFactura, billedLines)
         }
@@ -812,6 +1057,7 @@ export const accountingService = {
     // Si tiene asiento contable asociado, marcarlo como anulado
     if (invoice.asientoAsociadoId) {
       const entries = getStored<JournalEntry[]>(STORAGE_KEYS.ENTRIES, DEFAULT_ENTRIES)
+
       const updatedEntries = entries.map(e =>
         e.id === invoice.asientoAsociadoId ? { ...e, estado: 'CANCELED' as const } : e
       )
@@ -850,6 +1096,7 @@ export const accountingService = {
     // Si tiene asiento contable asociado, marcarlo como anulado
     if (invoice.asientoAsociadoId) {
       const entries = getStored<JournalEntry[]>(STORAGE_KEYS.ENTRIES, DEFAULT_ENTRIES)
+
       const updatedEntries = entries.map(e =>
         e.id === invoice.asientoAsociadoId ? { ...e, estado: 'CANCELED' as const } : e
       )
@@ -911,6 +1158,7 @@ export const accountingService = {
       totalUsd = Number(input.montoPersonalizadoUsd.toFixed(2))
 
       const ctaDefault = invoice.tipo === 'CUSTOMER' ? 'acc-410101' : 'acc-510101'
+
       ncLines = [
         {
           id: `line-nc-${Date.now()}-0`,
@@ -947,6 +1195,7 @@ export const accountingService = {
       // Cliente: Debita Devoluciones/Ingresos y Débito Fiscal IVA, Acredita CxC
       ncLines.forEach(l => {
         const subtotalVes = Number((l.subtotalUsd * invoice.tasaBcv).toFixed(2))
+
         entryLines.push({
           cuentaId: l.cuentaContableId || 'acc-410101',
           cuentaCodigo: '4.1.01.01',
@@ -1005,6 +1254,7 @@ export const accountingService = {
 
       ncLines.forEach(l => {
         const subtotalVes = Number((l.subtotalUsd * invoice.tasaBcv).toFixed(2))
+
         entryLines.push({
           cuentaId: l.cuentaContableId || 'acc-510101',
           cuentaCodigo: '5.1.01.01',
@@ -1087,6 +1337,7 @@ export const accountingService = {
     const totalNcAcumuladoUsd = Number(
       ((invoice.notasCreditoAplicadas || []).reduce((acc, nc) => acc + nc.montoUsd, 0) + totalUsd).toFixed(2)
     )
+
     const esReversionCompleta =
       totalNcAcumuladoUsd >= Number((invoice.totalUsd - 0.01).toFixed(2)) ||
       input.tipoNota === 'TOTAL' ||
@@ -1551,8 +1802,38 @@ export const accountingService = {
     return { invoice: updatedInvoice, payment: newPayment, entry }
   },
 
-  // Asientos Contables (Diario General)
+  // Asientos Contables (Diario General con backend GraphQL BE-ACC-01)
   getJournalEntries: async (targetMoves: 'POSTED' | 'ALL' = 'ALL'): Promise<JournalEntry[]> => {
+    try {
+      const res = await executeGraphQL<{ journalEntries: GqlJournalEntry[] }>(
+        GET_JOURNAL_ENTRIES_QUERY,
+        {
+          take: 100,
+          where: targetMoves === 'POSTED' ? { state: { equals: 'POSTED' } } : undefined
+        },
+        { timeoutMs: 5000 }
+      )
+
+      if (res?.journalEntries && Array.isArray(res.journalEntries)) {
+        const journals = await accountingService.getJournals()
+        const journalMap = Object.fromEntries(journals.map(j => [j.id, j.nombre]))
+        const mapped = res.journalEntries.map(e => mapGqlEntryToFrontend(e, journalMap))
+
+        if (mapped.length > 0) {
+          const backendIds = new Set(mapped.map(e => e.id))
+          const stored = getStored<JournalEntry[]>(STORAGE_KEYS.ENTRIES, DEFAULT_ENTRIES)
+          const localOnly = stored.filter(e => !backendIds.has(e.id) && e.id.startsWith('as-'))
+          const combined = [...mapped, ...localOnly]
+
+          setStored(STORAGE_KEYS.ENTRIES, combined)
+
+          return targetMoves === 'POSTED' ? combined.filter(e => e.estado === 'POSTED') : combined.filter(e => e.estado !== 'CANCELED')
+        }
+      }
+    } catch (err) {
+      console.warn('[accountingService] Error al consultar journalEntries de backend:', err)
+    }
+
     const list = getStored<JournalEntry[]>(STORAGE_KEYS.ENTRIES, DEFAULT_ENTRIES)
 
     if (targetMoves === 'POSTED') {
@@ -1573,6 +1854,70 @@ export const accountingService = {
     notas?: string
     creadoPor: string
   }): Promise<JournalEntry> => {
+    // 1. Pre-flight de Partida Doble
+    const validation = validateDoubleEntry(input.lineas)
+
+    if (!validation.balanced) {
+      throw new Error(validation.message || 'El asiento no cumple con la partida doble.')
+    }
+
+    const isJournalUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(
+      input.diarioId
+    )
+
+    if (isJournalUuid) {
+      try {
+        const idempotencyKey = generateIdempotencyKey()
+        const rateStr = formatDecimalString(input.tasaBcv, '1.0000')
+
+        const gqlLines = input.lineas.map(l => ({
+          accountId: l.cuentaId,
+          debitUsd: l.debeUsd ? formatDecimalString(l.debeUsd) : undefined,
+          creditUsd: l.haberUsd ? formatDecimalString(l.haberUsd) : undefined,
+          debitVes: l.debeVes ? formatDecimalString(l.debeVes) : undefined,
+          creditVes: l.haberVes ? formatDecimalString(l.haberVes) : undefined,
+          exchangeRate: rateStr,
+          contactId: l.contactoId && l.contactoId.length > 20 ? l.contactoId : undefined,
+          label: l.etiqueta?.trim() || undefined
+        }))
+
+        const res = await executeGraphQL<{ createJournalEntry: { id: string; number: number; state: string } }>(
+          CREATE_JOURNAL_ENTRY_MUTATION,
+          {
+            input: {
+              journalId: input.diarioId,
+              postingDate: new Date(input.fecha).toISOString(),
+              description: input.notas?.trim() || 'Asiento contable',
+              sourceReference: input.documentoReferencia?.trim() || undefined,
+              exchangeRate: rateStr,
+              idempotencyKey,
+              lines: gqlLines
+            }
+          },
+          { timeoutMs: 10000 }
+        )
+
+        if (res?.createJournalEntry?.id) {
+          const entryId = res.createJournalEntry.id
+
+          if (input.estado === 'POSTED') {
+            await executeGraphQL(
+              POST_JOURNAL_ENTRY_MUTATION,
+              { id: entryId, idempotencyKey: generateIdempotencyKey() },
+              { timeoutMs: 10000 }
+            )
+          }
+
+          const freshEntries = await accountingService.getJournalEntries('ALL')
+          const created = freshEntries.find(e => e.id === entryId)
+
+          if (created) return created
+        }
+      } catch (err: unknown) {
+        console.warn('[accountingService] Fallback local para createJournalEntry:', err)
+      }
+    }
+
     const entries = getStored<JournalEntry[]>(STORAGE_KEYS.ENTRIES, DEFAULT_ENTRIES)
     const journals = getStored<Journal[]>(STORAGE_KEYS.JOURNALS, DEFAULT_JOURNALS)
     const journal = journals.find(j => j.id === input.diarioId)
@@ -1581,15 +1926,6 @@ export const accountingService = {
     const totalHaberUsd = input.lineas.reduce((acc, l) => acc + (l.haberUsd || 0), 0)
     const totalDebeVes = input.lineas.reduce((acc, l) => acc + (l.debeVes || 0), 0)
     const totalHaberVes = input.lineas.reduce((acc, l) => acc + (l.haberVes || 0), 0)
-
-    const isBalancedUsd = Math.abs(totalDebeUsd - totalHaberUsd) <= 0.01
-    const isBalancedVes = Math.abs(totalDebeVes - totalHaberVes) <= 0.01
-
-    if (!isBalancedUsd || !isBalancedVes) {
-      throw new Error(
-        `El asiento no cumple con la partida doble: Descuadre USD: $${Math.abs(totalDebeUsd - totalHaberUsd).toFixed(2)}, Descuadre VES: ${Math.abs(totalDebeVes - totalHaberVes).toFixed(2)} Bs.`
-      )
-    }
 
     const correlativo = String(entries.length + 1).padStart(5, '0')
 
@@ -1618,6 +1954,101 @@ export const accountingService = {
     setStored(STORAGE_KEYS.ENTRIES, updated)
 
     return newEntry
+  },
+
+  postJournalEntry: async (id: string): Promise<JournalEntry> => {
+    const isUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(id)
+
+    if (isUuid) {
+      try {
+        await executeGraphQL(
+          POST_JOURNAL_ENTRY_MUTATION,
+          { id, idempotencyKey: generateIdempotencyKey() },
+          { timeoutMs: 10000 }
+        )
+
+        const list = await accountingService.getJournalEntries('ALL')
+        const found = list.find(e => e.id === id)
+
+        if (found) return found
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : 'Error al asentar el asiento contable en el servidor.'
+
+        throw new Error(msg)
+      }
+    }
+
+    const entries = getStored<JournalEntry[]>(STORAGE_KEYS.ENTRIES, DEFAULT_ENTRIES)
+    const updated = entries.map(e => (e.id === id ? { ...e, estado: 'POSTED' as EntryStatus } : e))
+
+    setStored(STORAGE_KEYS.ENTRIES, updated)
+
+    return updated.find(e => e.id === id)!
+  },
+
+  cancelJournalEntry: async (id: string, reason = 'Anulado por usuario'): Promise<JournalEntry> => {
+    const isUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(id)
+
+    if (isUuid) {
+      try {
+        await executeGraphQL(
+          CANCEL_JOURNAL_ENTRY_MUTATION,
+          { id, reason },
+          { timeoutMs: 10000 }
+        )
+
+        const list = await accountingService.getJournalEntries('ALL')
+        const found = list.find(e => e.id === id)
+
+        if (found) return found
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : 'Error al anular el asiento contable en el servidor.'
+
+        throw new Error(msg)
+      }
+    }
+
+    const entries = getStored<JournalEntry[]>(STORAGE_KEYS.ENTRIES, DEFAULT_ENTRIES)
+    const updated = entries.map(e => (e.id === id ? { ...e, estado: 'CANCELED' as EntryStatus } : e))
+
+    setStored(STORAGE_KEYS.ENTRIES, updated)
+
+    return updated.find(e => e.id === id)!
+  },
+
+  reverseJournalEntry: async (id: string, reason = 'Reversión contable'): Promise<JournalEntry> => {
+    const isUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(id)
+
+    if (isUuid) {
+      try {
+        await executeGraphQL(
+          REVERSE_JOURNAL_ENTRY_MUTATION,
+          {
+            input: {
+              entryId: id,
+              idempotencyKey: generateIdempotencyKey(),
+              reason
+            }
+          },
+          { timeoutMs: 10000 }
+        )
+
+        const list = await accountingService.getJournalEntries('ALL')
+
+        return list[0]
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : 'Error al reversar el asiento contable en el servidor.'
+
+        throw new Error(msg)
+      }
+    }
+
+    const entries = getStored<JournalEntry[]>(STORAGE_KEYS.ENTRIES, DEFAULT_ENTRIES)
+    const target = entries.find(e => e.id === id)
+
+    if (!target) throw new Error('Asiento no encontrado')
+
+    return target
   },
 
   updateJournalEntry: async (
@@ -2407,6 +2838,7 @@ export const accountingService = {
 
   updateContactAccountingConfig: async (config: ContactAccountingConfig): Promise<ContactAccountingConfig> => {
     const list = await accountingService.getContactAccountingConfigs()
+
     const updated = list.some(c => c.contactoId === config.contactoId)
       ? list.map(c => (c.contactoId === config.contactoId ? config : c))
       : [...list, config]
