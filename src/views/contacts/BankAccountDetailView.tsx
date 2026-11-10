@@ -1,8 +1,10 @@
 'use client'
 
 import React, { useState, useEffect, useMemo } from 'react'
+
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+
 import Card from '@mui/material/Card'
 import CardContent from '@mui/material/CardContent'
 import Typography from '@mui/material/Typography'
@@ -14,7 +16,6 @@ import Switch from '@mui/material/Switch'
 import FormControlLabel from '@mui/material/FormControlLabel'
 import Box from '@mui/material/Box'
 import MenuItem from '@mui/material/MenuItem'
-import Divider from '@mui/material/Divider'
 import Snackbar from '@mui/material/Snackbar'
 import Alert from '@mui/material/Alert'
 import Dialog from '@mui/material/Dialog'
@@ -27,10 +28,11 @@ import Skeleton from '@mui/material/Skeleton'
 import CustomTextField from '@core/components/mui/TextField'
 import CustomChip from '@core/components/mui/Chip'
 
-import {
+import type {
   BankAccount,
   BankAccountType,
-  BankCurrency,
+  BankCurrency} from '@/types/bankAccountTypes';
+import {
   ALL_BANKS,
   VENEZUELAN_BANKS,
   INTERNATIONAL_BANKS
@@ -71,6 +73,7 @@ export const BankAccountDetailView: React.FC<Props> = ({ id }) => {
 
   // Dialogs & Toasts
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+
   const [toast, setToast] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
     open: false,
     message: '',
@@ -85,11 +88,13 @@ export const BankAccountDetailView: React.FC<Props> = ({ id }) => {
           contactsService.getTerceros(),
           bankAccountsService.getBankAccounts()
         ])
+
         setContactsList(contacts)
         setAllAccounts(accounts)
 
         if (!isCreate) {
           const found = accounts.find(a => a.id === id) || (await bankAccountsService.getBankAccountById(id))
+
           if (found) {
             setAccount(found)
             setOwnerType(found.is_empresa ? 'COMPANY' : 'CONTACT')
@@ -107,6 +112,7 @@ export const BankAccountDetailView: React.FC<Props> = ({ id }) => {
 
             if (!found.is_empresa && found.contacto_id) {
               const matchedContact = contacts.find(c => c.id === found.contacto_id)
+
               if (matchedContact) setSelectedContact(matchedContact)
             }
           }
@@ -134,6 +140,7 @@ export const BankAccountDetailView: React.FC<Props> = ({ id }) => {
   const handleBankChange = (newBankName: string) => {
     setBanco(newBankName)
     const bankFound = ALL_BANKS.find(b => b.nombre === newBankName)
+
     if (bankFound) {
       if (bankFound.codigo === 'ZELLE' || bankFound.codigo === 'PAYPAL' || bankFound.codigo === 'BINANCE') {
         setTipoCuenta('VIRTUAL')
@@ -149,6 +156,7 @@ export const BankAccountDetailView: React.FC<Props> = ({ id }) => {
   // Contact selection helper
   const handleContactSelect = (contact: TerceroEntity | null) => {
     setSelectedContact(contact)
+
     if (contact) {
       setTitular(contact.nombre_razon_social)
       setIdentificacionTitular(contact.identificacion)
@@ -161,23 +169,32 @@ export const BankAccountDetailView: React.FC<Props> = ({ id }) => {
   const handleSave = async () => {
     if (!banco.trim()) {
       setToast({ open: true, message: 'Selecciona una entidad bancaria.', severity: 'error' })
-      return
+      
+return
     }
+
     if (!numeroCuenta.trim()) {
       setToast({ open: true, message: 'Ingresa el número de cuenta o identificador.', severity: 'error' })
-      return
+      
+return
     }
+
     if (!titular.trim()) {
       setToast({ open: true, message: 'Ingresa el titular de la cuenta.', severity: 'error' })
-      return
+      
+return
     }
+
     if (!identificacionTitular.trim()) {
       setToast({ open: true, message: 'Ingresa el RIF o Cédula del titular.', severity: 'error' })
-      return
+      
+return
     }
+
     if (isPagoMovil && !telefonoPagoMovil.trim()) {
       setToast({ open: true, message: 'Para Pago Móvil debes registrar el número telefónico.', severity: 'error' })
-      return
+      
+return
     }
 
     try {
@@ -185,6 +202,7 @@ export const BankAccountDetailView: React.FC<Props> = ({ id }) => {
       const isCompany = ownerType === 'COMPANY'
       const assignedContactId = isCompany ? 'COMPANY' : (selectedContact?.id || undefined)
       const assignedContactName = isCompany ? 'Empresa (Distribuidora Global C.A.)' : (selectedContact?.nombre_razon_social || undefined)
+
       const assignedContactType: 'EMPRESA' | 'CLIENTE' | 'PROVEEDOR' | 'AMBOS' = isCompany
         ? 'EMPRESA'
         : selectedContact?.is_cliente && selectedContact?.is_proveedor
@@ -216,15 +234,19 @@ export const BankAccountDetailView: React.FC<Props> = ({ id }) => {
 
       if (isCreate) {
         const created = await bankAccountsService.createBankAccount(payload)
+
         setToast({ open: true, message: `Cuenta ${created.banco} creada con éxito`, severity: 'success' })
         router.push(`/contacts/bank-accounts/${created.id}`)
       } else {
         const updated = await bankAccountsService.updateBankAccount(id, payload)
+
         setAccount(updated)
         setToast({ open: true, message: `Cuenta ${updated.banco} actualizada con éxito`, severity: 'success' })
       }
-    } catch (err: any) {
-      setToast({ open: true, message: err?.message || 'Error al guardar la cuenta bancaria', severity: 'error' })
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Error al guardar la cuenta bancaria'
+
+      setToast({ open: true, message: msg, severity: 'error' })
     } finally {
       setSaving(false)
     }
@@ -237,8 +259,10 @@ export const BankAccountDetailView: React.FC<Props> = ({ id }) => {
       setToast({ open: true, message: 'Cuenta bancaria eliminada exitosamente', severity: 'success' })
       setDeleteConfirmOpen(false)
       router.push('/contacts/bank-accounts')
-    } catch (err: any) {
-      setToast({ open: true, message: err?.message || 'Error al eliminar la cuenta', severity: 'error' })
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Error al eliminar la cuenta'
+
+      setToast({ open: true, message: msg, severity: 'error' })
     }
   }
 
@@ -443,7 +467,9 @@ export const BankAccountDetailView: React.FC<Props> = ({ id }) => {
                     checked={ownerType === 'CONTACT'}
                     onChange={e => {
                       const next = e.target.checked ? 'CONTACT' : 'COMPANY'
+
                       setOwnerType(next)
+
                       if (next === 'COMPANY') {
                         setSelectedContact(null)
                         setTitular('Distribuidora Global C.A.')
