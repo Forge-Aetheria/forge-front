@@ -1,4 +1,4 @@
-import {
+import type {
   BcvRate,
   CreatePurchaseQuotePayload,
   PurchaseOrderConversionResponse,
@@ -19,6 +19,27 @@ import {
 } from '@/data/purchases/mockPurchasesData'
 import { venezuelanRifRegex } from '@/views/purchases/quotes/schemas/purchaseFormSchema'
 import { createWarehouseOperationOrder } from '@/services/inventory/operationOrdersService'
+import { executeGraphQL } from '@/libs/graphqlClient'
+import {
+  GET_PURCHASE_QUOTES_QUERY,
+  GET_PURCHASE_QUOTE_QUERY,
+  CREATE_PURCHASE_QUOTE_MUTATION,
+  REGISTER_PURCHASE_QUOTE_MUTATION,
+  APPROVE_PURCHASE_QUOTE_MUTATION,
+  CONVERT_PURCHASE_QUOTE_TO_ORDER_MUTATION,
+  CANCEL_PURCHASE_QUOTE_MUTATION,
+  RECALCULATE_PURCHASE_QUOTE_BCV_MUTATION,
+  CREATE_PURCHASE_RECEPTION_MUTATION
+} from '@/graphql/purchases.gql'
+import { GET_PARTNERS_QUERY } from '@/graphql/contacts.gql'
+import { getInventoryTemplates, fetchStockLocations, resolveDefaultStockLocations } from '@/services/inventoryService'
+import {
+  serializeCreatePurchaseQuoteInput,
+  serializeReceptionInput,
+  mapGqlPurchaseQuoteToFrontend,
+  generateIdempotencyKey,
+  type GqlPurchaseQuote
+} from '@/services/adapters/purchasesAdapter'
 
 const STORAGE_KEY_QUOTES = 'forge_purchases_quotes_v1'
 const STORAGE_KEY_FLAGS = 'forge_purchases_feature_flags_v1'
@@ -38,10 +59,13 @@ class PurchasesService {
 
   private hydrateFromStorage(): void {
     if (typeof window === 'undefined') return
+
     try {
       const saved = localStorage.getItem(STORAGE_KEY_QUOTES)
+
       if (saved) {
         const parsed = JSON.parse(saved)
+
         if (Array.isArray(parsed) && parsed.length > 0) {
           this.quotes = parsed
         }
@@ -53,6 +77,7 @@ class PurchasesService {
 
   private persistToStorage(): void {
     if (typeof window === 'undefined') return
+
     try {
       localStorage.setItem(STORAGE_KEY_QUOTES, JSON.stringify(this.quotes))
     } catch {
@@ -64,6 +89,7 @@ class PurchasesService {
   public getFeatureFlags(): PurchasesFeatureFlags {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem(STORAGE_KEY_FLAGS)
+
       if (saved) {
         try {
           return { ...defaultPurchasesFeatureFlags, ...JSON.parse(saved) }
@@ -72,15 +98,20 @@ class PurchasesService {
         }
       }
     }
-    return defaultPurchasesFeatureFlags
+
+    
+return defaultPurchasesFeatureFlags
   }
 
   public setFeatureFlags(flags: Partial<PurchasesFeatureFlags>): PurchasesFeatureFlags {
     const updated = { ...this.getFeatureFlags(), ...flags }
+
     if (typeof window !== 'undefined') {
       localStorage.setItem(STORAGE_KEY_FLAGS, JSON.stringify(updated))
     }
-    return updated
+
+    
+return updated
   }
 
   // Tasa BCV Oficial (Sincronizada por CRON diario 7:00 AM)
@@ -95,13 +126,15 @@ class PurchasesService {
       fecha_valor: new Date().toISOString().split('T')[0],
       sincronizado_at: new Date().toISOString()
     }
-    return { ...this.bcvRate }
+    
+return { ...this.bcvRate }
   }
 
   // Adaptador Desacoplado: GET /api/suppliers?search= (o /api/terceros?rol=PROVEEDOR)
   public async searchSuppliers(query: string): Promise<SupplierLookup[]> {
     const q = query.toLowerCase().trim()
     const activeSuppliers = this.suppliers.filter(s => s.rol_proveedor_activo)
+
     if (!q) return activeSuppliers
 
     return activeSuppliers.filter(
@@ -114,11 +147,75 @@ class PurchasesService {
   }
 
   public async getSuppliers(): Promise<SupplierLookup[]> {
+    try {
+      const res = await executeGraphQL<{ partners: any[] }>(
+        GET_PARTNERS_QUERY,
+        {
+          where: { isSupplier: { equals: true }, deletedAt: { equals: null } },
+          take: 100
+        },
+        { timeoutMs: 5000 }
+      )
+
+      if (res?.partners && Array.isArray(res.partners) && res.partners.length > 0) {
+        return res.partners.map(p => ({
+          id: p.id,
+          identificacion: `${p.docType}-${p.docNumber}${p.checkDigit ? `-${p.checkDigit}` : ''}`,
+          razon_social: p.legalName,
+          nombre_comercial: p.tradeName || undefined,
+          rol_proveedor_activo: Boolean(p.isSupplier),
+          email: p.email || '',
+          telefono: p.phone || '',
+          direccion_fiscal: p.fiscalAddress || 'Venezuela',
+          condicion_pago_default: 'CONTADO',
+          dias_credito_default: 0,
+          moneda_negociacion_default: 'USD'
+        }))
+      }
+    } catch {
+      // Fallback a proveedores en caché local
+    }
+
     return [...this.suppliers]
   }
 
   // Adaptador Desacoplado: GET /api/products
   public async getPurchaseProducts(): Promise<PurchaseProductLookup[]> {
+    try {
+      const templates = await getInventoryTemplates()
+
+      if (templates && templates.length > 0) {
+        const mapped: PurchaseProductLookup[] = []
+
+        templates.forEach(t => {
+          t.variants.forEach(v => {
+            mapped.push({
+              id: v.id,
+              sku: v.sku,
+              nombre: `${t.name}${
+                v.combinationValues && v.combinationValues.length > 0
+                  ? ` (${v.combinationValues.map(c => c.valueName).join(', ')})`
+                  : ''
+              }`,
+              descripcion: t.notes || undefined,
+              uom_code: t.uomCode || 'un',
+              naturaleza: t.productType === 'service' ? 'SERVICE_EXPENSE' : 'PHYSICAL_STOCK',
+              is_physical_stock: t.productType !== 'service',
+              manages_stock: t.productType !== 'service',
+              costo_unitario_ult_compra_usd: v.costPrice || t.standardCost || 0,
+              stock_fisico_actual: v.physicalStock || 0,
+              stock_en_transito_actual: v.reservedStock || 0,
+              alicuota_iva: (t.vatRate as any) || '16'
+            })
+          })
+        })
+
+        if (mapped.length > 0) return mapped
+      }
+    } catch {
+      // Fallback
+    }
+
     return [...this.products]
   }
 
@@ -158,10 +255,12 @@ class PurchasesService {
 
       if (ivaEnabled) {
         const alicuota = item.alicuota_iva || '16'
+
         if (alicuota === 'EXEMPT' || alicuota === '0') {
           monto_exento_usd += netLine
         } else {
           const rateNum = alicuota === '8' ? 8 : 16
+
           base_imponible_usd += netLine
           credito_fiscal_iva_usd += netLine * (rateNum / 100)
         }
@@ -182,6 +281,7 @@ class PurchasesService {
     const credito_fiscal_iva_ves = credito_fiscal_iva_usd * tasaBcv
     const igtf_ves = igtf_usd * tasaBcv
     const total_ves = total_usd * tasaBcv
+
     const retencion_iva_estimada_ves =
       ivaEnabled && flags.SENIAT_FORMAT
         ? credito_fiscal_iva_ves * ((retencionIvaPorcentajeProveedor || 0) / 100)
@@ -245,17 +345,42 @@ class PurchasesService {
   // HU2: Consultar y Listar Compras (GET /api/purchases/quotes)
   public async getPurchaseQuotes(filters?: PurchasesFilterState): Promise<PurchaseQuote[]> {
     this.hydrateFromStorage()
+
+    try {
+      const res = await executeGraphQL<{ purchaseQuotes: GqlPurchaseQuote[] }>(
+        GET_PURCHASE_QUOTES_QUERY,
+        { take: 100 },
+        { timeoutMs: 5000 }
+      )
+
+      if (res?.purchaseQuotes && Array.isArray(res.purchaseQuotes)) {
+        const mapped = res.purchaseQuotes.map(q => mapGqlPurchaseQuoteToFrontend(q, this.bcvRate.tasa))
+
+        if (mapped.length > 0) {
+          const backendIds = new Set(mapped.map(q => q.id))
+          const localOnly = this.quotes.filter(q => !backendIds.has(q.id) && q.id.startsWith('pc-'))
+
+          this.quotes = [...mapped, ...localOnly]
+        }
+      }
+    } catch (err) {
+      console.warn('[purchasesService] Error al consultar purchaseQuotes en backend:', err)
+    }
+
     let result = [...this.quotes]
 
     if (filters) {
       if (filters.estado && filters.estado !== 'ALL') {
         result = result.filter(q => q.estado === filters.estado)
       }
+
       if (filters.proveedor_id && filters.proveedor_id !== 'ALL') {
         result = result.filter(q => q.proveedor.id === filters.proveedor_id)
       }
+
       if (filters.search && filters.search.trim().length > 0) {
         const q = filters.search.toLowerCase().trim()
+
         result = result.filter(
           item =>
             item.correlativo.toLowerCase().includes(q) ||
@@ -266,9 +391,11 @@ class PurchasesService {
             (item.proveedor.nombre_comercial && item.proveedor.nombre_comercial.toLowerCase().includes(q))
         )
       }
+
       if (filters.fecha_desde) {
         result = result.filter(item => item.fecha_registro >= filters.fecha_desde!)
       }
+
       if (filters.fecha_hasta) {
         result = result.filter(item => item.fecha_registro <= filters.fecha_hasta!)
       }
@@ -280,15 +407,111 @@ class PurchasesService {
   // HU2: Obtener Detalle por ID (GET /api/purchases/quotes/{id})
   public async getPurchaseQuoteById(id: string): Promise<PurchaseQuote | null> {
     this.hydrateFromStorage()
+
+    const isUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(id)
+
+    if (isUuid) {
+      try {
+        const res = await executeGraphQL<{ purchaseQuote: GqlPurchaseQuote }>(
+          GET_PURCHASE_QUOTE_QUERY,
+          { id },
+          { timeoutMs: 5000 }
+        )
+
+        if (res?.purchaseQuote) {
+          const mapped = mapGqlPurchaseQuoteToFrontend(res.purchaseQuote, this.bcvRate.tasa)
+          const idx = this.quotes.findIndex(q => q.id === id)
+
+          if (idx !== -1) {
+            this.quotes[idx] = mapped
+          } else {
+            this.quotes.unshift(mapped)
+          }
+
+          return mapped
+        }
+      } catch (err) {
+        console.warn('[purchasesService] Error al consultar purchaseQuote por ID:', err)
+      }
+    }
+
     const found = this.quotes.find(q => q.id === id)
+
     return found ? { ...found } : null
   }
 
   // HU1: Crear Solicitud de Cotización / Presupuesto de Compra (POST /api/purchases/quotes)
   public async createPurchaseQuote(payload: CreatePurchaseQuotePayload): Promise<PurchaseQuote> {
+    const isSupplierUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(
+      payload.proveedor_id
+    )
+
+    if (isSupplierUuid) {
+      if (!payload.items || payload.items.length === 0) {
+        throw new Error('Debe incluir al menos un ítem en la solicitud de compra.')
+      }
+
+      for (let i = 0; i < payload.items.length; i++) {
+        const it = payload.items[i]
+
+        const isVarUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(
+          it.producto_id
+        )
+
+        if (!isVarUuid) {
+          throw new Error(
+            `El producto en la línea ${i + 1} no es una variante sincronizada con el backend (requiere UUID). Seleccione un producto del catálogo.`
+          )
+        }
+      }
+
+      const idempotencyKey = generateIdempotencyKey()
+      const input = serializeCreatePurchaseQuoteInput(payload, idempotencyKey)
+
+      const res = await executeGraphQL<{ createPurchaseQuote: GqlPurchaseQuote }>(
+        CREATE_PURCHASE_QUOTE_MUTATION,
+        { input },
+        { timeoutMs: 10000 }
+      )
+
+      if (res?.createPurchaseQuote) {
+        let created = mapGqlPurchaseQuoteToFrontend(res.createPurchaseQuote, this.bcvRate.tasa)
+
+        // Si se solicitó registrar de inmediato como RFQ, ejecutar mutación de registro
+        if (payload.registrar_cotizacion_inmediatamente) {
+          try {
+            const regRes = await executeGraphQL<{ registerPurchaseQuote: GqlPurchaseQuote }>(
+              REGISTER_PURCHASE_QUOTE_MUTATION,
+              {
+                input: {
+                  quoteId: created.id,
+                  idempotencyKey: generateIdempotencyKey()
+                }
+              },
+              { timeoutMs: 8000 }
+            )
+
+            if (regRes?.registerPurchaseQuote) {
+              created = mapGqlPurchaseQuoteToFrontend(regRes.registerPurchaseQuote, this.bcvRate.tasa)
+            }
+          } catch (err) {
+            console.warn('[purchasesService] Error al registrar inmediatamente la RFQ:', err)
+          }
+        }
+
+        this.quotes.unshift(created)
+        this.persistToStorage()
+
+        return created
+      }
+
+      throw new Error('El backend no retornó los datos de la cotización de compra creada.')
+    }
+
     const flags = this.getFeatureFlags()
 
     const supplier = this.suppliers.find(s => s.id === payload.proveedor_id)
+
     if (!supplier) {
       throw new Error('El proveedor seleccionado no existe.')
     }
@@ -355,9 +578,11 @@ class PurchasesService {
     )
 
     const isRegistered = Boolean(payload.registrar_cotizacion_inmediatamente)
+
     const correlativo = isRegistered
       ? `SC-2026-${String(this.quoteCounter++).padStart(4, '0')}`
       : 'BORRADOR'
+
     const today = new Date().toISOString().split('T')[0]
 
     const newQuote: PurchaseQuote = {
@@ -399,17 +624,20 @@ class PurchasesService {
 
     this.quotes.unshift(newQuote)
     this.persistToStorage()
-    return { ...newQuote }
+    
+return { ...newQuote }
   }
 
   // Actualizar Solicitud existente en DRAFT o RFQ_SENT
   public async updatePurchaseQuote(id: string, payload: CreatePurchaseQuotePayload): Promise<PurchaseQuote> {
     const idx = this.quotes.findIndex(q => q.id === id)
+
     if (idx === -1) {
       throw new Error('La solicitud de compra no existe.')
     }
 
     const existing = this.quotes[idx]
+
     if (existing.estado !== 'DRAFT' && existing.estado !== 'RFQ_SENT') {
       throw new Error('Solo se pueden modificar solicitudes en estado Borrador o Cotización Registrada.')
     }
@@ -463,6 +691,7 @@ class PurchasesService {
 
     const shouldRegister = Boolean(payload.registrar_cotizacion_inmediatamente)
     const nextEstado = shouldRegister ? 'RFQ_SENT' : existing.estado
+
     const nextCorrelativo =
       existing.correlativo === 'BORRADOR' && nextEstado === 'RFQ_SENT'
         ? `SC-2026-${String(this.quoteCounter++).padStart(4, '0')}`
@@ -505,12 +734,39 @@ class PurchasesService {
 
     this.quotes[idx] = updated
     this.persistToStorage()
-    return { ...updated }
+    
+return { ...updated }
   }
 
   // HU3: Recalcular con nueva tasa BCV y renovar vigencia (EARS-EV-09)
   public async recalculatePurchaseQuoteBcv(id: string): Promise<PurchaseQuote> {
+    const isUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(id)
+
+    if (isUuid) {
+      const res = await executeGraphQL<{ recalculatePurchaseQuoteBcv: GqlPurchaseQuote }>(
+        RECALCULATE_PURCHASE_QUOTE_BCV_MUTATION,
+        {
+          input: {
+            quoteId: id,
+            idempotencyKey: generateIdempotencyKey()
+          }
+        },
+        { timeoutMs: 10000 }
+      )
+
+      if (res?.recalculatePurchaseQuoteBcv) {
+        const recalculated = mapGqlPurchaseQuoteToFrontend(res.recalculatePurchaseQuoteBcv, this.bcvRate.tasa)
+        const idx = this.quotes.findIndex(q => q.id === id)
+
+        if (idx !== -1) this.quotes[idx] = recalculated
+        this.persistToStorage()
+
+        return recalculated
+      }
+    }
+
     const idx = this.quotes.findIndex(q => q.id === id)
+
     if (idx === -1) {
       throw new Error('Solicitud de compra no encontrada.')
     }
@@ -530,6 +786,7 @@ class PurchasesService {
 
     const today = new Date().toISOString().split('T')[0]
     const futureValidity = new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+
     const validUntil =
       quote.fecha_vencimiento_cotizacion < today ? futureValidity : quote.fecha_vencimiento_cotizacion
 
@@ -550,18 +807,45 @@ class PurchasesService {
 
     this.quotes[idx] = updated
     this.persistToStorage()
+
     return { ...updated }
   }
 
   // HU3: Aprobar Presupuesto de Compra (PUT /api/purchases/quotes/{id}/status)
   public async approvePurchaseQuote(id: string): Promise<PurchaseQuote> {
+    const isUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(id)
+
+    if (isUuid) {
+      const idempotencyKey = generateIdempotencyKey()
+
+      const res = await executeGraphQL<{ approvePurchaseQuote: GqlPurchaseQuote }>(
+        APPROVE_PURCHASE_QUOTE_MUTATION,
+        { input: { quoteId: id, idempotencyKey } },
+        { timeoutMs: 10000 }
+      )
+
+      if (res?.approvePurchaseQuote) {
+        const approved = mapGqlPurchaseQuoteToFrontend(res.approvePurchaseQuote, this.bcvRate.tasa)
+        const idx = this.quotes.findIndex(q => q.id === id)
+
+        if (idx !== -1) this.quotes[idx] = approved
+        this.persistToStorage()
+
+        return approved
+      }
+
+      throw new Error('No se pudo confirmar la aprobación de la cotización en el servidor.')
+    }
+
     const idx = this.quotes.findIndex(q => q.id === id)
+
     if (idx === -1) {
       throw new Error('Solicitud de compra no encontrada.')
     }
 
     const quote = this.quotes[idx]
     const readiness = this.evaluateApprovalReadiness(quote)
+
     if (!readiness.canApproveDirectly) {
       throw new Error(
         readiness.warningMessage || 'La tasa BCV o vigencia ha cambiado, actualice los costos del presupuesto'
@@ -584,6 +868,7 @@ class PurchasesService {
 
     this.quotes[idx] = updated
     this.persistToStorage()
+
     return { ...updated }
   }
 
@@ -593,12 +878,38 @@ class PurchasesService {
       throw new Error('El motivo de anulación es obligatorio (mínimo 5 caracteres).')
     }
 
+    const isUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(id)
+
+    if (isUuid) {
+      const idempotencyKey = generateIdempotencyKey()
+
+      const res = await executeGraphQL<{ cancelPurchaseQuote: GqlPurchaseQuote }>(
+        CANCEL_PURCHASE_QUOTE_MUTATION,
+        { input: { quoteId: id, reason: motivo_anulacion.trim(), idempotencyKey } },
+        { timeoutMs: 10000 }
+      )
+
+      if (res?.cancelPurchaseQuote) {
+        const canceled = mapGqlPurchaseQuoteToFrontend(res.cancelPurchaseQuote, this.bcvRate.tasa)
+        const idx = this.quotes.findIndex(q => q.id === id)
+
+        if (idx !== -1) this.quotes[idx] = canceled
+        this.persistToStorage()
+
+        return canceled
+      }
+
+      throw new Error('No se pudo anular la cotización en el servidor.')
+    }
+
     const idx = this.quotes.findIndex(q => q.id === id)
+
     if (idx === -1) {
       throw new Error('Registro de compra no encontrado.')
     }
 
     const quote = this.quotes[idx]
+
     const updated: PurchaseQuote = {
       ...quote,
       estado: 'CANCELED',
@@ -608,17 +919,62 @@ class PurchasesService {
 
     this.quotes[idx] = updated
     this.persistToStorage()
+
     return { ...updated }
   }
 
   // HU5: Convertir a Orden de Compra en Firme (POST /api/purchases/orders/from-quote/{quote_id})
   public async convertQuoteToPurchaseOrder(quoteId: string): Promise<PurchaseOrderConversionResponse> {
+    const isUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(quoteId)
+
+    if (isUuid) {
+      const idempotencyKey = generateIdempotencyKey()
+
+      const res = await executeGraphQL<{ convertQuoteToPurchaseOrder: { id: string; code: string; state: string } }>(
+        CONVERT_PURCHASE_QUOTE_TO_ORDER_MUTATION,
+        { input: { quoteId, idempotencyKey } },
+        { timeoutMs: 10000 }
+      )
+
+      if (res?.convertQuoteToPurchaseOrder) {
+        const order = res.convertQuoteToPurchaseOrder
+        const idx = this.quotes.findIndex(q => q.id === quoteId)
+
+        if (idx !== -1) {
+          this.quotes[idx] = {
+            ...this.quotes[idx],
+            estado: 'PURCHASE_ORDER',
+            correlativo_orden_compra: order.code,
+            updated_at: new Date().toISOString()
+          }
+          this.persistToStorage()
+        }
+
+        return {
+          success: true,
+          purchase_order_id: order.id,
+          correlativo_orden_compra: order.code,
+          quote_id: quoteId,
+          estado: 'PURCHASE_ORDER',
+          lineas_fisicas_en_transito: [],
+          habilitada_recepcion_almacen: true,
+          habilitada_factura_cxp: true,
+          message: `Orden de Compra ${order.code} confirmada exitosamente en el servidor.`,
+          created_at: new Date().toISOString()
+        }
+      }
+
+      throw new Error('El backend no retornó los datos de la orden de compra convertida.')
+    }
+
     const idx = this.quotes.findIndex(q => q.id === quoteId)
+
     if (idx === -1) {
       throw new Error('La solicitud de compra no existe.')
     }
 
     const quote = this.quotes[idx]
+
     if (quote.estado !== 'APPROVED') {
       throw new Error('Solo se puede generar una Orden de Compra a partir de un presupuesto en estado APROBADO.')
     }
@@ -633,10 +989,13 @@ class PurchasesService {
             .filter(line => line.is_physical_stock)
             .map(line => {
               const prod = this.products.find(p => p.id === line.producto_id)
+
               if (prod) {
                 prod.stock_en_transito_actual += line.cantidad
               }
-              return {
+
+              
+return {
                 producto_id: line.producto_id,
                 producto_sku: line.producto_sku,
                 cantidad_en_transito_sumada: line.cantidad
@@ -648,6 +1007,7 @@ class PurchasesService {
     if (typeof window !== 'undefined' && lineasFisicasEnTransito.length > 0) {
       try {
         const currentLogs = JSON.parse(localStorage.getItem(STORAGE_KEY_TRANSIT_LOG) || '[]')
+
         currentLogs.unshift({
           correlativo_orden_compra: correlativoOC,
           quote_id: quote.id,
@@ -662,6 +1022,7 @@ class PurchasesService {
     }
 
     const nowIso = new Date().toISOString()
+
     const updatedQuote: PurchaseQuote = {
       ...quote,
       estado: 'PURCHASE_ORDER',
@@ -675,6 +1036,7 @@ class PurchasesService {
     this.persistToStorage()
 
     const physicalCount = lineasFisicasEnTransito.length
+
     const msg =
       physicalCount > 0
         ? `Orden de Compra ${correlativoOC} emitida en firme. Se sumaron ${physicalCount} ítem(s) físicos a stock en tránsito y se habilitó para Recepción de Almacén y Factura CxP.`
@@ -697,19 +1059,49 @@ class PurchasesService {
   // Crear Orden de Recepción vinculada en Almacén (SPEC-009)
   public async createReceptionForPurchase(purchaseId: string): Promise<{ success: boolean; codigo: string; operationId: string; message: string }> {
     const idx = this.quotes.findIndex(q => q.id === purchaseId)
+
     if (idx === -1) throw new Error('Orden de compra no encontrada.')
 
     const q = this.quotes[idx]
+
     if (q.estado !== 'PURCHASE_ORDER') {
       throw new Error('Solo se pueden generar recepciones para órdenes de compra confirmadas (OC-2026-XXXX).')
     }
 
     const physicalLines = q.items.filter(it => it.is_physical_stock)
+
     if (physicalLines.length === 0) {
       throw new Error('Esta orden de compra solo contiene servicios o gastos no inventariables; no requiere recepción física.')
     }
 
     const docOrigen = q.correlativo_orden_compra || q.correlativo
+
+    const isUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(purchaseId)
+
+    if (isUuid) {
+      try {
+        const locations = await fetchStockLocations()
+        const defaultLoc = await resolveDefaultStockLocations()
+        const warehouseId = locations.find(l => l.warehouseId)?.warehouseId || defaultLoc.internalLocationId
+
+        const receptionInput = serializeReceptionInput({
+          orderId: purchaseId,
+          warehouseId,
+          lines: physicalLines.map(l => ({
+            variantId: l.producto_id,
+            quantityReceived: l.cantidad
+          }))
+        })
+
+        await executeGraphQL(
+          CREATE_PURCHASE_RECEPTION_MUTATION,
+          { input: receptionInput },
+          { timeoutMs: 10000 }
+        )
+      } catch (err) {
+        console.warn('[purchasesService] No se pudo crear recepción directa en backend:', err)
+      }
+    }
 
     const opLines = physicalLines.map(line => ({
       producto_id: line.producto_id,
@@ -754,18 +1146,23 @@ class PurchasesService {
   public recordReceptionOperation(originRef: string, operationCode: string, lines: { producto_id: string; cantidad: number }[]): void {
     this.hydrateFromStorage()
     const idx = this.quotes.findIndex(q => q.correlativo_orden_compra === originRef || q.correlativo === originRef || q.id === originRef)
+
     if (idx === -1) return
 
     const q = this.quotes[idx]
+
     const updatedItems = q.items.map(item => {
       const match = lines.find(l => l.producto_id === item.producto_id)
+
       if (match) {
         return {
           ...item,
           cantidad_recibida: (item.cantidad_recibida || 0) + match.cantidad
         }
       }
-      return item
+
+      
+return item
     })
 
     this.quotes[idx] = {
@@ -781,20 +1178,25 @@ class PurchasesService {
   public recordSupplierInvoiceLink(originRef: string, invoiceId: string, invoiceNumber: string, billedLines?: { producto_id: string; cantidad: number }[]): void {
     this.hydrateFromStorage()
     const idx = this.quotes.findIndex(q => q.correlativo_orden_compra === originRef || q.correlativo === originRef || q.id === originRef)
+
     if (idx === -1) return
 
     const q = this.quotes[idx]
     let updatedItems = q.items
+
     if (billedLines && billedLines.length > 0) {
       updatedItems = q.items.map(item => {
         const match = billedLines.find(l => l.producto_id === item.producto_id)
+
         if (match) {
           return {
             ...item,
             cantidad_facturada: (item.cantidad_facturada || 0) + match.cantidad
           }
         }
-        return item
+
+        
+return item
       })
     }
 
