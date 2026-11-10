@@ -1,18 +1,19 @@
 'use client'
 
 import React, { useEffect, useState, useMemo, useCallback } from 'react'
+
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+
 import Card from '@mui/material/Card'
 import Box from '@mui/material/Box'
 import Tabs from '@mui/material/Tabs'
 import Tab from '@mui/material/Tab'
 import Divider from '@mui/material/Divider'
-import CardContent from '@mui/material/CardContent'
 import Typography from '@mui/material/Typography'
 import Button from '@mui/material/Button'
 import IconButton from '@mui/material/IconButton'
-import CustomChip from '@core/components/mui/Chip'
+
 import Grid from '@mui/material/Grid'
 import Tooltip from '@mui/material/Tooltip'
 import Snackbar from '@mui/material/Snackbar'
@@ -29,7 +30,9 @@ import DialogTitle from '@mui/material/DialogTitle'
 import DialogContent from '@mui/material/DialogContent'
 import DialogActions from '@mui/material/DialogActions'
 
-import { BcvRate, PurchaseQuote, PurchasesFeatureFlags } from '@/types/purchasesTypes'
+import CustomChip from '@core/components/mui/Chip'
+
+import type { BcvRate, PurchaseQuote, PurchasesFeatureFlags } from '@/types/purchasesTypes'
 import { purchasesService } from '@/services/purchasesService'
 import { getInventoryTemplates } from '@/services/inventoryService'
 import { settingsService } from '@/services/settingsService'
@@ -37,7 +40,6 @@ import type { ProductTemplate } from '@/types/inventoryTypes'
 import type { CommercialPoliciesSettings } from '@/types/settingsTypes'
 import { calculateBillablePurchaseLines, resolveEffectivePurchaseControlPolicy } from '@/utils/policyEngine'
 import { PurchaseStatusChip } from './components/PurchaseStatusChip'
-import { BcvRateBadge } from './components/BcvRateBadge'
 import { PurchaseTotalsCard } from './components/PurchaseTotalsCard'
 import { CancelPurchaseModal } from './components/CancelPurchaseModal'
 
@@ -65,6 +67,7 @@ export const PurchaseDetailView: React.FC<Props> = ({ id }) => {
   // Interconexión y Motor de Políticas (SPEC-009)
   const [products, setProducts] = useState<ProductTemplate[]>([])
   const [commercialPolicies, setCommercialPolicies] = useState<CommercialPoliciesSettings | null>(null)
+
   const [policyWarningModal, setPolicyWarningModal] = useState<{
     open: boolean
     title: string
@@ -86,6 +89,7 @@ export const PurchaseDetailView: React.FC<Props> = ({ id }) => {
   const loadData = useCallback(async () => {
     try {
       setLoading(true)
+
       const [currentQuote, quotesList, bcv, productTemplates, policies] = await Promise.all([
         purchasesService.getPurchaseQuoteById(id),
         purchasesService.getPurchaseQuotes(),
@@ -97,6 +101,7 @@ export const PurchaseDetailView: React.FC<Props> = ({ id }) => {
       if (currentQuote) {
         setQuote(currentQuote)
       }
+
       setAllQuotes(quotesList)
       setActiveBcvRate(bcv)
       setProducts(productTemplates)
@@ -119,6 +124,7 @@ export const PurchaseDetailView: React.FC<Props> = ({ id }) => {
 
     if (totalBillable <= 0) {
       const blockedLines = billableLines.filter(l => l.reason)
+
       setPolicyWarningModal({
         open: true,
         title: 'Factura Bloqueada por Política de Recepción',
@@ -129,7 +135,8 @@ export const PurchaseDetailView: React.FC<Props> = ({ id }) => {
             `• ${b.line.producto_nombre}: Ordenadas: ${b.orderedQty}, Recibidas: ${b.receivedQty}, Facturadas: ${b.alreadyBilledQty}. Motivo: ${b.reason}`
         )
       })
-      return
+      
+return
     }
 
     // Redirigir a Facturas de Proveedor con contexto de orden de compra
@@ -138,10 +145,12 @@ export const PurchaseDetailView: React.FC<Props> = ({ id }) => {
 
   const handleGenerateReceptionClick = async () => {
     if (!quote) return
+
     try {
       setIsGeneratingReception(true)
       const res = await purchasesService.createReceptionForPurchase(quote.id)
       const reloaded = await purchasesService.getPurchaseQuoteById(quote.id)
+
       if (reloaded) setQuote(reloaded)
       setToast({
         open: true,
@@ -173,12 +182,14 @@ export const PurchaseDetailView: React.FC<Props> = ({ id }) => {
   // Evaluación de Vigencia y Tasa BCV (HU3 - EARS-EX-03)
   const readiness = useMemo(() => {
     if (!quote) return null
-    return purchasesService.evaluateApprovalReadiness(quote)
+    
+return purchasesService.evaluateApprovalReadiness(quote)
   }, [quote, activeBcvRate])
 
   const totalsCalculation = useMemo(() => {
     if (!quote) return null
-    return purchasesService.calculateTotals(
+    
+return purchasesService.calculateTotals(
       quote.items,
       quote.tasa_bcv.tasa,
       flags,
@@ -191,19 +202,21 @@ export const PurchaseDetailView: React.FC<Props> = ({ id }) => {
   // HU3: Recalcular con nueva tasa BCV (EARS-EV-09)
   const handleRecalculateBcv = async () => {
     if (!quote) return
+
     try {
       setIsRecalculating(true)
       const updated = await purchasesService.recalculatePurchaseQuoteBcv(quote.id)
+
       setQuote(updated)
       setToast({
         open: true,
         message: `Costos actualizados a la tasa BCV oficial (${updated.tasa_bcv.tasa.toFixed(2)} Bs/USD) y vigencia renovada. Ya puede aprobar la compra.`,
         severity: 'info'
       })
-    } catch (err: any) {
+    } catch (err: unknown) {
       setToast({
         open: true,
-        message: err?.message || 'Error al recalcular con nueva tasa BCV.',
+        message: err instanceof Error ? err.message : 'Error al recalcular con nueva tasa BCV.',
         severity: 'error'
       })
     } finally {
@@ -214,19 +227,21 @@ export const PurchaseDetailView: React.FC<Props> = ({ id }) => {
   // HU3: Aprobar Presupuesto de Compra (EARS-EV-08)
   const handleApprovePurchase = async () => {
     if (!quote) return
+
     try {
       setIsApproving(true)
       const updated = await purchasesService.approvePurchaseQuote(quote.id)
+
       setQuote(updated)
       setToast({
         open: true,
         message: 'Presupuesto de compra aprobado exitosamente. Costos pactados congelados.',
         severity: 'success'
       })
-    } catch (err: any) {
+    } catch (err: unknown) {
       setToast({
         open: true,
-        message: err?.message || 'Error al aprobar la solicitud de compra.',
+        message: err instanceof Error ? err.message : 'Error al aprobar la solicitud de compra.',
         severity: 'error'
       })
     } finally {
@@ -238,6 +253,7 @@ export const PurchaseDetailView: React.FC<Props> = ({ id }) => {
   const handleConfirmCancel = async (motivo: string) => {
     if (!quote) return
     const updated = await purchasesService.cancelPurchaseQuote(quote.id, motivo)
+
     setQuote(updated)
     setToast({
       open: true,
@@ -249,38 +265,27 @@ export const PurchaseDetailView: React.FC<Props> = ({ id }) => {
   // HU5: Convertir a Orden de Compra en Firme (EARS-EV-11 / EARS-ST-06)
   const handleConvertToPurchaseOrder = async () => {
     if (!quote) return
+
     try {
       setIsConverting(true)
       const res = await purchasesService.convertQuoteToPurchaseOrder(quote.id)
       const reloaded = await purchasesService.getPurchaseQuoteById(quote.id)
+
       if (reloaded) setQuote(reloaded)
       setToast({
         open: true,
         message: res.message,
         severity: 'success'
       })
-    } catch (err: any) {
+    } catch (err: unknown) {
       setToast({
         open: true,
-        message: err?.message || 'Error al generar la Orden de Compra.',
+        message: err instanceof Error ? err.message : 'Error al generar la Orden de Compra.',
         severity: 'error'
       })
     } finally {
       setIsConverting(false)
     }
-  }
-
-  // Simular cambio de tasa BCV del día para probar HU3 en vivo si se desea
-  const handleSimulateBcvVariation = async () => {
-    if (!activeBcvRate) return
-    const nextRate = Number((activeBcvRate.tasa + 0.75).toFixed(2))
-    const updatedBcv = await purchasesService.updateActiveBcvRate(nextRate)
-    setActiveBcvRate(updatedBcv)
-    setToast({
-      open: true,
-      message: `Tasa oficial del día actualizada a ${updatedBcv.tasa.toFixed(2)} Bs/USD (Simulación CRON 7:00 AM).`,
-      severity: 'info'
-    })
   }
 
   if (loading) {
@@ -323,6 +328,7 @@ export const PurchaseDetailView: React.FC<Props> = ({ id }) => {
 
   const displayCorrelativo = quote.correlativo_orden_compra || quote.correlativo
   const physicalLinesCount = quote.items.filter(it => it.is_physical_stock).length
+
   const totalPhysicalUnits = quote.items
     .filter(it => it.is_physical_stock)
     .reduce((acc, it) => acc + it.cantidad, 0)

@@ -1,12 +1,13 @@
 'use client'
 
 import React, { useState, useEffect, useMemo } from 'react'
+
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+
 import Card from '@mui/material/Card'
 import CardContent from '@mui/material/CardContent'
 import Button from '@mui/material/Button'
-import IconButton from '@mui/material/IconButton'
 import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 import Grid from '@mui/material/Grid'
@@ -20,9 +21,10 @@ import MenuItem from '@mui/material/MenuItem'
 import Snackbar from '@mui/material/Snackbar'
 import Alert from '@mui/material/Alert'
 import CircularProgress from '@mui/material/CircularProgress'
+
 import CustomTextField from '@core/components/mui/TextField'
 
-import {
+import type {
   BcvRate,
   CurrencyCode,
   PaymentConditionType,
@@ -37,9 +39,9 @@ import {
   venezuelanRifRegex
 } from './schemas/purchaseFormSchema'
 import { SupplierAutocomplete } from './components/SupplierAutocomplete'
-import { BcvRateBadge } from './components/BcvRateBadge'
 import { PurchaseTotalsCard } from './components/PurchaseTotalsCard'
-import { FormPurchaseItemLine, PurchaseItemRow } from './components/PurchaseItemRow'
+import type { FormPurchaseItemLine } from './components/PurchaseItemRow'
+import { PurchaseItemRow } from './components/PurchaseItemRow'
 
 interface Props {
   initialQuote?: PurchaseQuote
@@ -53,6 +55,7 @@ export const PurchaseMasterDetailForm: React.FC<Props> = ({ initialQuote, mode =
     () => new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     []
   )
+
   const defaultDeliveryDate = useMemo(
     () => new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     []
@@ -66,25 +69,33 @@ export const PurchaseMasterDetailForm: React.FC<Props> = ({ initialQuote, mode =
 
   // Estados de Cabecera Maestro (HU1)
   const [supplier, setSupplier] = useState<SupplierLookup | null>(initialQuote?.proveedor || null)
+
   const [referenciaProveedor, setReferenciaProveedor] = useState<string>(
     initialQuote?.referencia_proveedor || ''
   )
+
   const [condicionPago, setCondicionPago] = useState<PaymentConditionType>(
     initialQuote?.condicion_pago || 'CREDITO'
   )
+
   const [diasCredito, setDiasCredito] = useState<number>(initialQuote?.dias_credito ?? 30)
   const [monedaBase, setMonedaBase] = useState<CurrencyCode>(initialQuote?.moneda_base || 'USD')
+
   const [fechaVencimientoCotizacion, setFechaVencimientoCotizacion] = useState<string>(
     initialQuote?.fecha_vencimiento_cotizacion || defaultValidityDate
   )
+
   const [fechaEstimadaEntrega, setFechaEstimadaEntrega] = useState<string>(
     initialQuote?.fecha_estimada_entrega || defaultDeliveryDate
   )
+
   const [aplicaIvaCompras, setAplicaIvaCompras] = useState<boolean>(
     initialQuote ? initialQuote.aplica_iva_compras : true
   )
+
   const [aplicaIgtf, setAplicaIgtf] = useState<boolean>(Boolean(initialQuote?.aplica_igtf))
   const [observaciones, setObservaciones] = useState<string>(initialQuote?.observaciones || '')
+
   const [terminosNegociacion, setTerminosNegociacion] = useState<string>(
     initialQuote?.terminos_negociacion ||
       'Entrega en almacén central acompañada de nota de entrega y factura fiscal SENIAT.'
@@ -106,13 +117,15 @@ export const PurchaseMasterDetailForm: React.FC<Props> = ({ initialQuote, mode =
         alicuota_iva: it.alicuota_iva || '16'
       }))
     }
-    return []
+
+    
+return []
   })
 
   // Errores inline y Estado de Envío
   const [inlineError, setInlineError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [submitAction, setSubmitAction] = useState<'draft' | 'register' | null>(null)
+
   const [toast, setToast] = useState<{
     open: boolean
     message: string
@@ -131,11 +144,13 @@ export const PurchaseMasterDetailForm: React.FC<Props> = ({ initialQuote, mode =
           purchasesService.getActiveBcvRate(),
           purchasesService.getPurchaseProducts()
         ])
+
         setBcvRate(rate)
         setProducts(prods)
 
         if (mode === 'create' && items.length === 0 && prods.length > 0) {
           const first = prods[0]
+
           setItems([
             {
               id: `pline-${Date.now()}`,
@@ -161,6 +176,7 @@ export const PurchaseMasterDetailForm: React.FC<Props> = ({ initialQuote, mode =
         setLoadingInitial(false)
       }
     }
+
     init()
   }, [mode])
 
@@ -168,6 +184,7 @@ export const PurchaseMasterDetailForm: React.FC<Props> = ({ initialQuote, mode =
   const handleSelectSupplier = (selected: SupplierLookup | null) => {
     setSupplier(selected)
     setInlineError(null)
+
     if (selected) {
       setCondicionPago(selected.condicion_pago_default)
       setDiasCredito(
@@ -180,7 +197,9 @@ export const PurchaseMasterDetailForm: React.FC<Props> = ({ initialQuote, mode =
   // Recálculo reactivo de Totales Bimonetarios (EARS-EV-04)
   const totals = useMemo(() => {
     const tasa = bcvRate?.tasa || 36.5
-    return purchasesService.calculateTotals(
+
+    
+return purchasesService.calculateTotals(
       items,
       tasa,
       flags,
@@ -194,6 +213,7 @@ export const PurchaseMasterDetailForm: React.FC<Props> = ({ initialQuote, mode =
   const handleAddItem = () => {
     if (products.length === 0) return
     const prod = products[0]
+
     setInlineError(null)
     setItems(prev => [
       ...prev,
@@ -216,8 +236,10 @@ export const PurchaseMasterDetailForm: React.FC<Props> = ({ initialQuote, mode =
     setInlineError(null)
     setItems(prev => {
       const copy = [...prev]
+
       copy[index] = updated
-      return copy
+      
+return copy
     })
   }
 
@@ -232,37 +254,46 @@ export const PurchaseMasterDetailForm: React.FC<Props> = ({ initialQuote, mode =
 
     if (!supplier) {
       const msg = 'Debe seleccionar un proveedor antes de guardar o registrar la cotización.'
+
       setInlineError(msg)
       setToast({ open: true, message: msg, severity: 'warning' })
-      return
+      
+return
     }
 
     if (flags.SENIAT_FORMAT) {
       if (!venezuelanRifRegex.test(supplier.identificacion) || !supplier.rol_proveedor_activo) {
         const msg = 'El proveedor seleccionado no posee un RIF válido o no está activo para compras.'
+
         setInlineError(msg)
         setToast({ open: true, message: msg, severity: 'error' })
-        return
+        
+return
       }
     }
 
     if (items.length === 0) {
       const msg = 'El arreglo de ítems no puede estar vacío. Agregue al menos una línea de compra.'
+
       setInlineError(msg)
       setToast({ open: true, message: msg, severity: 'error' })
-      return
+      
+return
     }
 
     const invalidLine = items.find(
       it => !it.producto_id || Number(it.cantidad) <= 0 || Number(it.costo_unitario) <= 0
     )
+
     if (invalidLine) {
       const msg = `Error de validación inline: La línea "${
         invalidLine.producto_nombre || 'Sin producto'
       }" tiene cantidad o costo unitario menor o igual a cero (<= 0).`
+
       setInlineError(msg)
       setToast({ open: true, message: msg, severity: 'error' })
-      return
+      
+return
     }
 
     const validation = createPurchaseQuoteFormSchema.safeParse({
@@ -283,14 +314,15 @@ export const PurchaseMasterDetailForm: React.FC<Props> = ({ initialQuote, mode =
 
     if (!validation.success) {
       const firstIssue = validation.error.issues[0]?.message || 'Verifique los campos obligatorios del formulario.'
+
       setInlineError(firstIssue)
       setToast({ open: true, message: firstIssue, severity: 'error' })
-      return
+      
+return
     }
 
     try {
       setIsSubmitting(true)
-      setSubmitAction(registrarInmediatamente ? 'register' : 'draft')
 
       const payload = {
         proveedor_id: supplier.id,
@@ -315,6 +347,7 @@ export const PurchaseMasterDetailForm: React.FC<Props> = ({ initialQuote, mode =
       }
 
       let saved: PurchaseQuote
+
       if (mode === 'edit' && initialQuote) {
         saved = await purchasesService.updatePurchaseQuote(initialQuote.id, payload)
       } else {
@@ -330,12 +363,12 @@ export const PurchaseMasterDetailForm: React.FC<Props> = ({ initialQuote, mode =
       })
 
       router.push(`/purchases/quotes/${saved.id}`)
-    } catch (err: any) {
-      const msg = err?.message || 'Error al procesar la solicitud de compra.'
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Error al procesar la solicitud de compra.'
+
       setInlineError(msg)
       setToast({ open: true, message: msg, severity: 'error' })
       setIsSubmitting(false)
-      setSubmitAction(null)
     }
   }
 
@@ -504,6 +537,7 @@ export const PurchaseMasterDetailForm: React.FC<Props> = ({ initialQuote, mode =
                       value={condicionPago}
                       onChange={e => {
                         const next = e.target.value as PaymentConditionType
+
                         setCondicionPago(next)
                         if (next === 'CONTADO') setDiasCredito(0)
                         else if (diasCredito === 0) setDiasCredito(supplier?.dias_credito_default || 15)

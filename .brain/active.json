@@ -1,11 +1,11 @@
 {
-  "ticketId": "TICK-010",
+  "ticketId": "TICK-012",
   "repoId": "forge-front",
   "targetDomain": "forge-front",
   "phase": "implement",
-  "featureDir": ".brain/features/TICK-010",
+  "featureDir": ".brain/features/TICK-012",
   "contract": false,
   "language": "en",
   "mode": "checkpoint",
-  "updatedAt": "2026-11-09T23:38:08.203Z"
+  "updatedAt": "2026-11-10T00:18:38.637Z"
 }
