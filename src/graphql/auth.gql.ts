@@ -78,3 +78,45 @@ export const SIGN_OUT_MUTATION = `
     signOut(scope: $scope)
   }
 `
+
+export const SIGN_UP_MUTATION = `
+  mutation SignUp($input: RegistrarCuentaInput!) {
+    signUp(input: $input) {
+      tenantId
+      userId
+      requiresEmailVerification
+      isExistingAccount
+    }
+  }
+`
+
+export const VERIFY_EMAIL_MUTATION = `
+  mutation VerifyEmail($input: VerificarEmailInput!) {
+    verifyEmail(input: $input) {
+      accessToken
+      refreshToken
+      tokenType
+      expiresIn
+      expiresAt
+    }
+  }
+`
+
+export const RESEND_VERIFICATION_EMAIL_MUTATION = `
+  mutation ResendVerificationEmail($input: SolicitudEmailInput!) {
+    resendVerificationEmail(input: $input)
+  }
+`
+
+export const REQUEST_PASSWORD_RESET_MUTATION = `
+  mutation RequestPasswordReset($input: SolicitudEmailInput!) {
+    requestPasswordReset(input: $input)
+  }
+`
+
+export const RESET_PASSWORD_MUTATION = `
+  mutation ResetPassword($input: RestablecerPasswordInput!) {
+    resetPassword(input: $input)
+  }
+`
+
