@@ -1,4 +1,12 @@
-import { BankAccount, ALL_BANKS } from '@/types/bankAccountTypes'
+import type { BankAccount } from '@/types/bankAccountTypes'
+import { ALL_BANKS } from '@/types/bankAccountTypes'
+import { executeGraphQL } from '@/libs/graphqlClient'
+import {
+  GET_BANKS_QUERY,
+  ADD_PARTNER_BANK_ACCOUNT_MUTATION,
+  REMOVE_PARTNER_BANK_ACCOUNT_MUTATION,
+  ADD_PARTNER_MOBILE_PAYMENT_MUTATION
+} from '@/graphql/contacts.gql'
 
 const STORAGE_KEY = 'foundly_bank_accounts'
 
@@ -194,13 +202,63 @@ const INITIAL_BANK_ACCOUNTS: BankAccount[] = [
 ]
 
 class BankAccountsService {
+  private cachedBanks: Array<{ id: string; name: string; code: string }> | null = null
+
+  public async fetchBanks(): Promise<Array<{ id: string; name: string; code: string }>> {
+    if (this.cachedBanks && this.cachedBanks.length > 0) {
+      return this.cachedBanks
+    }
+
+    try {
+      const res = await executeGraphQL<{ banks: Array<{ id: string; name: string; code: string; active: boolean }> }>(
+        GET_BANKS_QUERY,
+        { where: { active: { equals: true } }, take: 50 },
+        { timeoutMs: 5000 }
+      )
+
+      if (res?.banks && Array.isArray(res.banks) && res.banks.length > 0) {
+        this.cachedBanks = res.banks.map(b => ({ id: b.id, name: b.name, code: b.code }))
+
+        return this.cachedBanks
+      }
+    } catch {
+      // Fallback a ALL_BANKS estático
+    }
+
+    return ALL_BANKS.map((b, idx) => ({ id: `bank-sudeban-${idx + 1}`, name: b.nombre, code: b.codigo }))
+  }
+
+  public validateBankAccountCode(accountNumber: string, expectedCode?: string): { valid: boolean; message?: string } {
+    const cleanDigits = accountNumber.replace(/[\s-]/g, '')
+
+    if (cleanDigits.length !== 20) {
+      return { valid: false, message: 'El número de cuenta bancaria debe contener exactamente 20 dígitos numéricos.' }
+    }
+
+    if (expectedCode) {
+      const prefix = cleanDigits.slice(0, 4)
+
+      if (prefix !== expectedCode) {
+        return {
+          valid: false,
+          message: `Los primeros 4 dígitos (${prefix}) no coinciden con el código oficial del banco seleccionado (${expectedCode}).`
+        }
+      }
+    }
+
+    return { valid: true }
+  }
+
   private getStored(): BankAccount[] {
     if (typeof window === 'undefined') return INITIAL_BANK_ACCOUNTS
     const raw = localStorage.getItem(STORAGE_KEY)
+
     if (!raw) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_BANK_ACCOUNTS))
-      return INITIAL_BANK_ACCOUNTS
+      
+return INITIAL_BANK_ACCOUNTS
     }
+
     try {
       return JSON.parse(raw)
     } catch {
@@ -226,17 +284,22 @@ class BankAccountsService {
       if (filters.isEmpresa !== undefined) {
         list = list.filter(acc => (filters.isEmpresa ? acc.is_empresa : !acc.is_empresa))
       }
+
       if (filters.contactoId) {
         list = list.filter(acc => acc.contacto_id === filters.contactoId)
       }
+
       if (filters.moneda && filters.moneda !== 'ALL') {
         list = list.filter(acc => acc.moneda === filters.moneda)
       }
+
       if (filters.tipo && filters.tipo !== 'ALL') {
         list = list.filter(acc => acc.tipo_cuenta === filters.tipo)
       }
+
       if (filters.search && filters.search.trim()) {
         const q = filters.search.toLowerCase().trim()
+
         list = list.filter(
           acc =>
             acc.banco.toLowerCase().includes(q) ||
@@ -263,11 +326,73 @@ class BankAccountsService {
   public async getBankAccountById(id: string): Promise<BankAccount | null> {
     const list = this.getStored()
     const found = list.find(a => a.id === id)
-    return found || null
+
+    
+return found || null
   }
 
-  public async createBankAccount(data: Omit<BankAccount, 'id' | 'status' | 'created_at' | 'updated_at'>): Promise<BankAccount> {
+  public async createBankAccount(
+    data: Omit<BankAccount, 'id' | 'status' | 'created_at' | 'updated_at'>
+  ): Promise<BankAccount> {
     const list = this.getStored()
+    const cleanAccount = data.numero_cuenta.replace(/[\s-]/g, '')
+
+    const isPartnerUuid = Boolean(
+      data.contacto_id &&
+        /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(data.contacto_id)
+    )
+
+    let backendAccountId: string | undefined
+
+    if (isPartnerUuid && data.contacto_id) {
+      const banks = await this.fetchBanks()
+      const bankCode = data.codigo_banco || cleanAccount.slice(0, 4)
+      const matchedBank = banks.find(b => b.code === bankCode) || banks[0]
+
+      const validation = this.validateBankAccountCode(cleanAccount, matchedBank?.code)
+
+      if (!validation.valid) {
+        throw new Error(validation.message)
+      }
+
+      try {
+        const res = await executeGraphQL<{ addPartnerBankAccount: { id: string } }>(
+          ADD_PARTNER_BANK_ACCOUNT_MUTATION,
+          {
+            input: {
+              partnerId: data.contacto_id,
+              bankId: matchedBank.id,
+              currency: data.moneda === 'USD' ? 'USD' : 'VES',
+              accountNumber: cleanAccount
+            }
+          },
+          { timeoutMs: 10000 }
+        )
+
+        if (res?.addPartnerBankAccount?.id) {
+          backendAccountId = res.addPartnerBankAccount.id
+        }
+
+        if (data.is_pago_movil && data.telefono_pago_movil) {
+          await executeGraphQL(
+            ADD_PARTNER_MOBILE_PAYMENT_MUTATION,
+            {
+              input: {
+                partnerId: data.contacto_id,
+                bankId: matchedBank.id,
+                phone: data.telefono_pago_movil.replace(/[\s-]/g, ''),
+                docId: data.identificacion_titular.trim()
+              }
+            },
+            { timeoutMs: 8000 }
+          )
+        }
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : 'Error al registrar la cuenta bancaria en el servidor.'
+
+        throw new Error(msg)
+      }
+    }
 
     // Si viene marcada como predeterminada, quitar predeterminada previa en el mismo contacto o empresa
     if (data.is_predeterminada) {
@@ -281,7 +406,7 @@ class BankAccountsService {
     }
 
     const newAcc: BankAccount = {
-      id: `bank-${Date.now()}`,
+      id: backendAccountId || `bank-${Date.now()}`,
       ...data,
       status: 'ACTIVO',
       created_at: new Date().toISOString(),
@@ -290,16 +415,19 @@ class BankAccountsService {
 
     list.unshift(newAcc)
     this.setStored(list)
+
     return newAcc
   }
 
   public async updateBankAccount(id: string, data: Partial<BankAccount>): Promise<BankAccount> {
     const list = this.getStored()
     const idx = list.findIndex(a => a.id === id)
+
     if (idx === -1) throw new Error('Cuenta bancaria no encontrada')
 
     if (data.is_predeterminada) {
       const target = list[idx]
+
       list.forEach(a => {
         if (target.is_empresa && a.is_empresa) {
           a.is_predeterminada = false
@@ -316,17 +444,34 @@ class BankAccountsService {
     }
 
     this.setStored(list)
+
     return list[idx]
   }
 
   public async deleteBankAccount(id: string): Promise<void> {
+    const isUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(id)
+
+    if (isUuid) {
+      try {
+        await executeGraphQL(
+          REMOVE_PARTNER_BANK_ACCOUNT_MUTATION,
+          { id },
+          { timeoutMs: 8000 }
+        )
+      } catch (err: unknown) {
+        console.warn('[bankAccountsService] Error al eliminar cuenta en backend:', err)
+      }
+    }
+
     const list = this.getStored()
     const filtered = list.filter(a => a.id !== id)
+
     this.setStored(filtered)
   }
 
   public async setDefaultBankAccount(id: string, contactoId?: string, isEmpresa = false): Promise<void> {
     const list = this.getStored()
+
     list.forEach(a => {
       if (isEmpresa && a.is_empresa) {
         a.is_predeterminada = a.id === id

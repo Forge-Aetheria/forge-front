@@ -118,4 +118,65 @@ export const UPDATE_PARTNER_MUTATION = `
   }
 `
 
+export const GET_BANKS_QUERY = `
+  query GetBanks($where: BankWhereInput, $take: Int, $skip: Int) {
+    banks(where: $where, take: $take, skip: $skip) {
+      id
+      name
+      code
+      rif
+      active
+    }
+  }
+`
+
+export const ADD_PARTNER_BANK_ACCOUNT_MUTATION = `
+  mutation AddPartnerBankAccount($input: PartnerBankAccountInput!) {
+    addPartnerBankAccount(input: $input) {
+      id
+      accountNumber
+      currency
+      bank {
+        id
+        name
+        code
+      }
+      createdAt
+    }
+  }
+`
+
+export const REMOVE_PARTNER_BANK_ACCOUNT_MUTATION = `
+  mutation RemovePartnerBankAccount($id: ID!) {
+    removePartnerBankAccount(id: $id) {
+      id
+    }
+  }
+`
+
+export const ADD_PARTNER_MOBILE_PAYMENT_MUTATION = `
+  mutation AddPartnerMobilePayment($input: PartnerMobilePaymentInput!) {
+    addPartnerMobilePayment(input: $input) {
+      id
+      phone
+      docId
+      bank {
+        id
+        name
+        code
+      }
+      createdAt
+    }
+  }
+`
+
+export const REMOVE_PARTNER_MOBILE_PAYMENT_MUTATION = `
+  mutation RemovePartnerMobilePayment($id: ID!) {
+    removePartnerMobilePayment(id: $id) {
+      id
+    }
+  }
+`
+
+
 

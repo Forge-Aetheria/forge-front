@@ -1,14 +1,16 @@
 'use client'
 
 import React, { useState, useEffect, useMemo } from 'react'
+
 import Link from 'next/link'
+
 import Card from '@mui/material/Card'
 import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
 import Button from '@mui/material/Button'
 import TextField from '@mui/material/TextField'
 import MenuItem from '@mui/material/MenuItem'
-import CustomChip from '@core/components/mui/Chip'
+
 import TablePagination from '@mui/material/TablePagination'
 import Table from '@mui/material/Table'
 import TableBody from '@mui/material/TableBody'
@@ -21,6 +23,8 @@ import Tooltip from '@mui/material/Tooltip'
 import Snackbar from '@mui/material/Snackbar'
 import Alert from '@mui/material/Alert'
 import Skeleton from '@mui/material/Skeleton'
+
+import CustomChip from '@core/components/mui/Chip'
 
 import type { BankAccount, BankCurrency } from '@/types/bankAccountTypes'
 import { bankAccountsService } from '@/services/bankAccountsService'
@@ -43,6 +47,7 @@ export const BankAccountsListView: React.FC = () => {
     try {
       setLoading(true)
       const list = await bankAccountsService.getBankAccounts()
+
       setAccounts(list)
     } finally {
       setLoading(false)
@@ -81,6 +86,7 @@ export const BankAccountsListView: React.FC = () => {
 
   const handleDelete = async (id: string, banco: string) => {
     if (!confirm(`¿Estás seguro de eliminar la cuenta bancaria de ${banco}?`)) return
+
     try {
       await bankAccountsService.deleteBankAccount(id)
       setAccounts(prev => prev.filter(a => a.id !== id))
