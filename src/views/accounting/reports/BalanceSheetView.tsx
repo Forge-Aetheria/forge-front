@@ -1,6 +1,9 @@
 'use client'
 
 import React, { useState, useEffect, useMemo } from 'react'
+
+import Link from 'next/link'
+
 import Box from '@mui/material/Box'
 import Card from '@mui/material/Card'
 import Typography from '@mui/material/Typography'
@@ -18,7 +21,6 @@ import Tooltip from '@mui/material/Tooltip'
 import Skeleton from '@mui/material/Skeleton'
 import Snackbar from '@mui/material/Snackbar'
 import Alert from '@mui/material/Alert'
-import Link from 'next/link'
 
 import { accountingService } from '@/services/accountingService'
 import type { FinancialReportRow, CurrencyViewMode } from '@/types/accountingTypes'
@@ -39,6 +41,7 @@ export const BalanceSheetView: React.FC = () => {
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const savedMode = localStorage.getItem('forge_accounting_currency_mode') as CurrencyViewMode | null
+
       if (savedMode && ['VES', 'USD', 'DUAL'].includes(savedMode)) {
         setCurrencyMode(savedMode)
       }
@@ -49,6 +52,7 @@ export const BalanceSheetView: React.FC = () => {
     try {
       setLoading(true)
       const data = await accountingService.getBalanceSheet(tasaBcv, targetMoves)
+
       setRows(data)
     } finally {
       setLoading(false)
@@ -69,6 +73,7 @@ export const BalanceSheetView: React.FC = () => {
 
   const handleCollapseAll = () => {
     const keys: Record<string, boolean> = {}
+
     rows.forEach(r => {
       keys[r.concepto] = true
       r.subfilas?.forEach(s => {
@@ -83,8 +88,10 @@ export const BalanceSheetView: React.FC = () => {
       window.print()
     } else {
       setToastMessage('Generando exportación en Excel con balances bimonetarios...')
+
       // CSV Download simulation
       const csvRows = ['Código,Concepto,Monto USD,Monto VES']
+
       rows.forEach(r => {
         csvRows.push(`,"${r.concepto}",${r.montoUsd},${r.montoVes}`)
         r.subfilas?.forEach(s => {
@@ -97,6 +104,7 @@ export const BalanceSheetView: React.FC = () => {
       const blob = new Blob([csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' })
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
+
       a.href = url
       a.download = `Balance_General_${cutoffDate}.csv`
       a.click()
@@ -112,25 +120,32 @@ export const BalanceSheetView: React.FC = () => {
     return rows
       .map(r => {
         const matchesLevel1 = r.concepto.toLowerCase().includes(q)
+
         const subfilas = (r.subfilas || [])
           .map(s => {
             const matchesLevel2 = s.concepto.toLowerCase().includes(q)
+
             const subSubfilas = (s.subfilas || []).filter(
               sub =>
                 sub.concepto.toLowerCase().includes(q) ||
                 (sub.codigo && sub.codigo.toLowerCase().includes(q))
             )
+
             if (matchesLevel2 || subSubfilas.length > 0) {
               return { ...s, subfilas: subSubfilas.length > 0 ? subSubfilas : s.subfilas }
             }
-            return null
+
+            
+return null
           })
           .filter(Boolean) as FinancialReportRow[]
 
         if (matchesLevel1 || subfilas.length > 0) {
           return { ...r, subfilas }
         }
-        return null
+
+        
+return null
       })
       .filter(Boolean) as FinancialReportRow[]
   }, [rows, searchQuery])

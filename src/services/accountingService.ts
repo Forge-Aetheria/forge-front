@@ -45,7 +45,11 @@ import {
   CANCEL_CUSTOMER_INVOICE_MUTATION,
   CANCEL_SUPPLIER_INVOICE_MUTATION,
   GET_PAYMENTS_QUERY,
-  REGISTER_PAYMENT_MUTATION
+  REGISTER_PAYMENT_MUTATION,
+  GET_BALANCE_SHEET_QUERY,
+  GET_PROFIT_AND_LOSS_QUERY,
+  GET_TRIAL_BALANCE_QUERY,
+  GET_GENERAL_LEDGER_QUERY
 } from '@/graphql/accounting.gql'
 import {
   formatDecimalString,
@@ -61,7 +65,11 @@ import {
   type GqlJournal,
   type GqlJournalEntry,
   type GqlAccountingInvoice,
-  type GqlPayment
+  type GqlPayment,
+  type GqlBalanceSheet,
+  type GqlProfitAndLoss,
+  type GqlTrialBalance,
+  type GqlGeneralLedger
 } from '@/services/adapters/accountingAdapter'
 
 const STORAGE_KEYS = {
@@ -2843,6 +2851,113 @@ return found
         saldoVes: newSaldoVes
       }
     })
+  },
+
+  // Reportes Financieros Bimonetarios en Vivo (GraphQL BE-ACC-01)
+  fetchBalanceSheetLive: async (
+    asOf: string = new Date().toISOString(),
+    includeDrafts = false
+  ): Promise<GqlBalanceSheet | null> => {
+    try {
+      const res = await executeGraphQL<{ balanceSheet: GqlBalanceSheet }>(
+        GET_BALANCE_SHEET_QUERY,
+        {
+          asOf: new Date(asOf).toISOString(),
+          includeDrafts
+        },
+        { timeoutMs: 8000 }
+      )
+
+      if (res?.balanceSheet) {
+        return res.balanceSheet
+      }
+    } catch (err) {
+      console.warn('[accountingService] Error al consultar balanceSheet en vivo:', err)
+    }
+
+    return null
+  },
+
+  fetchProfitAndLossLive: async (
+    dateFrom: string,
+    dateTo: string,
+    includeDrafts = false
+  ): Promise<GqlProfitAndLoss | null> => {
+    try {
+      const res = await executeGraphQL<{ profitAndLoss: GqlProfitAndLoss }>(
+        GET_PROFIT_AND_LOSS_QUERY,
+        {
+          dateFrom: new Date(dateFrom).toISOString(),
+          dateTo: new Date(dateTo).toISOString(),
+          includeDrafts
+        },
+        { timeoutMs: 8000 }
+      )
+
+      if (res?.profitAndLoss) {
+        return res.profitAndLoss
+      }
+    } catch (err) {
+      console.warn('[accountingService] Error al consultar profitAndLoss en vivo:', err)
+    }
+
+    return null
+  },
+
+  fetchTrialBalanceLive: async (
+    asOf: string = new Date().toISOString(),
+    includeDrafts = false
+  ): Promise<GqlTrialBalance | null> => {
+    try {
+      const res = await executeGraphQL<{ trialBalance: GqlTrialBalance }>(
+        GET_TRIAL_BALANCE_QUERY,
+        {
+          asOf: new Date(asOf).toISOString(),
+          includeDrafts
+        },
+        { timeoutMs: 8000 }
+      )
+
+      if (res?.trialBalance) {
+        return res.trialBalance
+      }
+    } catch (err) {
+      console.warn('[accountingService] Error al consultar trialBalance en vivo:', err)
+    }
+
+    return null
+  },
+
+  fetchGeneralLedgerLive: async (params: {
+    dateFrom: string
+    dateTo: string
+    accountId?: string
+    includeDrafts?: boolean
+    page?: number
+    pageSize?: number
+  }): Promise<GqlGeneralLedger | null> => {
+    try {
+      const res = await executeGraphQL<{ generalLedger: GqlGeneralLedger }>(
+        GET_GENERAL_LEDGER_QUERY,
+        {
+          dateFrom: new Date(params.dateFrom).toISOString(),
+          dateTo: new Date(params.dateTo).toISOString(),
+          accountId: params.accountId || undefined,
+          includeDrafts: Boolean(params.includeDrafts),
+          page: params.page || 1,
+          pageSize: params.pageSize || 50
+        },
+        { timeoutMs: 8000 }
+      )
+
+      if (res?.generalLedger) {
+        return res.generalLedger
+      }
+    } catch (err) {
+      console.warn('[accountingService] Error al consultar generalLedger en vivo:', err)
+    }
+
+    return null
   },
 
   // Reportes Financieros Bimonetarios (VEN-NIF / Odoo Style)

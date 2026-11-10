@@ -1,7 +1,11 @@
 'use client'
 
 import React, { useState, useEffect, useMemo } from 'react'
+
 import { useSearchParams } from 'next/navigation'
+
+import Link from 'next/link'
+
 import Box from '@mui/material/Box'
 import Card from '@mui/material/Card'
 import Typography from '@mui/material/Typography'
@@ -15,11 +19,9 @@ import Chip from '@mui/material/Chip'
 import TextField from '@mui/material/TextField'
 import MenuItem from '@mui/material/MenuItem'
 import Button from '@mui/material/Button'
-import Tooltip from '@mui/material/Tooltip'
 import Skeleton from '@mui/material/Skeleton'
 import Snackbar from '@mui/material/Snackbar'
 import Alert from '@mui/material/Alert'
-import Link from 'next/link'
 
 import { accountingService } from '@/services/accountingService'
 import type { JournalEntry, Account, CurrencyViewMode } from '@/types/accountingTypes'
@@ -74,6 +76,7 @@ export const GeneralLedgerView: React.FC = () => {
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const savedMode = localStorage.getItem('forge_accounting_currency_mode') as CurrencyViewMode | null
+
       if (savedMode && ['VES', 'USD', 'DUAL'].includes(savedMode)) {
         setCurrencyMode(savedMode)
       }
@@ -90,10 +93,12 @@ export const GeneralLedgerView: React.FC = () => {
   const loadData = async () => {
     try {
       setLoading(true)
+
       const [accList, entryList] = await Promise.all([
         accountingService.getAccountsWithTargetMoves(targetMoves, tasaBcv),
         accountingService.getJournalEntries(targetMoves)
       ])
+
       setAccounts(accList)
       setEntries(entryList)
     } finally {
@@ -235,6 +240,7 @@ export const GeneralLedgerView: React.FC = () => {
     } else {
       setToastMessage('Generando exportación de Libro Mayor en formato CSV/Excel...')
       const csvRows = ['Cuenta Código,Cuenta Nombre,Fecha,N° Asiento,Diario,Referencia,Tercero,Glosa,Debe USD,Haber USD,Saldo USD,Debe VES,Haber VES,Saldo VES']
+
       ledgerGroups.forEach(g => {
         g.items.forEach(it => {
           csvRows.push(
@@ -245,6 +251,7 @@ export const GeneralLedgerView: React.FC = () => {
       const blob = new Blob([csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' })
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
+
       a.href = url
       a.download = `Libro_Mayor_${startDate}_al_${endDate}.csv`
       a.click()
