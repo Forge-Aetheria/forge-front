@@ -229,3 +229,267 @@ export const REVERSE_JOURNAL_ENTRY_MUTATION = `
     }
   }
 `
+
+export const GET_INVOICES_QUERY = `
+  query GetInvoices($where: AccountingInvoiceWhereInput, $orderBy: [AccountingInvoiceOrderByWithRelationInput!], $take: Int, $skip: Int) {
+    accountingInvoices(where: $where, orderBy: $orderBy, take: $take, skip: $skip) {
+      id
+      number
+      type
+      status
+      partnerId
+      partnerName
+      issueDate
+      dueDate
+      currency
+      exchangeRate
+      subtotalAmount
+      vatAmount
+      igtfAmount
+      totalAmount
+      pendingAmount
+      journalId
+      journalEntryId
+      partner {
+        id
+        legalName
+        tradeName
+        docType
+        docNumber
+        checkDigit
+      }
+      lines {
+        id
+        description
+        quantity
+        unitPrice
+        vatRate
+        lineTotal
+        accountId
+      }
+      payments {
+        id
+        amountAllocated
+        payment {
+          id
+          number
+          paymentDate
+          amount
+          currency
+        }
+      }
+      createdAt
+      updatedAt
+    }
+  }
+`
+
+export const GET_INVOICE_QUERY = `
+  query GetInvoice($id: ID!) {
+    accountingInvoice(id: $id) {
+      id
+      number
+      type
+      status
+      partnerId
+      partnerName
+      issueDate
+      dueDate
+      currency
+      exchangeRate
+      subtotalAmount
+      vatAmount
+      igtfAmount
+      totalAmount
+      pendingAmount
+      journalId
+      journalEntryId
+      partner {
+        id
+        legalName
+        tradeName
+        docType
+        docNumber
+        checkDigit
+        fiscalAddress
+      }
+      lines {
+        id
+        description
+        quantity
+        unitPrice
+        vatRate
+        lineTotal
+        accountId
+      }
+      payments {
+        id
+        amountAllocated
+        payment {
+          id
+          number
+          paymentDate
+          amount
+          currency
+        }
+      }
+      createdAt
+      updatedAt
+    }
+  }
+`
+
+export const CREATE_CUSTOMER_INVOICE_MUTATION = `
+  mutation CreateCustomerInvoice($input: CustomerInvoiceInput!) {
+    createCustomerInvoice(input: $input) {
+      id
+      number
+      status
+      totalAmount
+      createdAt
+    }
+  }
+`
+
+export const POST_CUSTOMER_INVOICE_MUTATION = `
+  mutation PostCustomerInvoice($invoiceId: ID!) {
+    postCustomerInvoice(invoiceId: $invoiceId) {
+      id
+      number
+      status
+      updatedAt
+    }
+  }
+`
+
+export const CREATE_SUPPLIER_INVOICE_MUTATION = `
+  mutation CreateSupplierInvoice($input: SupplierInvoiceInput!) {
+    createSupplierInvoice(input: $input) {
+      id
+      number
+      status
+      totalAmount
+      createdAt
+    }
+  }
+`
+
+export const POST_SUPPLIER_INVOICE_MUTATION = `
+  mutation PostSupplierInvoice($invoiceId: ID!) {
+    postSupplierInvoice(invoiceId: $invoiceId) {
+      id
+      number
+      status
+      updatedAt
+    }
+  }
+`
+
+export const CANCEL_CUSTOMER_INVOICE_MUTATION = `
+  mutation CancelCustomerInvoice($input: CancelInvoiceInput!) {
+    cancelCustomerInvoice(input: $input) {
+      id
+      status
+    }
+  }
+`
+
+export const CANCEL_SUPPLIER_INVOICE_MUTATION = `
+  mutation CancelSupplierInvoice($input: CancelInvoiceInput!) {
+    cancelSupplierInvoice(input: $input) {
+      id
+      status
+    }
+  }
+`
+
+export const GET_PAYMENTS_QUERY = `
+  query GetPayments($where: PaymentWhereInput, $orderBy: [PaymentOrderByWithRelationInput!], $take: Int, $skip: Int) {
+    payments(where: $where, orderBy: $orderBy, take: $take, skip: $skip) {
+      id
+      number
+      paymentDate
+      amount
+      currency
+      exchangeRate
+      reference
+      partnerId
+      journalId
+      allocations {
+        id
+        invoiceId
+        amountAllocated
+        invoice {
+          id
+          number
+          type
+        }
+      }
+      createdAt
+      updatedAt
+    }
+  }
+`
+
+export const REGISTER_PAYMENT_MUTATION = `
+  mutation RegisterPayment($input: RegisterPaymentInput!) {
+    registerPayment(input: $input) {
+      id
+      number
+      amount
+      paymentDate
+      createdAt
+    }
+  }
+`
+
+export const CANCEL_PAYMENT_MUTATION = `
+  mutation CancelPayment($input: CancelPaymentInput!) {
+    cancelPayment(input: $input) {
+      id
+    }
+  }
+`
+
+export const GET_CREDIT_NOTES_QUERY = `
+  query GetCreditNotes($where: CreditNoteWhereInput, $orderBy: [CreditNoteOrderByWithRelationInput!], $take: Int, $skip: Int) {
+    creditNotes(where: $where, orderBy: $orderBy, take: $take, skip: $skip) {
+      id
+      number
+      status
+      invoiceId
+      amount
+      currency
+      issueDate
+      reason
+      invoice {
+        id
+        number
+      }
+      createdAt
+      updatedAt
+    }
+  }
+`
+
+export const POST_CREDIT_NOTE_MUTATION = `
+  mutation PostCreditNote($input: CreditNoteInput!) {
+    postCreditNote(input: $input) {
+      id
+      number
+      status
+      amount
+      createdAt
+    }
+  }
+`
+
+export const CANCEL_CREDIT_NOTE_MUTATION = `
+  mutation CancelCreditNote($input: CancelCreditNoteInput!) {
+    cancelCreditNote(input: $input) {
+      id
+      status
+    }
+  }
+`
+

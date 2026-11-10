@@ -10,7 +10,15 @@ import type {
   JournalType,
   EntryStatus,
   EntrySource,
-  CurrencyCode
+  CurrencyCode,
+  AccountingInvoice,
+  InvoiceLine,
+  Payment,
+  PaymentReconciledInvoice,
+  AppliedCreditNote,
+  InvoiceStatus,
+  InvoiceAccountingType,
+  PaymentMethod
 } from '@/types/accountingTypes'
 
 export const formatDecimalString = (val?: number | string | null, defaultValue = '0.0000'): string => {
@@ -289,3 +297,241 @@ export const mapGqlEntryToFrontend = (
     creadoEn: gql.createdAt || new Date().toISOString()
   }
 }
+
+export interface GqlInvoiceLine {
+  id: string
+  description: string
+  quantity: string | number
+  unitPrice: string | number
+  vatRate?: string | number | null
+  lineTotal?: string | number | null
+  accountId?: string | null
+}
+
+export interface GqlInvoicePaymentAssoc {
+  id: string
+  amountAllocated: string | number
+  payment?: {
+    id: string
+    number: number
+    paymentDate: string
+    amount: string | number
+    currency: string
+  } | null
+}
+
+export interface GqlAccountingInvoice {
+  id: string
+  number: number
+  type: 'CUSTOMER' | 'SUPPLIER' | string
+  status: string
+  partnerId: string
+  partnerName?: string | null
+  issueDate: string
+  dueDate: string
+  currency: string
+  exchangeRate?: string | number | null
+  subtotalAmount?: string | number | null
+  vatAmount?: string | number | null
+  igtfAmount?: string | number | null
+  totalAmount: string | number
+  pendingAmount?: string | number | null
+  journalId?: string | null
+  journalEntryId?: string | null
+  partner?: {
+    id: string
+    legalName: string
+    tradeName?: string | null
+    docType: string
+    docNumber: string
+    checkDigit?: string | null
+    fiscalAddress?: string | null
+  } | null
+  lines?: GqlInvoiceLine[] | null
+  payments?: GqlInvoicePaymentAssoc[] | null
+  createdAt?: string | null
+  updatedAt?: string | null
+}
+
+export const mapGqlInvoiceStatusToFrontend = (status: string): InvoiceStatus => {
+  if (status === 'POSTED') return 'POSTED'
+  if (status === 'PAID') return 'PAID'
+  if (status === 'CANCELLED' || status === 'CANCELED') return 'CANCELED'
+  if (status === 'REVERSED') return 'REVERSED'
+
+  return 'DRAFT'
+}
+
+export const mapGqlInvoiceToFrontend = (gql: GqlAccountingInvoice): AccountingInvoice => {
+  const rate = typeof gql.exchangeRate === 'string' ? parseFloat(gql.exchangeRate) : Number(gql.exchangeRate || 1)
+  const totalUsd = typeof gql.totalAmount === 'string' ? parseFloat(gql.totalAmount) : Number(gql.totalAmount || 0)
+  const subtotalUsd = typeof gql.subtotalAmount === 'string' ? parseFloat(gql.subtotalAmount) : Number(gql.subtotalAmount || totalUsd)
+  const vatUsd = typeof gql.vatAmount === 'string' ? parseFloat(gql.vatAmount) : Number(gql.vatAmount || 0)
+  const pendingUsd = typeof gql.pendingAmount === 'string' ? parseFloat(gql.pendingAmount) : Number(gql.pendingAmount || 0)
+
+  const partnerRif = gql.partner
+    ? `${gql.partner.docType}-${gql.partner.docNumber}${gql.partner.checkDigit ? `-${gql.partner.checkDigit}` : ''}`
+    : 'J-00000000-0'
+
+  const lines: InvoiceLine[] = (gql.lines || []).map((l, idx) => {
+    const qty = typeof l.quantity === 'string' ? parseFloat(l.quantity) : Number(l.quantity || 0)
+    const price = typeof l.unitPrice === 'string' ? parseFloat(l.unitPrice) : Number(l.unitPrice || 0)
+    const lineTotal = typeof l.lineTotal === 'string' ? parseFloat(l.lineTotal) : Number(l.lineTotal || qty * price)
+
+    return {
+      id: l.id || `inv-l-${idx + 1}`,
+      productoOConcepto: l.description || `Línea ${idx + 1}`,
+      cuentaContableId: l.accountId || 'acc-revenue',
+      cuentaContableNombre: 'Cuenta Contable',
+      cantidad: qty,
+      precioUnitarioUsd: price,
+      tasaImpuestoPct: 16,
+      subtotalUsd: lineTotal,
+      ivaUsd: Number((lineTotal * 0.16).toFixed(2)),
+      totalUsd: Number((lineTotal * 1.16).toFixed(2))
+    }
+  })
+
+  const pagosAsociados = (gql.payments || []).map((p, idx) => ({
+    id: p.id || `assoc-${idx + 1}`,
+    pagoId: p.payment?.id || `pag-${idx + 1}`,
+    numeroPago: p.payment ? `PAG-${String(p.payment.number).padStart(4, '0')}` : 'PAG-0000',
+    fecha: p.payment?.paymentDate ? p.payment.paymentDate.slice(0, 10) : new Date().toISOString().slice(0, 10),
+    diarioId: 'jou-bank',
+    diarioNombre: 'Banco',
+    metodoPago: 'TRANSFERENCIA' as PaymentMethod,
+    moneda: (p.payment?.currency as CurrencyCode) || 'USD',
+    monto: typeof p.amountAllocated === 'string' ? parseFloat(p.amountAllocated) : Number(p.amountAllocated || 0),
+    montoUsd: typeof p.amountAllocated === 'string' ? parseFloat(p.amountAllocated) : Number(p.amountAllocated || 0),
+    montoVes: Number(((typeof p.amountAllocated === 'string' ? parseFloat(p.amountAllocated) : Number(p.amountAllocated || 0)) * rate).toFixed(2)),
+    creadoEn: p.payment?.paymentDate || new Date().toISOString()
+  }))
+
+  const prefix = gql.type === 'CUSTOMER' ? 'FAC-CLI' : 'FAC-PROV'
+
+  return {
+    id: gql.id,
+    numeroFactura: `${prefix}-2026-${String(gql.number).padStart(4, '0')}`,
+    tipo: (gql.type as InvoiceAccountingType) || 'CUSTOMER',
+    tipoDocumento: 'FACTURA',
+    moneda: (gql.currency as CurrencyCode) || 'USD',
+    contactoId: gql.partnerId,
+    contactoNombre: gql.partner?.legalName || gql.partnerName || 'Tercero',
+    contactoRif: partnerRif,
+    contactoCuentaContableId: 'acc-cxc',
+    contactoCuentaContableNombre: 'Cuentas por Cobrar / Pagar',
+    fechaEmision: gql.issueDate ? gql.issueDate.slice(0, 10) : new Date().toISOString().slice(0, 10),
+    fechaVencimiento: gql.dueDate ? gql.dueDate.slice(0, 10) : new Date().toISOString().slice(0, 10),
+    tasaBcv: Number(rate.toFixed(4)),
+    estado: mapGqlInvoiceStatusToFrontend(gql.status),
+    diarioId: gql.journalId || 'jou-sales',
+    lineas: lines,
+    totalNetoUsd: Number(subtotalUsd.toFixed(2)),
+    totalIvaUsd: Number(vatUsd.toFixed(2)),
+    totalUsd: Number(totalUsd.toFixed(2)),
+    totalVes: Number((totalUsd * rate).toFixed(2)),
+    saldoPendienteUsd: Number(pendingUsd.toFixed(2)),
+    saldoPendienteVes: Number((pendingUsd * rate).toFixed(2)),
+    asientoAsociadoId: gql.journalEntryId || undefined,
+    pagosAsociados
+  }
+}
+
+export interface GqlPayment {
+  id: string
+  number: number
+  paymentDate: string
+  amount: string | number
+  currency: string
+  exchangeRate?: string | number | null
+  reference?: string | null
+  partnerId?: string | null
+  journalId: string
+  allocations?: Array<{
+    id: string
+    invoiceId: string
+    amountAllocated: string | number
+    invoice?: {
+      id: string
+      number: number
+      type: string
+    } | null
+  }> | null
+  createdAt?: string | null
+}
+
+export const mapGqlPaymentToFrontend = (
+  gql: GqlPayment,
+  journalMap: Record<string, string> = {}
+): Payment => {
+  const amount = typeof gql.amount === 'string' ? parseFloat(gql.amount) : Number(gql.amount || 0)
+  const rate = typeof gql.exchangeRate === 'string' ? parseFloat(gql.exchangeRate) : Number(gql.exchangeRate || 1)
+
+  const facturasConciliadas: PaymentReconciledInvoice[] = (gql.allocations || []).map(a => {
+    const allocated = typeof a.amountAllocated === 'string' ? parseFloat(a.amountAllocated) : Number(a.amountAllocated || 0)
+
+    return {
+      facturaId: a.invoiceId,
+      numeroFactura: a.invoice ? `FAC-${String(a.invoice.number).padStart(4, '0')}` : 'FAC-0000',
+      montoAplicadoUsd: allocated,
+      montoAplicadoVes: Number((allocated * rate).toFixed(2)),
+      tasaBcvOriginal: rate,
+      diferencialCambiarioVes: 0
+    }
+  })
+
+  return {
+    id: gql.id,
+    numeroPago: `PAG-2026-${String(gql.number).padStart(4, '0')}`,
+    fecha: gql.paymentDate ? gql.paymentDate.slice(0, 10) : new Date().toISOString().slice(0, 10),
+    diarioId: gql.journalId,
+    diarioNombre: journalMap[gql.journalId] || 'Banco',
+    metodoPago: 'TRANSFERENCIA',
+    moneda: (gql.currency as CurrencyCode) || 'USD',
+    monto: Number(amount.toFixed(2)),
+    tasaBcvPago: Number(rate.toFixed(4)),
+    contactoId: gql.partnerId || 'ct-general',
+    contactoNombre: 'Tercero',
+    referenciaBancaria: gql.reference || undefined,
+    estado: 'CONFIRMADO',
+    facturasConciliadas,
+    aplicaIgtf: false,
+    montoIgtfUsd: 0,
+    montoIgtfVes: 0,
+    creadoEn: gql.createdAt || new Date().toISOString()
+  }
+}
+
+export interface GqlCreditNote {
+  id: string
+  number: number
+  status: string
+  invoiceId: string
+  amount: string | number
+  currency: string
+  issueDate: string
+  reason?: string | null
+  invoice?: {
+    id: string
+    number: number
+  } | null
+}
+
+export const mapGqlCreditNoteToFrontend = (
+  gql: GqlCreditNote,
+  bcvRate: number
+): AppliedCreditNote => {
+  const amount = typeof gql.amount === 'string' ? parseFloat(gql.amount) : Number(gql.amount || 0)
+
+  return {
+    id: gql.id,
+    notaCreditoId: gql.id,
+    numeroNotaCredito: `NC-2026-${String(gql.number).padStart(4, '0')}`,
+    fecha: gql.issueDate ? gql.issueDate.slice(0, 10) : new Date().toISOString().slice(0, 10),
+    montoUsd: Number(amount.toFixed(2)),
+    montoVes: Number((amount * bcvRate).toFixed(2)),
+    motivo: gql.reason || 'Nota de crédito',
+    creadoEn: gql.issueDate || new Date().toISOString()
+  }
+}
+

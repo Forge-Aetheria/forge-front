@@ -1,13 +1,16 @@
 'use client'
 
 import React, { useState, useEffect, useMemo } from 'react'
+
+import { useSearchParams, useRouter } from 'next/navigation'
+
 import Card from '@mui/material/Card'
 import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
 import Button from '@mui/material/Button'
 import TextField from '@mui/material/TextField'
 import MenuItem from '@mui/material/MenuItem'
-import CustomChip from '@core/components/mui/Chip'
+
 import TablePagination from '@mui/material/TablePagination'
 import Table from '@mui/material/Table'
 import TableBody from '@mui/material/TableBody'
@@ -22,7 +25,8 @@ import Tooltip from '@mui/material/Tooltip'
 import Snackbar from '@mui/material/Snackbar'
 import Alert from '@mui/material/Alert'
 import Skeleton from '@mui/material/Skeleton'
-import { useSearchParams, useRouter } from 'next/navigation'
+
+import CustomChip from '@core/components/mui/Chip'
 
 import { accountingService, isInvoiceLandedCostEligible } from '@/services/accountingService'
 import { settingsService } from '@/services/settingsService'
@@ -85,6 +89,7 @@ export const InvoicesListView: React.FC = () => {
   const loadData = async () => {
     try {
       setLoading(true)
+
       const [invList, accList, fiscalRules] = await Promise.all([
         accountingService.getInvoices(),
         accountingService.getAccounts(),
@@ -93,6 +98,7 @@ export const InvoicesListView: React.FC = () => {
 
       setInvoices(invList)
       setAccounts(accList)
+
       if (fiscalRules && 'costosEnDestinoActivos' in fiscalRules) {
         setCostosEnDestinoActivos(fiscalRules.costosEnDestinoActivos !== false)
       }
@@ -110,6 +116,7 @@ export const InvoicesListView: React.FC = () => {
     return invoices.filter(inv => {
       // Las notas de crédito tienen su propio apartado exclusivo (/accounting/credit-notes)
       if (inv.tipoDocumento === 'NOTA_CREDITO') return false;
+
       const matchSearch =
         inv.numeroFactura.toLowerCase().includes(searchTerm.toLowerCase()) ||
         inv.contactoNombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -168,12 +175,17 @@ export const InvoicesListView: React.FC = () => {
   const handleInvoiceUpdated = (updated: AccountingInvoice) => {
     setInvoices(prev => {
       const index = prev.findIndex(i => i.id === updated.id)
+
       if (index >= 0) {
         const copy = [...prev]
+
         copy[index] = updated
-        return copy
+        
+return copy
       }
-      return [updated, ...prev]
+
+      
+return [updated, ...prev]
     })
     setSelectedInvoice(updated)
   }
@@ -305,6 +317,7 @@ export const InvoicesListView: React.FC = () => {
                   onClick={() => {
                     const selInvoices = invoices.filter(i => selectedIds.includes(i.id))
                     const numbers = selInvoices.map(i => i.numeroFactura).join(', ')
+
                     navigator.clipboard.writeText(numbers)
                     setToastMessage('Números de facturas copiados al portapapeles')
                     setActionsAnchor(null)
