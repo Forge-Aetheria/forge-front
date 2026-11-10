@@ -9,7 +9,7 @@ import type {
 
 export type SystemRole = 'ADMIN' | 'VENTAS' | 'COMPRAS' | 'ALMACEN' | 'CAJERO_POS' | 'UNASSIGNED'
 
-export type UserAccountStatus = 'ACTIVO' | 'INACTIVO'
+export type UserAccountStatus = 'ACTIVO' | 'INACTIVO' | 'INVITADO'
 
 // 1. Datos del Usuario Autenticado / Mi Perfil
 export interface UserProfile {
@@ -47,6 +47,7 @@ export interface CompanySettings {
   emailFacturacion: string
   logoUrl?: string
   monedaBase: 'USD' | 'VES'
+
   // Políticas Comerciales por Defecto (Regla R6)
   salesInvoicingPolicyDefault?: SalesInvoicingPolicy
   purchaseControlPolicyDefault?: PurchaseControlPolicy
@@ -92,6 +93,8 @@ export interface ErpUser {
   telefono?: string
   avatarUrl?: string
   rol: SystemRole
+  roleId?: string
+  roleName?: string
   estado: UserAccountStatus
   ultimoIngreso?: string
   creadoEn: string
