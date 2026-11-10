@@ -1,6 +1,9 @@
 'use client'
 
 import React, { useState, useEffect, useMemo } from 'react'
+
+import Link from 'next/link'
+
 import Box from '@mui/material/Box'
 import Card from '@mui/material/Card'
 import Typography from '@mui/material/Typography'
@@ -18,7 +21,6 @@ import Tooltip from '@mui/material/Tooltip'
 import Skeleton from '@mui/material/Skeleton'
 import Snackbar from '@mui/material/Snackbar'
 import Alert from '@mui/material/Alert'
-import Link from 'next/link'
 
 import { accountingService } from '@/services/accountingService'
 import type { FinancialReportRow, CurrencyViewMode } from '@/types/accountingTypes'
@@ -40,6 +42,7 @@ export const ProfitAndLossView: React.FC = () => {
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const savedMode = localStorage.getItem('forge_accounting_currency_mode') as CurrencyViewMode | null
+
       if (savedMode && ['VES', 'USD', 'DUAL'].includes(savedMode)) {
         setCurrencyMode(savedMode)
       }
@@ -50,6 +53,7 @@ export const ProfitAndLossView: React.FC = () => {
     try {
       setLoading(true)
       const data = await accountingService.getProfitAndLoss(tasaBcv, targetMoves)
+
       setRows(data)
     } finally {
       setLoading(false)
@@ -70,6 +74,7 @@ export const ProfitAndLossView: React.FC = () => {
 
   const handleCollapseAll = () => {
     const keys: Record<string, boolean> = {}
+
     rows.forEach(r => {
       keys[r.concepto] = true
     })
@@ -82,6 +87,7 @@ export const ProfitAndLossView: React.FC = () => {
     } else {
       setToastMessage('Generando exportación de Estado de Resultados...')
       const csvRows = ['Código,Concepto,Monto USD,Monto VES']
+
       rows.forEach(r => {
         csvRows.push(`,"${r.concepto}",${r.montoUsd},${r.montoVes}`)
         r.subfilas?.forEach(s => {
@@ -91,6 +97,7 @@ export const ProfitAndLossView: React.FC = () => {
       const blob = new Blob([csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' })
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
+
       a.href = url
       a.download = `Estado_de_Resultados_${startDate}_al_${endDate}.csv`
       a.click()
@@ -106,15 +113,19 @@ export const ProfitAndLossView: React.FC = () => {
     return rows
       .map(r => {
         const matchesLevel1 = r.concepto.toLowerCase().includes(q)
+
         const subfilas = (r.subfilas || []).filter(
           sub =>
             sub.concepto.toLowerCase().includes(q) ||
             (sub.codigo && sub.codigo.toLowerCase().includes(q))
         )
+
         if (matchesLevel1 || subfilas.length > 0) {
           return { ...r, subfilas: subfilas.length > 0 ? subfilas : r.subfilas }
         }
-        return null
+
+        
+return null
       })
       .filter(Boolean) as FinancialReportRow[]
   }, [rows, searchQuery])

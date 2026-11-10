@@ -1,6 +1,9 @@
 'use client'
 
 import React, { useState, useEffect, useMemo } from 'react'
+
+import Link from 'next/link'
+
 import Box from '@mui/material/Box'
 import Card from '@mui/material/Card'
 import Typography from '@mui/material/Typography'
@@ -20,7 +23,6 @@ import IconButton from '@mui/material/IconButton'
 import Skeleton from '@mui/material/Skeleton'
 import Snackbar from '@mui/material/Snackbar'
 import Alert from '@mui/material/Alert'
-import Link from 'next/link'
 
 import { accountingService } from '@/services/accountingService'
 import type { Account, CurrencyViewMode } from '@/types/accountingTypes'
@@ -43,6 +45,7 @@ export const TrialBalanceView: React.FC = () => {
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const savedMode = localStorage.getItem('forge_accounting_currency_mode') as CurrencyViewMode | null
+
       if (savedMode && ['VES', 'USD', 'DUAL'].includes(savedMode)) {
         setCurrencyMode(savedMode)
       }
@@ -53,6 +56,7 @@ export const TrialBalanceView: React.FC = () => {
     try {
       setLoading(true)
       const accList = await accountingService.getAccountsWithTargetMoves(targetMoves, tasaBcv)
+
       setAccounts(accList)
     } finally {
       setLoading(false)
@@ -69,7 +73,6 @@ export const TrialBalanceView: React.FC = () => {
       const isDebitNormal = acc.tipo.startsWith('ASSET') || acc.tipo.startsWith('EXPENSE') || acc.tipo === 'COST_OF_GOODS'
 
       const saldoUsd = acc.saldoUsd || 0
-      const saldoVes = acc.saldoVes || Number((saldoUsd * tasaBcv).toFixed(2))
 
       // En un balance de comprobación de sumas y saldos estándar
       const saldoDeudorUsd = isDebitNormal ? (saldoUsd >= 0 ? saldoUsd : 0) : (saldoUsd < 0 ? Math.abs(saldoUsd) : 0)
@@ -104,7 +107,9 @@ export const TrialBalanceView: React.FC = () => {
 
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase()
-        return acc.codigo.toLowerCase().includes(q) || acc.nombre.toLowerCase().includes(q)
+
+        
+return acc.codigo.toLowerCase().includes(q) || acc.nombre.toLowerCase().includes(q)
       }
 
       return true
@@ -125,6 +130,7 @@ export const TrialBalanceView: React.FC = () => {
     } else {
       setToastMessage('Generando exportación de Balance de Comprobación en Excel...')
       const csvRows = ['Código,Nombre de la Cuenta,Tipo,Saldo Deudor USD,Saldo Acreedor USD,Saldo Deudor VES,Saldo Acreedor VES']
+
       filteredAccounts.forEach(a => {
         csvRows.push(
           `"${a.codigo}","${a.nombre}","${a.tipo}",${a.saldoDeudorUsd},${a.saldoAcreedorUsd},${a.saldoDeudorVes},${a.saldoAcreedorVes}`
@@ -135,6 +141,7 @@ export const TrialBalanceView: React.FC = () => {
       const blob = new Blob([csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' })
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
+
       a.href = url
       a.download = `Balance_de_Comprobacion_${cutoffDate}.csv`
       a.click()

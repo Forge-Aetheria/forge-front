@@ -535,3 +535,140 @@ export const mapGqlCreditNoteToFrontend = (
   }
 }
 
+export interface GqlDualMoney {
+  usd?: { amount?: string | number } | null
+  ves?: { amount?: string | number } | null
+}
+
+export const unpackDualMoney = (dm?: GqlDualMoney | null): { usd: number; ves: number } => {
+  if (!dm) return { usd: 0, ves: 0 }
+  const usd = typeof dm.usd?.amount === 'string' ? parseFloat(dm.usd.amount) : Number(dm.usd?.amount || 0)
+  const ves = typeof dm.ves?.amount === 'string' ? parseFloat(dm.ves.amount) : Number(dm.ves?.amount || 0)
+
+  return { usd: Number(usd.toFixed(2)), ves: Number(ves.toFixed(2)) }
+}
+
+export interface GqlBalanceSheetLine {
+  accountId: string
+  code: string
+  name: string
+  level: number
+  amounts?: GqlDualMoney | null
+}
+
+export interface GqlBalanceSheetSection {
+  type: string
+  total?: GqlDualMoney | null
+  lines?: GqlBalanceSheetLine[] | null
+}
+
+export interface GqlBalanceSheet {
+  meta?: {
+    generatedAt: string
+    dateTo: string
+    ratePolicy?: string
+    closingRate?: string | number | null
+    balanced?: boolean
+  } | null
+  sections?: GqlBalanceSheetSection[] | null
+  equation?: {
+    assets?: GqlDualMoney | null
+    liabilities?: GqlDualMoney | null
+    equity?: GqlDualMoney | null
+    balanced?: boolean
+    differenceUsd?: string | number | null
+    differenceVes?: string | number | null
+  } | null
+}
+
+export interface GqlProfitAndLossLine {
+  id: string
+  accountId: string
+  code: string
+  name: string
+  section: string
+  level: number
+  amounts?: GqlDualMoney | null
+}
+
+export interface GqlProfitAndLossTotals {
+  revenue?: GqlDualMoney | null
+  costOfGoods?: GqlDualMoney | null
+  grossProfit?: GqlDualMoney | null
+  operatingExpenses?: GqlDualMoney | null
+  operatingResult?: GqlDualMoney | null
+  netResult?: GqlDualMoney | null
+}
+
+export interface GqlProfitAndLoss {
+  meta?: {
+    generatedAt: string
+    dateFrom?: string | null
+    dateTo: string
+    ratePolicy?: string
+  } | null
+  lines?: GqlProfitAndLossLine[] | null
+  totals?: GqlProfitAndLossTotals | null
+}
+
+export interface GqlTrialBalanceAccount {
+  accountId: string
+  code: string
+  name: string
+  initialDebit?: GqlDualMoney | null
+  initialCredit?: GqlDualMoney | null
+  periodDebit?: GqlDualMoney | null
+  periodCredit?: GqlDualMoney | null
+  closingDebit?: GqlDualMoney | null
+  closingCredit?: GqlDualMoney | null
+}
+
+export interface GqlTrialBalance {
+  meta?: {
+    generatedAt: string
+    dateTo: string
+  } | null
+  accounts?: GqlTrialBalanceAccount[] | null
+  totals?: {
+    periodDebit?: GqlDualMoney | null
+    periodCredit?: GqlDualMoney | null
+    closingDebit?: GqlDualMoney | null
+    closingCredit?: GqlDualMoney | null
+    balanced?: boolean
+  } | null
+}
+
+export interface GqlGeneralLedgerItem {
+  entryId: string
+  entryNumber: number
+  postingDate: string
+  status: string
+  journalCode: string
+  accountCode: string
+  accountName: string
+  description: string
+  contactName?: string | null
+  debit?: GqlDualMoney | null
+  credit?: GqlDualMoney | null
+  runningBalance?: GqlDualMoney | null
+}
+
+export interface GqlGeneralLedger {
+  meta?: {
+    dateFrom?: string | null
+    dateTo: string
+  } | null
+  items?: GqlGeneralLedgerItem[] | null
+  totals?: {
+    debit?: GqlDualMoney | null
+    credit?: GqlDualMoney | null
+  } | null
+  pagination?: {
+    totalCount: number
+    page: number
+    pageSize: number
+    totalPages: number
+  } | null
+}
+
+

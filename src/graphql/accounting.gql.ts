@@ -493,3 +493,153 @@ export const CANCEL_CREDIT_NOTE_MUTATION = `
   }
 `
 
+export const GET_BALANCE_SHEET_QUERY = `
+  query GetBalanceSheet($asOf: DateTime!, $includeDrafts: Boolean, $ratePolicy: RatePolicy, $closingRate: String) {
+    balanceSheet(asOf: $asOf, includeDrafts: $includeDrafts, ratePolicy: $ratePolicy, closingRate: $closingRate) {
+      meta {
+        generatedAt
+        dateTo
+        ratePolicy
+        closingRate
+        balanced
+      }
+      sections {
+        type
+        total {
+          usd { amount }
+          ves { amount }
+        }
+        lines {
+          accountId
+          code
+          name
+          level
+          amounts {
+            usd { amount }
+            ves { amount }
+          }
+        }
+      }
+      equation {
+        assets { usd { amount } ves { amount } }
+        liabilities { usd { amount } ves { amount } }
+        equity { usd { amount } ves { amount } }
+        balanced
+        differenceUsd
+        differenceVes
+      }
+    }
+  }
+`
+
+export const GET_PROFIT_AND_LOSS_QUERY = `
+  query GetProfitAndLoss($dateFrom: DateTime!, $dateTo: DateTime!, $includeDrafts: Boolean, $ratePolicy: RatePolicy, $closingRate: String) {
+    profitAndLoss(dateFrom: $dateFrom, dateTo: $dateTo, includeDrafts: $includeDrafts, ratePolicy: $ratePolicy, closingRate: $closingRate) {
+      meta {
+        generatedAt
+        dateFrom
+        dateTo
+        ratePolicy
+      }
+      lines {
+        id
+        accountId
+        code
+        name
+        section
+        level
+        amounts {
+          usd { amount }
+          ves { amount }
+        }
+      }
+      totals {
+        revenue { usd { amount } ves { amount } }
+        costOfGoods { usd { amount } ves { amount } }
+        grossProfit { usd { amount } ves { amount } }
+        operatingExpenses { usd { amount } ves { amount } }
+        operatingResult { usd { amount } ves { amount } }
+        netResult { usd { amount } ves { amount } }
+      }
+    }
+  }
+`
+
+export const GET_TRIAL_BALANCE_QUERY = `
+  query GetTrialBalance($asOf: DateTime!, $includeDrafts: Boolean, $ratePolicy: RatePolicy, $closingRate: String) {
+    trialBalance(asOf: $asOf, includeDrafts: $includeDrafts, ratePolicy: $ratePolicy, closingRate: $closingRate) {
+      meta {
+        generatedAt
+        dateTo
+      }
+      accounts {
+        accountId
+        code
+        name
+        initialDebit { usd { amount } ves { amount } }
+        initialCredit { usd { amount } ves { amount } }
+        periodDebit { usd { amount } ves { amount } }
+        periodCredit { usd { amount } ves { amount } }
+        closingDebit { usd { amount } ves { amount } }
+        closingCredit { usd { amount } ves { amount } }
+      }
+      totals {
+        periodDebit { usd { amount } ves { amount } }
+        periodCredit { usd { amount } ves { amount } }
+        closingDebit { usd { amount } ves { amount } }
+        closingCredit { usd { amount } ves { amount } }
+        balanced
+      }
+    }
+  }
+`
+
+export const GET_GENERAL_LEDGER_QUERY = `
+  query GetGeneralLedger($dateFrom: DateTime!, $dateTo: DateTime!, $accountId: String, $includeDrafts: Boolean, $page: Int, $pageSize: Int) {
+    generalLedger(dateFrom: $dateFrom, dateTo: $dateTo, accountId: $accountId, includeDrafts: $includeDrafts, page: $page, pageSize: $pageSize) {
+      meta {
+        dateFrom
+        dateTo
+      }
+      items {
+        entryId
+        entryNumber
+        postingDate
+        status
+        journalCode
+        accountCode
+        accountName
+        description
+        contactName
+        debit { usd { amount } ves { amount } }
+        credit { usd { amount } ves { amount } }
+        runningBalance { usd { amount } ves { amount } }
+      }
+      totals {
+        debit { usd { amount } ves { amount } }
+        credit { usd { amount } ves { amount } }
+      }
+      pagination {
+        totalCount
+        page
+        pageSize
+        totalPages
+      }
+    }
+  }
+`
+
+export const GET_ACCOUNTING_DASHBOARD_QUERY = `
+  query GetAccountingDashboard($asOf: DateTime) {
+    accountingDashboard(asOf: $asOf) {
+      metrics {
+        cashAndBank { usd { amount } ves { amount } }
+        receivables { usd { amount } ves { amount } }
+        payables { usd { amount } ves { amount } }
+        netIncome { usd { amount } ves { amount } }
+      }
+    }
+  }
+`
+
+
