@@ -1,6 +1,11 @@
 'use client'
 
 import React, { useState, useEffect, useMemo } from 'react'
+
+import Link from 'next/link'
+
+import { useSearchParams } from 'next/navigation'
+
 import Card from '@mui/material/Card'
 import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
@@ -10,7 +15,7 @@ import MenuItem from '@mui/material/MenuItem'
 import Checkbox from '@mui/material/Checkbox'
 import Menu from '@mui/material/Menu'
 import Divider from '@mui/material/Divider'
-import CustomChip from '@core/components/mui/Chip'
+
 import TablePagination from '@mui/material/TablePagination'
 import Table from '@mui/material/Table'
 import TableBody from '@mui/material/TableBody'
@@ -18,13 +23,11 @@ import TableCell from '@mui/material/TableCell'
 import TableContainer from '@mui/material/TableContainer'
 import TableHead from '@mui/material/TableHead'
 import TableRow from '@mui/material/TableRow'
-import IconButton from '@mui/material/IconButton'
-import Tooltip from '@mui/material/Tooltip'
 import Snackbar from '@mui/material/Snackbar'
 import Alert from '@mui/material/Alert'
 import Skeleton from '@mui/material/Skeleton'
-import Link from 'next/link'
-import { useSearchParams } from 'next/navigation'
+
+import CustomChip from '@core/components/mui/Chip'
 
 import { accountingService } from '@/services/accountingService'
 import type { Payment, Journal, AccountingInvoice, Account } from '@/types/accountingTypes'
@@ -52,6 +55,7 @@ export const PaymentsListView: React.FC = () => {
   const [currentView, setCurrentView] = useState<'list' | 'form'>(
     searchParams.get('action') === 'new' ? 'form' : 'list'
   )
+
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null)
 
   // Modals & Drawers
@@ -69,6 +73,7 @@ export const PaymentsListView: React.FC = () => {
     igtf: true,
     estado: true
   }
+
   const [visibleColumns, setVisibleColumns] = useState(DEFAULT_VISIBLE_COLUMNS)
   const [columnAnchorEl, setColumnAnchorEl] = useState<null | HTMLElement>(null)
 
@@ -89,74 +94,18 @@ export const PaymentsListView: React.FC = () => {
   const loadData = async () => {
     try {
       setLoading(true)
-      const [jList, invList, accList] = await Promise.all([
+
+      const [jList, invList, accList, pList] = await Promise.all([
         accountingService.getJournals(),
         accountingService.getInvoices(),
-        accountingService.getAccounts()
+        accountingService.getAccounts(),
+        accountingService.getPayments()
       ])
 
       setJournals(jList)
       setInvoices(invList)
       setAccounts(accList)
-
-      // Fetch stored payments
-      const stored = localStorage.getItem('foundly_accounting_payments')
-      const pList: Payment[] = stored ? JSON.parse(stored) : []
-
-      // If empty, generate initial payment seeds for demonstration
-      if (pList.length === 0) {
-        const seedPayments: Payment[] = [
-          {
-            id: 'pag-seed-1',
-            numeroPago: 'PAG-2026-0041',
-            tipo: 'CUSTOMER',
-            fecha: '2026-10-18',
-            contactoId: 'ct-01',
-            contactoNombre: 'Inversiones Caroní C.A.',
-            diarioId: 'jou-bank-ves',
-            diarioNombre: 'Banesco Banco Universal (VES)',
-            metodoPago: 'TRANSFERENCIA',
-            moneda: 'VES',
-            monto: 31320.00,
-            tasaBcvPago: 54.00,
-            facturasConciliadas: [{ facturaId: 'inv-seed-1', numeroFactura: 'FAC-2026-0001', tasaBcvOriginal: 54.00, montoAplicadoUsd: 580.00, montoAplicadoVes: 31320.00, diferencialCambiarioVes: 0 }],
-            aplicaIgtf: false,
-            montoIgtfUsd: 0,
-            montoIgtfVes: 0,
-            referenciaBancaria: 'REF-889021',
-            asientoContableId: 'as-seed-p1',
-            estado: 'CONFIRMADO',
-            creadoEn: '2026-10-18 10:15'
-          },
-          {
-            id: 'pag-seed-2',
-            numeroPago: 'PAG-2026-0042',
-            tipo: 'SUPPLIER',
-            fecha: '2026-10-19',
-            contactoId: 'ct-prov-01',
-            contactoNombre: 'Distribuidora Eléctrica del Sur C.A.',
-            diarioId: 'jou-bank-usd',
-            diarioNombre: 'Banesco Cuenta Custodia (USD)',
-            metodoPago: 'TRANSFERENCIA',
-            moneda: 'USD',
-            monto: 1200.00,
-            tasaBcvPago: 54.00,
-            facturasConciliadas: [],
-            aplicaIgtf: true,
-            montoIgtfUsd: 36.00,
-            montoIgtfVes: 1944.00,
-            referenciaBancaria: 'CUST-009182',
-            asientoContableId: 'as-seed-p2',
-            estado: 'CONFIRMADO',
-            creadoEn: '2026-10-19 11:30'
-          }
-        ]
-
-        localStorage.setItem('foundly_accounting_payments', JSON.stringify(seedPayments))
-        setPayments(seedPayments)
-      } else {
-        setPayments(pList)
-      }
+      setPayments(pList)
     } finally {
       setLoading(false)
     }
@@ -209,6 +158,7 @@ export const PaymentsListView: React.FC = () => {
         }}
         onSuccess={(msg, savedPayment) => {
           handlePaymentSuccess(msg)
+
           if (savedPayment) {
             setSelectedPayment(savedPayment)
             setCurrentView('form')
@@ -224,9 +174,11 @@ export const PaymentsListView: React.FC = () => {
   const handleToggleSelectAll = () => {
     if (isAllSelected) {
       const pageIds = new Set(paginatedPayments.map(p => p.id))
+
       setSelectedIds(prev => prev.filter(id => !pageIds.has(id)))
     } else {
       const pageIds = paginatedPayments.map(p => p.id)
+
       setSelectedIds(prev => Array.from(new Set([...prev, ...pageIds])))
     }
   }
@@ -240,6 +192,7 @@ export const PaymentsListView: React.FC = () => {
   const handleCopySelected = () => {
     const selectedList = payments.filter(p => selectedIds.includes(p.id))
     const text = selectedList.map(p => `${p.numeroPago} - ${p.contactoNombre} - ${p.moneda} ${p.monto}`).join('\n')
+
     navigator.clipboard.writeText(text)
     setToastMessage(`${selectedIds.length} pagos copiados al portapapeles.`)
     setBatchMenuAnchorEl(null)

@@ -35,7 +35,17 @@ import {
   CREATE_JOURNAL_ENTRY_MUTATION,
   POST_JOURNAL_ENTRY_MUTATION,
   CANCEL_JOURNAL_ENTRY_MUTATION,
-  REVERSE_JOURNAL_ENTRY_MUTATION
+  REVERSE_JOURNAL_ENTRY_MUTATION,
+  GET_INVOICES_QUERY,
+  GET_INVOICE_QUERY,
+  CREATE_CUSTOMER_INVOICE_MUTATION,
+  POST_CUSTOMER_INVOICE_MUTATION,
+  CREATE_SUPPLIER_INVOICE_MUTATION,
+  POST_SUPPLIER_INVOICE_MUTATION,
+  CANCEL_CUSTOMER_INVOICE_MUTATION,
+  CANCEL_SUPPLIER_INVOICE_MUTATION,
+  GET_PAYMENTS_QUERY,
+  REGISTER_PAYMENT_MUTATION
 } from '@/graphql/accounting.gql'
 import {
   formatDecimalString,
@@ -45,9 +55,13 @@ import {
   mapFrontendTypeToGqlAccountType,
   mapGqlJournalToFrontend,
   mapGqlEntryToFrontend,
+  mapGqlInvoiceToFrontend,
+  mapGqlPaymentToFrontend,
   type GqlAccount,
   type GqlJournal,
-  type GqlJournalEntry
+  type GqlJournalEntry,
+  type GqlAccountingInvoice,
+  type GqlPayment
 } from '@/services/adapters/accountingAdapter'
 
 const STORAGE_KEYS = {
@@ -988,18 +1002,152 @@ return found
     setStored(STORAGE_KEYS.JOURNALS, updated)
   },
 
-  // Facturas Contables
+  // Facturas Contables (con backend GraphQL BE-ACC-01 Fases 2 & 3)
   getInvoices: async (): Promise<AccountingInvoice[]> => {
+    try {
+      const res = await executeGraphQL<{ accountingInvoices: GqlAccountingInvoice[] }>(
+        GET_INVOICES_QUERY,
+        { take: 100 },
+        { timeoutMs: 5000 }
+      )
+
+      if (res?.accountingInvoices && Array.isArray(res.accountingInvoices)) {
+        const mapped = res.accountingInvoices.map(mapGqlInvoiceToFrontend)
+
+        if (mapped.length > 0) {
+          const backendIds = new Set(mapped.map(i => i.id))
+          const stored = getStored<AccountingInvoice[]>(STORAGE_KEYS.INVOICES, DEFAULT_INVOICES)
+          const localOnly = stored.filter(i => !backendIds.has(i.id) && i.id.startsWith('inv-'))
+          const combined = [...mapped, ...localOnly]
+
+          setStored(STORAGE_KEYS.INVOICES, combined)
+
+          return combined
+        }
+      }
+    } catch (err) {
+      console.warn('[accountingService] Error al consultar accountingInvoices de backend:', err)
+    }
+
     return getStored<AccountingInvoice[]>(STORAGE_KEYS.INVOICES, DEFAULT_INVOICES)
   },
 
   getInvoiceById: async (id: string): Promise<AccountingInvoice | null> => {
+    const isUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(id)
+
+    if (isUuid) {
+      try {
+        const res = await executeGraphQL<{ accountingInvoice: GqlAccountingInvoice }>(
+          GET_INVOICE_QUERY,
+          { id },
+          { timeoutMs: 5000 }
+        )
+
+        if (res?.accountingInvoice) {
+          const mapped = mapGqlInvoiceToFrontend(res.accountingInvoice)
+          const invoices = getStored<AccountingInvoice[]>(STORAGE_KEYS.INVOICES, DEFAULT_INVOICES)
+          const idx = invoices.findIndex(i => i.id === id)
+
+          if (idx !== -1) invoices[idx] = mapped
+          else invoices.unshift(mapped)
+
+          setStored(STORAGE_KEYS.INVOICES, invoices)
+
+          return mapped
+        }
+      } catch (err) {
+        console.warn('[accountingService] Error al consultar accountingInvoice por id:', err)
+      }
+    }
+
     const invoices = getStored<AccountingInvoice[]>(STORAGE_KEYS.INVOICES, DEFAULT_INVOICES)
 
     return invoices.find(i => i.id === id) || null
   },
 
   createInvoice: async (invoice: AccountingInvoice): Promise<AccountingInvoice> => {
+    const isPartnerUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(
+      invoice.contactoId
+    )
+
+    if (isPartnerUuid) {
+      try {
+        const idempotencyKey = generateIdempotencyKey()
+        const rateStr = formatDecimalString(invoice.tasaBcv, '1.0000')
+
+        const gqlLines = invoice.lineas.map(l => ({
+          description: l.productoOConcepto.trim(),
+          quantity: formatDecimalString(l.cantidad),
+          unitPrice: formatDecimalString(l.precioUnitarioUsd),
+          vatRate: 'GENERAL_16',
+          accountId: l.cuentaContableId && l.cuentaContableId.length > 20 ? l.cuentaContableId : undefined
+        }))
+
+        if (invoice.tipo === 'CUSTOMER') {
+          const res = await executeGraphQL<{ createCustomerInvoice: { id: string } }>(
+            CREATE_CUSTOMER_INVOICE_MUTATION,
+            {
+              input: {
+                partnerId: invoice.contactoId,
+                issueDate: new Date(invoice.fechaEmision).toISOString(),
+                dueDate: new Date(invoice.fechaVencimiento).toISOString(),
+                currency: invoice.moneda === 'USD' ? 'USD' : 'VES',
+                exchangeRate: rateStr,
+                idempotencyKey,
+                lines: gqlLines
+              }
+            },
+            { timeoutMs: 10000 }
+          )
+
+          if (res?.createCustomerInvoice?.id) {
+            const invoiceId = res.createCustomerInvoice.id
+
+            if (invoice.estado === 'POSTED') {
+              await executeGraphQL(POST_CUSTOMER_INVOICE_MUTATION, { invoiceId }, { timeoutMs: 10000 })
+            }
+
+            const fresh = await accountingService.getInvoices()
+            const created = fresh.find(i => i.id === invoiceId)
+
+            if (created) return created
+          }
+        } else {
+          const res = await executeGraphQL<{ createSupplierInvoice: { id: string } }>(
+            CREATE_SUPPLIER_INVOICE_MUTATION,
+            {
+              input: {
+                partnerId: invoice.contactoId,
+                issueDate: new Date(invoice.fechaEmision).toISOString(),
+                dueDate: new Date(invoice.fechaVencimiento).toISOString(),
+                currency: invoice.moneda === 'USD' ? 'USD' : 'VES',
+                exchangeRate: rateStr,
+                supplierInvoiceNumber: invoice.numeroFactura,
+                idempotencyKey,
+                lines: gqlLines
+              }
+            },
+            { timeoutMs: 10000 }
+          )
+
+          if (res?.createSupplierInvoice?.id) {
+            const invoiceId = res.createSupplierInvoice.id
+
+            if (invoice.estado === 'POSTED') {
+              await executeGraphQL(POST_SUPPLIER_INVOICE_MUTATION, { invoiceId }, { timeoutMs: 10000 })
+            }
+
+            const fresh = await accountingService.getInvoices()
+            const created = fresh.find(i => i.id === invoiceId)
+
+            if (created) return created
+          }
+        }
+      } catch (err: unknown) {
+        console.warn('[accountingService] Fallback local para createInvoice:', err)
+      }
+    }
+
     const invoices = getStored<AccountingInvoice[]>(STORAGE_KEYS.INVOICES, DEFAULT_INVOICES)
     const updated = [invoice, ...invoices]
 
@@ -1078,6 +1226,26 @@ return found
   },
 
   cancelInvoice: async (id: string, motivo: string, anuladaPor: string = 'Administrador'): Promise<AccountingInvoice> => {
+    const isUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(id)
+
+    if (isUuid) {
+      const invoices = getStored<AccountingInvoice[]>(STORAGE_KEYS.INVOICES, DEFAULT_INVOICES)
+      const invoice = invoices.find(i => i.id === id)
+
+      try {
+        const mutation = invoice?.tipo === 'SUPPLIER' ? CANCEL_SUPPLIER_INVOICE_MUTATION : CANCEL_CUSTOMER_INVOICE_MUTATION
+
+        await executeGraphQL(mutation, { input: { invoiceId: id, reason: motivo } }, { timeoutMs: 10000 })
+
+        const fresh = await accountingService.getInvoices()
+        const updated = fresh.find(i => i.id === id)
+
+        if (updated) return updated
+      } catch (err: unknown) {
+        console.warn('[accountingService] Fallback local para cancelInvoice:', err)
+      }
+    }
+
     const invoices = getStored<AccountingInvoice[]>(STORAGE_KEYS.INVOICES, DEFAULT_INVOICES)
     const invoice = invoices.find(i => i.id === id)
 
@@ -1604,6 +1772,38 @@ return found
     return { creditNote, entry }
   },
 
+  // Pagos y Tesorería (con backend GraphQL BE-ACC-01)
+  getPayments: async (): Promise<Payment[]> => {
+    try {
+      const res = await executeGraphQL<{ payments: GqlPayment[] }>(
+        GET_PAYMENTS_QUERY,
+        { take: 100 },
+        { timeoutMs: 5000 }
+      )
+
+      if (res?.payments && Array.isArray(res.payments)) {
+        const journals = await accountingService.getJournals()
+        const journalMap = Object.fromEntries(journals.map(j => [j.id, j.nombre]))
+        const mapped = res.payments.map(p => mapGqlPaymentToFrontend(p, journalMap))
+
+        if (mapped.length > 0) {
+          const backendIds = new Set(mapped.map(p => p.id))
+          const stored = getStored<Payment[]>(STORAGE_KEYS.PAYMENTS, [])
+          const localOnly = stored.filter(p => !backendIds.has(p.id) && p.id.startsWith('pag-'))
+          const combined = [...mapped, ...localOnly]
+
+          setStored(STORAGE_KEYS.PAYMENTS, combined)
+
+          return combined
+        }
+      }
+    } catch (err) {
+      console.warn('[accountingService] Error al consultar payments de backend:', err)
+    }
+
+    return getStored<Payment[]>(STORAGE_KEYS.PAYMENTS, [])
+  },
+
   // Registrar Pago Directo desde la Factura (Estilo Odoo)
   registerInvoicePayment: async (input: {
     invoiceId: string
@@ -1646,6 +1846,42 @@ return found
       diferencialCambiarioVes = Number((costoPagoVes - costoEmisionVes).toFixed(2))
     } else {
       diferencialCambiarioVes = Number((costoEmisionVes - costoPagoVes).toFixed(2))
+    }
+
+    const isInvoiceUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(
+      invoice.id
+    )
+
+    if (isInvoiceUuid) {
+      try {
+        const idempotencyKey = generateIdempotencyKey()
+        const rateStr = formatDecimalString(input.tasaBcvPago, '1.0000')
+
+        await executeGraphQL(
+          REGISTER_PAYMENT_MUTATION,
+          {
+            input: {
+              journalId: input.diarioId,
+              partnerId: invoice.contactoId,
+              paymentDate: new Date(fechaPago).toISOString(),
+              amount: formatDecimalString(input.monto),
+              currency: input.moneda === 'USD' ? 'USD' : 'VES',
+              exchangeRate: rateStr,
+              reference: input.referenciaBancaria?.trim() || undefined,
+              idempotencyKey,
+              allocations: [
+                {
+                  invoiceId: invoice.id,
+                  amountAllocated: formatDecimalString(montoUsd)
+                }
+              ]
+            }
+          },
+          { timeoutMs: 10000 }
+        )
+      } catch (err) {
+        console.warn('[accountingService] Error al registrar pago en backend:', err)
+      }
     }
 
     const paymentId = `pag-${Date.now()}`
