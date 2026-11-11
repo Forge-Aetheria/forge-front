@@ -1,15 +1,16 @@
 'use client'
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react'
+
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
+
 import Card from '@mui/material/Card'
 import CardContent from '@mui/material/CardContent'
 import Typography from '@mui/material/Typography'
 import Button from '@mui/material/Button'
 import Grid from '@mui/material/Grid'
 import IconButton from '@mui/material/IconButton'
-import Tooltip from '@mui/material/Tooltip'
 import MenuItem from '@mui/material/MenuItem'
 import Tabs from '@mui/material/Tabs'
 import Tab from '@mui/material/Tab'
@@ -111,6 +112,7 @@ export const LandedCostDetailView: React.FC<Props> = ({ id }) => {
   const loadInitialData = useCallback(async () => {
     try {
       setLoading(!isCreate)
+
       const [allReceipts, allTemplates, allInvoices] = await Promise.all([
         getWarehouseOperationOrders('RECEIPT'),
         getInventoryTemplates(),
@@ -125,13 +127,16 @@ export const LandedCostDetailView: React.FC<Props> = ({ id }) => {
 
       // Filtrar servicios de tipo Landed Cost (o servicios en general)
       const services = allTemplates.filter(t => t.productType === 'service')
+
       setLandedCostServices(services)
 
       if (!isCreate) {
         const found = await getLandedCostById(id)
+
         if (!found) {
           setToast({ open: true, message: 'Costo en destino no encontrado.', severity: 'error' })
-          return
+          
+return
         }
 
         setRecord(found)
@@ -144,6 +149,7 @@ export const LandedCostDetailView: React.FC<Props> = ({ id }) => {
         // Flujo A: Si viene derivado desde una Factura de Proveedor (?invoiceId=...)
         if (invoiceIdParam) {
           const inv = allInvoices.find(i => i.id === invoiceIdParam)
+
           if (inv) {
             setReferencia(`Factura Proveedor: ${inv.numeroFactura}`)
             setFecha(inv.fechaEmision)
@@ -151,6 +157,7 @@ export const LandedCostDetailView: React.FC<Props> = ({ id }) => {
 
             if (inv.lineas && inv.lineas.length > 0) {
               const defaultService = services.find(s => s.isLandedCost) || services[0]
+
               const importedLines: LandedCostCostLine[] = inv.lineas.map(l => ({
                 id: `cost-inv-${l.id}-${Date.now()}`,
                 producto_id: defaultService?.id || '',
@@ -159,12 +166,14 @@ export const LandedCostDetailView: React.FC<Props> = ({ id }) => {
                 metodo_reparto: defaultService?.defaultSplitMethod || 'BY_QUANTITY',
                 monto_usd: l.subtotalUsd
               }))
+
               setCostos(importedLines)
             }
           }
         } else {
           // Flujo B: En creación manual directa, pre-cargar una línea de costo sugerida si hay servicios
           const defaultService = services.find(s => s.isLandedCost) || services[0]
+
           if (defaultService) {
             setCostos([
               {
@@ -200,12 +209,15 @@ export const LandedCostDetailView: React.FC<Props> = ({ id }) => {
     if (isApplied && record?.ajustes_valoracion?.length) {
       return record.ajustes_valoracion
     }
-    return calculateValuationAdjustments(recepciones, costos)
+
+    
+return calculateValuationAdjustments(recepciones, costos)
   }, [recepciones, costos, isApplied, record])
 
   // Handlers para líneas de costo
   const handleAddCostLine = () => {
     const defaultService = landedCostServices.find(s => s.isLandedCost) || landedCostServices[0]
+
     setCostos(prev => [
       ...prev,
       {
@@ -223,7 +235,8 @@ export const LandedCostDetailView: React.FC<Props> = ({ id }) => {
     setCostos(prev =>
       prev.map(line => {
         if (line.id !== lineId) return line
-        return { ...line, ...partial }
+        
+return { ...line, ...partial }
       })
     )
   }
@@ -241,6 +254,7 @@ export const LandedCostDetailView: React.FC<Props> = ({ id }) => {
       const matchCode = order.codigo.toLowerCase().includes(q)
       const matchVendor = (order.tercero_nombre || '').toLowerCase().includes(q)
       const matchDoc = (order.documento_origen || '').toLowerCase().includes(q)
+
       const matchLines = order.lineas.some(
         l =>
           (l.producto_nombre || '').toLowerCase().includes(q) ||
@@ -273,6 +287,7 @@ export const LandedCostDetailView: React.FC<Props> = ({ id }) => {
     if (!referencia.trim()) {
       setReferencia(`Factura Proveedor: ${inv.numeroFactura}`)
     }
+
     setNotas(prev =>
       prev
         ? `${prev}\nFactura ${inv.numeroFactura} (${inv.contactoNombre} - RIF: ${inv.contactoRif})`
@@ -280,6 +295,7 @@ export const LandedCostDetailView: React.FC<Props> = ({ id }) => {
     )
 
     const defaultService = landedCostServices.find(s => s.isLandedCost) || landedCostServices[0]
+
     const newLines: LandedCostCostLine[] = inv.lineas.map(l => ({
       id: `cost-inv-${l.id}-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`,
       producto_id: defaultService?.id || '',
@@ -310,6 +326,7 @@ export const LandedCostDetailView: React.FC<Props> = ({ id }) => {
 
     selectedReceiptIds.forEach(orderId => {
       const order = availableReceipts.find(o => o.id === orderId)
+
       if (order) {
         newRefs.push({
           id: `ref-${order.id}`,
@@ -333,7 +350,8 @@ export const LandedCostDetailView: React.FC<Props> = ({ id }) => {
   const handleSaveDraft = async () => {
     if (costos.length === 0) {
       setToast({ open: true, message: 'Agrega al menos una línea de costo.', severity: 'error' })
-      return
+      
+return
     }
 
     setSubmitting(true)
@@ -387,6 +405,7 @@ export const LandedCostDetailView: React.FC<Props> = ({ id }) => {
           recepciones,
           costos
         })
+
         targetId = created.id
       } else {
         await updateLandedCost(id, {
@@ -399,6 +418,7 @@ export const LandedCostDetailView: React.FC<Props> = ({ id }) => {
       }
 
       const applied = await validateLandedCost(targetId)
+
       setRecord(applied)
       setValidateModalOpen(false)
       setToast({
@@ -741,6 +761,7 @@ export const LandedCostDetailView: React.FC<Props> = ({ id }) => {
                                 value={costLine.producto_id}
                                 onChange={e => {
                                   const srv = landedCostServices.find(s => s.id === e.target.value)
+
                                   handleUpdateCostLine(costLine.id, {
                                     producto_id: e.target.value,
                                     producto_nombre: srv?.name || '',
@@ -1214,9 +1235,11 @@ export const LandedCostDetailView: React.FC<Props> = ({ id }) => {
                       onChange={e => {
                         if (e.target.checked) {
                           const toAdd = filteredAvailableReceipts.map(r => r.id)
+
                           setSelectedReceiptIds(prev => Array.from(new Set([...prev, ...toAdd])))
                         } else {
                           const toRemove = new Set(filteredAvailableReceipts.map(r => r.id))
+
                           setSelectedReceiptIds(prev => prev.filter(id => !toRemove.has(id)))
                         }
                       }}
@@ -1248,7 +1271,9 @@ export const LandedCostDetailView: React.FC<Props> = ({ id }) => {
                 ) : (
                   filteredAvailableReceipts.map(order => {
                     const isSelected = selectedReceiptIds.includes(order.id)
-                    return (
+
+                    
+return (
                       <TableRow
                         key={order.id}
                         hover
