@@ -3,6 +3,13 @@ import type {
   Warehouse,
   WarehouseLocation
 } from '@/types/inventoryTypes'
+import { executeGraphQL } from '@/libs/graphqlClient'
+import {
+  GET_WAREHOUSES_QUERY,
+  CREATE_WAREHOUSE_MUTATION,
+  UPDATE_WAREHOUSE_MUTATION,
+  CREATE_STOCK_LOCATION_MUTATION
+} from '@/graphql/inventory.gql'
 import {
   loadStoredCategories,
   saveStoredCategories,
@@ -94,6 +101,7 @@ export const updateProductCategory = async (
   }
 
   const oldName = categories[idx].name
+
   const updatedCat: ProductCategory = {
     ...categories[idx],
     ...changes,
@@ -137,9 +145,53 @@ export const deleteProductCategory = async (id: string): Promise<void> => {
 }
 
 // ==========================================
-// WAREHOUSES & LOCATIONS CRUD (Padre-Hijo)
+// WAREHOUSES & LOCATIONS CRUD (Padre-Hijo con backend GraphQL BE-INV-03)
 // ==========================================
 export const getWarehouses = async (): Promise<Warehouse[]> => {
+  try {
+    const res = await executeGraphQL<{ warehouses: any[] }>(
+      GET_WAREHOUSES_QUERY,
+      { take: 50 },
+      { timeoutMs: 5000 }
+    )
+
+    if (res?.warehouses && Array.isArray(res.warehouses) && res.warehouses.length > 0) {
+      const stored = loadStoredWarehouses()
+
+      const backendMapped: Warehouse[] = res.warehouses.map(w => {
+        const localMatched = stored.find(s => s.id === w.id || s.code === w.code)
+
+        return {
+          id: w.id,
+          code: w.code,
+          name: w.name,
+          address: w.address || '',
+          manager: w.manager || 'Administrador ERP',
+          isDefault: Boolean(w.isDefault),
+          isActive: w.isActive !== false,
+          createdAt: w.createdAt || new Date().toISOString(),
+          locations: localMatched?.locations || [
+            {
+              id: `loc-${w.id}-1`,
+              warehouseId: w.id,
+              code: `${w.code}-GEN`,
+              name: 'Ubicación General',
+              type: 'INTERNAL',
+              notes: 'Ubicación principal de almacén',
+              isActive: true
+            }
+          ]
+        }
+      })
+
+      saveStoredWarehouses(backendMapped)
+
+      return backendMapped
+    }
+  } catch (err) {
+    console.warn('[categoryWarehouseService] Fallback local para getWarehouses:', err)
+  }
+
   return Promise.resolve(loadStoredWarehouses())
 }
 
@@ -162,13 +214,38 @@ export const createWarehouse = async (input: {
     throw new Error(`El código de almacén "${cleanCode}" ya está en uso.`)
   }
 
+  let backendId: string | undefined
+
+  try {
+    const res = await executeGraphQL<{ createWarehouse: { id: string } }>(
+      CREATE_WAREHOUSE_MUTATION,
+      {
+        input: {
+          code: cleanCode,
+          name: cleanName,
+          address: input.address?.trim() || undefined,
+          manager: input.manager?.trim() || undefined,
+          isDefault: Boolean(input.isDefault)
+        }
+      },
+      { timeoutMs: 8000 }
+    )
+
+    if (res?.createWarehouse?.id) {
+      backendId = res.createWarehouse.id
+    }
+  } catch (err: unknown) {
+    console.warn('[categoryWarehouseService] Fallback local para createWarehouse:', err)
+  }
+
   const isDefault = Boolean(input.isDefault) || warehouses.length === 0
 
   const updatedList = isDefault
     ? warehouses.map(w => ({ ...w, isDefault: false }))
     : [...warehouses]
 
-  const newWhId = `wh-${Date.now()}`
+  const newWhId = backendId || `wh-${Date.now()}`
+
   const newWarehouse: Warehouse = {
     id: newWhId,
     code: cleanCode,
@@ -201,6 +278,30 @@ export const updateWarehouse = async (
   id: string,
   changes: Partial<Omit<Warehouse, 'id' | 'locations'>>
 ): Promise<Warehouse> => {
+  const isUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(id)
+
+  if (isUuid) {
+    try {
+      await executeGraphQL(
+        UPDATE_WAREHOUSE_MUTATION,
+        {
+          id,
+          input: {
+            code: changes.code?.trim().toUpperCase(),
+            name: changes.name?.trim(),
+            address: changes.address?.trim(),
+            manager: changes.manager?.trim(),
+            isDefault: changes.isDefault,
+            isActive: changes.isActive
+          }
+        },
+        { timeoutMs: 8000 }
+      )
+    } catch (err) {
+      console.warn('[categoryWarehouseService] Error al actualizar warehouse en backend:', err)
+    }
+  }
+
   let warehouses = loadStoredWarehouses()
   const idx = warehouses.findIndex(w => w.id === id)
 
@@ -243,6 +344,33 @@ export const addWarehouseLocation = async (
     notes?: string
   }
 ): Promise<WarehouseLocation> => {
+  const isWhUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(warehouseId)
+  let backendLocId: string | undefined
+
+  if (isWhUuid) {
+    try {
+      const res = await executeGraphQL<{ createStockLocation: { id: string } }>(
+        CREATE_STOCK_LOCATION_MUTATION,
+        {
+          input: {
+            warehouseId,
+            name: input.name.trim(),
+            code: input.code.trim().toUpperCase(),
+            locationType: input.type === 'TRANSIT' ? 'TRANSIT' : input.type === 'SCRAP' ? 'INVENTORY_LOSS' : 'INTERNAL',
+            notes: input.notes?.trim() || undefined
+          }
+        },
+        { timeoutMs: 8000 }
+      )
+
+      if (res?.createStockLocation?.id) {
+        backendLocId = res.createStockLocation.id
+      }
+    } catch (err) {
+      console.warn('[categoryWarehouseService] Error al crear ubicación en backend:', err)
+    }
+  }
+
   const warehouses = loadStoredWarehouses()
   const idx = warehouses.findIndex(w => w.id === warehouseId)
 
@@ -264,7 +392,7 @@ export const addWarehouseLocation = async (
   }
 
   const newLoc: WarehouseLocation = {
-    id: `loc-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`,
+    id: backendLocId || `loc-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`,
     warehouseId,
     code: cleanCode,
     name: cleanName,
