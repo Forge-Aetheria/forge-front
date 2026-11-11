@@ -1,15 +1,16 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import Link from 'next/link'
+
 import { useSearchParams } from 'next/navigation'
+
 import Card from '@mui/material/Card'
 import CardContent from '@mui/material/CardContent'
 import Typography from '@mui/material/Typography'
 import Button from '@mui/material/Button'
 import IconButton from '@mui/material/IconButton'
 import Tooltip from '@mui/material/Tooltip'
-import CustomChip from '@core/components/mui/Chip'
+
 import TextField from '@mui/material/TextField'
 import MenuItem from '@mui/material/MenuItem'
 import Table from '@mui/material/Table'
@@ -24,6 +25,8 @@ import DialogActions from '@mui/material/DialogActions'
 import Snackbar from '@mui/material/Snackbar'
 import Alert from '@mui/material/Alert'
 import InputAdornment from '@mui/material/InputAdornment'
+
+import CustomChip from '@core/components/mui/Chip'
 
 import type { Warehouse, WarehouseLocation } from '@/types/inventoryTypes'
 import {
@@ -72,7 +75,9 @@ export const InventoryLocationsView = () => {
     try {
       setLoading(true)
       const data = await getWarehouses()
+
       setWarehouses(data)
+
       if (data.length > 0 && !targetWarehouseId) {
         setTargetWarehouseId(data[0].id)
       }
@@ -90,6 +95,7 @@ export const InventoryLocationsView = () => {
   // Flatten all locations with warehouse data
   const allLocations = useMemo<FlatLocation[]>(() => {
     const list: FlatLocation[] = []
+
     warehouses.forEach(wh => {
       wh.locations.forEach(loc => {
         list.push({
@@ -99,7 +105,8 @@ export const InventoryLocationsView = () => {
         })
       })
     })
-    return list
+    
+return list
   }, [warehouses])
 
   const filteredLocations = useMemo(() => {
@@ -107,19 +114,25 @@ export const InventoryLocationsView = () => {
       if (selectedWarehouseFilter !== 'ALL' && loc.warehouseId !== selectedWarehouseFilter) {
         return false
       }
+
       if (selectedTypeFilter !== 'ALL' && loc.type !== selectedTypeFilter) {
         return false
       }
+
       if (search.trim()) {
         const q = search.toLowerCase()
-        return (
+
+        
+return (
           loc.code.toLowerCase().includes(q) ||
           loc.name.toLowerCase().includes(q) ||
           loc.warehouseName.toLowerCase().includes(q) ||
           (loc.notes && loc.notes.toLowerCase().includes(q))
         )
       }
-      return true
+
+      
+return true
     })
   }, [allLocations, selectedWarehouseFilter, selectedTypeFilter, search])
 
@@ -128,20 +141,25 @@ export const InventoryLocationsView = () => {
     setName('')
     setType('INTERNAL')
     setNotes('')
+
     if (warehouses.length > 0) {
       setTargetWarehouseId(warehouses[0].id)
     }
+
     setModalOpen(true)
   }
 
   const handleCreateLocation = async () => {
     if (!targetWarehouseId) {
       setToast({ open: true, message: 'Seleccione el almacén correspondiente.', severity: 'error' })
-      return
+      
+return
     }
+
     if (!code.trim() || !name.trim()) {
       setToast({ open: true, message: 'El código y el nombre son obligatorios.', severity: 'error' })
-      return
+      
+return
     }
 
     try {

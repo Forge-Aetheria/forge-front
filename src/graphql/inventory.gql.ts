@@ -471,4 +471,78 @@ export const CANCEL_LANDED_COST_MUTATION = `
   }
 `
 
+export const GET_WAREHOUSES_QUERY = `
+  query GetWarehouses($where: WarehouseWhereInput, $take: Int, $skip: Int) {
+    warehouses(where: $where, take: $take, skip: $skip) {
+      id
+      code
+      name
+      address
+      manager
+      isDefault
+      isActive
+      createdAt
+      updatedAt
+    }
+  }
+`
+
+export const CREATE_WAREHOUSE_MUTATION = `
+  mutation CreateWarehouse($input: CreateWarehouseInput!) {
+    createWarehouse(input: $input) {
+      id
+      code
+      name
+      address
+      manager
+      isDefault
+      isActive
+    }
+  }
+`
+
+export const UPDATE_WAREHOUSE_MUTATION = `
+  mutation UpdateWarehouse($id: ID!, $input: UpdateWarehouseInput!) {
+    updateWarehouse(id: $id, input: $input) {
+      id
+      code
+      name
+      address
+      manager
+      isDefault
+      isActive
+    }
+  }
+`
+
+export const CREATE_STOCK_LOCATION_MUTATION = `
+  mutation CreateStockLocation($input: CreateStockLocationInput!) {
+    createStockLocation(input: $input) {
+      id
+      name
+      code
+      completePath
+      warehouseId
+      parentId
+      isFrozen
+      isActive
+    }
+  }
+`
+
+export const UPDATE_STOCK_LOCATION_MUTATION = `
+  mutation UpdateStockLocation($id: ID!, $input: UpdateStockLocationInput!) {
+    updateStockLocation(id: $id, input: $input) {
+      id
+      name
+      code
+      completePath
+      parentId
+      isFrozen
+      isActive
+    }
+  }
+`
+
+
 
