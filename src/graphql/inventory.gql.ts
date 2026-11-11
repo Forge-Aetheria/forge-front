@@ -342,3 +342,133 @@ export const DELETE_PRODUCT_TEMPLATE_MUTATION = `
   }
 `
 
+export const GET_INVENTORY_ADJUSTMENTS_QUERY = `
+  query GetInventoryAdjustments($where: InventoryAuditWhereInput, $take: Int, $skip: Int) {
+    inventoryAdjustments(where: $where, take: $take, skip: $skip) {
+      id
+      auditNumber
+      adjustmentState
+      locationId
+      reason
+      auditType
+      createdAt
+      lines {
+        id
+        variantId
+        theoreticalQuantity
+        countedQuantity
+        difference
+      }
+    }
+  }
+`
+
+export const CREATE_INVENTORY_ADJUSTMENT_MUTATION = `
+  mutation CreateInventoryAdjustment($input: CreateInventoryAdjustmentInput!) {
+    createInventoryAdjustment(input: $input) {
+      id
+      auditNumber
+      adjustmentState
+      createdAt
+    }
+  }
+`
+
+export const APPLY_INVENTORY_ADJUSTMENT_MUTATION = `
+  mutation ApplyInventoryAdjustment($id: ID!, $idempotencyKey: String!) {
+    applyInventoryAdjustment(id: $id, idempotencyKey: $idempotencyKey) {
+      id
+      auditNumber
+      adjustmentState
+    }
+  }
+`
+
+export const GET_LANDED_COSTS_QUERY = `
+  query GetLandedCosts($where: LandedCostWhereInput, $take: Int, $skip: Int) {
+    landedCosts(where: $where, take: $take, skip: $skip) {
+      id
+      code
+      state
+      date
+      reference
+      notes
+      totalAmountUsd
+      createdAt
+      updatedAt
+      costs {
+        id
+        description
+        splitMethod
+        amountUsd
+      }
+    }
+  }
+`
+
+export const GET_LANDED_COST_QUERY = `
+  query GetLandedCost($id: ID!) {
+    landedCost(id: $id) {
+      id
+      code
+      state
+      date
+      reference
+      notes
+      totalAmountUsd
+      createdAt
+      updatedAt
+      costs {
+        id
+        description
+        splitMethod
+        amountUsd
+      }
+    }
+  }
+`
+
+export const CREATE_LANDED_COST_MUTATION = `
+  mutation CreateLandedCost($input: CreateLandedCostInput!) {
+    createLandedCost(input: $input) {
+      id
+      code
+      state
+      totalAmountUsd
+      createdAt
+    }
+  }
+`
+
+export const UPDATE_LANDED_COST_MUTATION = `
+  mutation UpdateLandedCost($id: ID!, $input: UpdateLandedCostInput!) {
+    updateLandedCost(id: $id, input: $input) {
+      id
+      code
+      state
+      updatedAt
+    }
+  }
+`
+
+export const VALIDATE_LANDED_COST_MUTATION = `
+  mutation ValidateLandedCost($id: ID!, $idempotencyKey: String!) {
+    validateLandedCost(id: $id, idempotencyKey: $idempotencyKey) {
+      id
+      code
+      state
+      updatedAt
+    }
+  }
+`
+
+export const CANCEL_LANDED_COST_MUTATION = `
+  mutation CancelLandedCost($id: ID!, $reason: String!) {
+    cancelLandedCost(id: $id, reason: $reason) {
+      id
+      state
+    }
+  }
+`
+
+

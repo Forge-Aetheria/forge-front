@@ -7,8 +7,7 @@ import type {
   LandedCostCostLine,
   LandedCostReceiptRef,
   LandedCostValuationAdjustment,
-  StockMovement,
-  WarehouseOperationOrder
+  StockMovement
 } from '@/types/inventoryTypes'
 import {
   loadStoredLandedCosts,
@@ -22,16 +21,26 @@ import {
 } from './inventoryStorage'
 import { recalculateTemplateStandardCost } from './costingService'
 import { accountingService } from '@/services/accountingService'
+import { executeGraphQL } from '@/libs/graphqlClient'
+import {
+  CREATE_LANDED_COST_MUTATION,
+  VALIDATE_LANDED_COST_MUTATION
+} from '@/graphql/inventory.gql'
+import { serializeLandedCostInput, generateIdempotencyKey } from '@/services/adapters/inventoryAdapter'
 
 export const getLandedCosts = async (): Promise<LandedCostRecord[]> => {
   const list = loadStoredLandedCosts()
-  return Promise.resolve(list)
+
+  
+return Promise.resolve(list)
 }
 
 export const getLandedCostById = async (id: string): Promise<LandedCostRecord | null> => {
   const list = loadStoredLandedCosts()
   const record = list.find(r => r.id === id || r.codigo === id) || null
-  return Promise.resolve(record)
+
+  
+return Promise.resolve(record)
 }
 
 export const calculateValuationAdjustments = (
@@ -61,10 +70,12 @@ export const calculateValuationAdjustments = (
 
   recepciones.forEach(ref => {
     const order = allOrders.find(o => o.id === ref.orden_id || o.codigo === ref.orden_codigo)
+
     if (!order) return
 
     order.lineas.forEach(line => {
       const qty = line.cantidad_procesada > 0 ? line.cantidad_procesada : line.cantidad_demanda
+
       if (qty <= 0) return
 
       const tpl = templates.find(t => t.id === line.producto_id)
@@ -134,6 +145,7 @@ export const calculateValuationAdjustments = (
       })
     } else {
       const existing = allocatedMap.get(rl.varianteId)!
+
       existing.cantidadRecibida += rl.cantidad
     }
   })
@@ -141,6 +153,7 @@ export const calculateValuationAdjustments = (
   // Distribuir cada costo según su método
   costos.forEach(costLine => {
     const monto = costLine.monto_usd || 0
+
     if (monto <= 0) return
 
     receiptLines.forEach(rl => {
@@ -167,8 +180,10 @@ export const calculateValuationAdjustments = (
       }
 
       const item = allocatedMap.get(rl.varianteId)
+
       if (item) {
         item.costoAdicionalUsd += portion
+
         if (!item.lineaCostoIds.includes(costLine.id)) {
           item.lineaCostoIds.push(costLine.id)
         }
@@ -183,6 +198,7 @@ export const calculateValuationAdjustments = (
     const tpl = templates.find(t => t.id === item.productoId)
     const variant = tpl?.variants.find(v => v.id === item.varianteId)
     const stockActual = variant?.physicalStock || 0
+
     const additionalUnitCost =
       item.cantidadRecibida > 0 ? item.costoAdicionalUsd / item.cantidadRecibida : 0
 
@@ -235,6 +251,45 @@ export const createLandedCost = async (
     ajustes_valoracion: ajustes,
     total_monto_usd: Number(totalMontoUsd.toFixed(2)),
     createdAt: now
+  }
+
+  const hasUuidReceipt = recepciones.some(r =>
+    /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(r.orden_id)
+  )
+
+  if (hasUuidReceipt && costos.length > 0) {
+    try {
+      const idempotencyKey = generateIdempotencyKey()
+
+      const payload = serializeLandedCostInput({
+        date: input.fecha || now,
+        reference: input.referencia,
+        notes: input.notas,
+        idempotencyKey,
+        receipts: recepciones.map(r => ({
+          receiptType: 'WAREHOUSE_OPERATION',
+          receiptId: r.orden_id
+        })),
+        costs: costos.map(c => ({
+          description: c.descripcion || c.producto_nombre || 'Gasto de importación',
+          splitMethod: (c.metodo_reparto as any) || 'BY_COST',
+          amountUsd: c.monto_usd
+        }))
+      })
+
+      const res = await executeGraphQL<{ createLandedCost: { id: string; code: string } }>(
+        CREATE_LANDED_COST_MUTATION,
+        { input: payload },
+        { timeoutMs: 10000 }
+      )
+
+      if (res?.createLandedCost?.id) {
+        newRecord.id = res.createLandedCost.id
+        if (res.createLandedCost.code) newRecord.codigo = res.createLandedCost.code
+      }
+    } catch (err) {
+      console.warn('[landedCostService] Fallback local para createLandedCost:', err)
+    }
   }
 
   list.unshift(newRecord)
@@ -293,12 +348,27 @@ export const deleteLandedCost = async (id: string): Promise<void> => {
   }
 
   const filtered = list.filter(r => r.id !== id)
+
   saveStoredLandedCosts(filtered)
 
   return Promise.resolve()
 }
 
 export const validateLandedCost = async (id: string): Promise<LandedCostRecord> => {
+  const isUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(id)
+
+  if (isUuid) {
+    try {
+      await executeGraphQL(
+        VALIDATE_LANDED_COST_MUTATION,
+        { id, idempotencyKey: generateIdempotencyKey() },
+        { timeoutMs: 10000 }
+      )
+    } catch (err: unknown) {
+      console.warn('[landedCostService] Fallback local para validateLandedCost:', err)
+    }
+  }
+
   const list = loadStoredLandedCosts()
   const idx = list.findIndex(r => r.id === id)
 
@@ -338,10 +408,12 @@ export const validateLandedCost = async (id: string): Promise<LandedCostRecord> 
   // 1. Aplicar nuevo costo promedio a las variantes y generar movimientos en Kárdex
   adjustments.forEach(adj => {
     const tIdx = templates.findIndex(t => t.id === adj.producto_id)
+
     if (tIdx === -1) return
 
     const tpl = templates[tIdx]
     const vIdx = tpl.variants.findIndex(v => v.id === adj.variante_id)
+
     if (vIdx === -1) return
 
     const variant = tpl.variants[vIdx]
@@ -359,8 +431,10 @@ export const validateLandedCost = async (id: string): Promise<LandedCostRecord> 
 
     // Prorrateo contable: existencia actual vs unidades ya vendidas
     const stockActual = Math.max(0, variant.physicalStock)
+
     const ratioExistencia =
       adj.cantidad_recibida > 0 ? Math.min(1, stockActual / adj.cantidad_recibida) : 1
+
     const montoInventario = Number((adj.costo_adicional_usd * ratioExistencia).toFixed(2))
     const montoCostoVentas = Number((adj.costo_adicional_usd - montoInventario).toFixed(2))
 

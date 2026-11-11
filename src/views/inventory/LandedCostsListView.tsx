@@ -1,8 +1,10 @@
 'use client'
 
 import React, { useEffect, useMemo, useState, useCallback } from 'react'
+
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+
 import Typography from '@mui/material/Typography'
 import Card from '@mui/material/Card'
 import CardContent from '@mui/material/CardContent'
@@ -85,6 +87,7 @@ export const LandedCostsListView: React.FC = () => {
     try {
       setLoading(true)
       const data = await getLandedCosts()
+
       setRecords(data)
     } catch {
       setToast({
@@ -110,6 +113,7 @@ export const LandedCostsListView: React.FC = () => {
         const matchCode = r.codigo.toLowerCase().includes(q)
         const matchRef = (r.referencia || '').toLowerCase().includes(q)
         const matchNotes = (r.notas || '').toLowerCase().includes(q)
+
         const matchReceipts = r.recepciones.some(
           rec =>
             rec.orden_codigo.toLowerCase().includes(q) ||
@@ -132,6 +136,7 @@ export const LandedCostsListView: React.FC = () => {
     const totalCount = records.length
     const draftCount = records.filter(r => r.estado === 'DRAFT').length
     const appliedCount = records.filter(r => r.estado === 'APPLIED').length
+
     const totalAmountUsd = records
       .filter(r => r.estado === 'APPLIED')
       .reduce((acc, r) => acc + (r.total_monto_usd || 0), 0)
@@ -166,7 +171,9 @@ export const LandedCostsListView: React.FC = () => {
   const formatDate = (iso: string) => {
     try {
       const d = new Date(iso)
-      return d.toLocaleDateString('es-VE', {
+
+      
+return d.toLocaleDateString('es-VE', {
         day: '2-digit',
         month: 'short',
         year: 'numeric'

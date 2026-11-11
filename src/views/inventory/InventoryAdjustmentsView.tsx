@@ -10,8 +10,7 @@ import Typography from '@mui/material/Typography'
 import Button from '@mui/material/Button'
 import IconButton from '@mui/material/IconButton'
 import Tooltip from '@mui/material/Tooltip'
-import CustomChip from '@core/components/mui/Chip'
-import CustomTextField from '@core/components/mui/TextField'
+
 import TextField from '@mui/material/TextField'
 import Autocomplete from '@mui/material/Autocomplete'
 import MenuItem from '@mui/material/MenuItem'
@@ -27,6 +26,9 @@ import Divider from '@mui/material/Divider'
 import Popover from '@mui/material/Popover'
 import Snackbar from '@mui/material/Snackbar'
 import Alert from '@mui/material/Alert'
+
+import CustomTextField from '@core/components/mui/TextField'
+import CustomChip from '@core/components/mui/Chip'
 
 import type { ProductTemplate, StockAdjustmentRecord, AdjustmentReason } from '@/types/inventoryTypes'
 import {
@@ -88,6 +90,7 @@ const InventoryAdjustmentsView = () => {
   const [reasonFilter, setReasonFilter] = useState<string>('ALL')
   const [page, setPage] = useState(0)
   const [rowsPerPage, setRowsPerPage] = useState(10)
+
   const [toast, setToast] = useState<{ open: boolean; message: string; severity: 'success' | 'error' | 'info' }>({
     open: false,
     message: '',
@@ -456,8 +459,10 @@ const InventoryAdjustmentsView = () => {
                 {draftRows.map(row => {
                   const opt = row.selectedOption
                   const stockSistema = opt ? opt.stock_sistema : 0
+
                   const countedNum =
                     row.stock_contado === '' ? stockSistema : Math.max(0, Number(row.stock_contado))
+
                   const diff = opt ? countedNum - stockSistema : 0
 
                   return (

@@ -412,3 +412,62 @@ export const serializeConfirmStockMoveInput = (params: {
   }
 }
 
+export const serializeAdjustmentInput = (params: {
+  locationId: string
+  reason: 'PHYSICAL_COUNT' | 'LOSS' | 'DAMAGE' | 'SCRAP' | 'INITIAL_LOAD' | 'CORRECTION'
+  auditType?: string
+  lines: Array<{
+    variantId: string
+    theoreticalQuantity: number | string
+    countedQuantity: number | string
+    difference: number | string
+  }>
+  idempotencyKey?: string
+}) => {
+  return {
+    locationId: params.locationId,
+    reason: params.reason,
+    auditType: params.auditType || 'CONTEO_FISICO',
+    idempotencyKey: params.idempotencyKey || generateIdempotencyKey(),
+    lines: params.lines.map(l => ({
+      variantId: l.variantId,
+      theoreticalQuantity: formatDecimalString(l.theoreticalQuantity),
+      countedQuantity: formatDecimalString(l.countedQuantity),
+      difference: formatDecimalString(l.difference)
+    }))
+  }
+}
+
+export const serializeLandedCostInput = (params: {
+  date: string
+  reference?: string
+  notes?: string
+  receipts: Array<{
+    receiptType: 'PURCHASE_RECEPTION' | 'WAREHOUSE_OPERATION'
+    receiptId: string
+  }>
+  costs: Array<{
+    description: string
+    splitMethod: 'EQUAL' | 'BY_QUANTITY' | 'BY_COST' | 'BY_WEIGHT' | 'BY_VOLUME'
+    amountUsd: number | string
+  }>
+  idempotencyKey?: string
+}) => {
+  return {
+    date: new Date(params.date).toISOString(),
+    reference: params.reference?.trim() || undefined,
+    notes: params.notes?.trim() || undefined,
+    idempotencyKey: params.idempotencyKey || generateIdempotencyKey(),
+    receipts: params.receipts.map(r => ({
+      receiptType: r.receiptType,
+      receiptId: r.receiptId
+    })),
+    costs: params.costs.map(c => ({
+      description: c.description.trim(),
+      splitMethod: c.splitMethod,
+      amountUsd: formatDecimalString(c.amountUsd)
+    }))
+  }
+}
+
+

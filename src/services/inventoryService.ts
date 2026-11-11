@@ -17,7 +17,9 @@ import {
   GET_VARIANT_AVAILABILITY_QUERY,
   CREATE_PRODUCT_TEMPLATE_MUTATION,
   UPDATE_PRODUCT_TEMPLATE_MUTATION,
-  DELETE_PRODUCT_TEMPLATE_MUTATION
+  DELETE_PRODUCT_TEMPLATE_MUTATION,
+  CREATE_INVENTORY_ADJUSTMENT_MUTATION,
+  APPLY_INVENTORY_ADJUSTMENT_MUTATION
 } from '@/graphql/inventory.gql'
 import type {
   GqlProductTemplate,
@@ -30,7 +32,9 @@ import type {
 import {
   mapGqlTemplateToFrontend,
   serializeCreateTemplateInput,
-  serializeUpdateTemplateInput
+  serializeUpdateTemplateInput,
+  serializeAdjustmentInput,
+  generateIdempotencyKey
 } from '@/services/adapters/inventoryAdapter'
 import {
   getActiveBcvRate,
@@ -485,6 +489,57 @@ export const applyStockAdjustment = async (input: {
   const stockSistema = variant.physicalStock
   const stockContado = Math.max(0, input.stock_contado)
   const diferencia = stockContado - stockSistema
+
+  const isVarUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(
+    input.variante_id
+  )
+
+  if (isVarUuid) {
+    try {
+      const defaultLoc = await resolveDefaultStockLocations()
+      const idempotencyKey = generateIdempotencyKey()
+
+      let reasonGql: 'PHYSICAL_COUNT' | 'LOSS' | 'DAMAGE' | 'SCRAP' | 'INITIAL_LOAD' | 'CORRECTION' = 'PHYSICAL_COUNT'
+
+      if (input.motivo === 'ROTURA_MERMA') reasonGql = 'DAMAGE'
+      else if (input.motivo === 'CADUCIDAD') reasonGql = 'SCRAP'
+      else if (input.motivo === 'CONSUMO_INTERNO') reasonGql = 'LOSS'
+      else if (input.motivo === 'CORRECCION_SISTEMA') reasonGql = 'CORRECTION'
+
+      const adjPayload = serializeAdjustmentInput({
+        locationId: defaultLoc.internalLocationId,
+        reason: reasonGql,
+        lines: [
+          {
+            variantId: input.variante_id,
+            theoreticalQuantity: stockSistema,
+            countedQuantity: stockContado,
+            difference: diferencia
+          }
+        ],
+        idempotencyKey
+      })
+
+      const res = await executeGraphQL<{ createInventoryAdjustment: { id: string } }>(
+        CREATE_INVENTORY_ADJUSTMENT_MUTATION,
+        { input: adjPayload },
+        { timeoutMs: 10000 }
+      )
+
+      if (res?.createInventoryAdjustment?.id) {
+        await executeGraphQL(
+          APPLY_INVENTORY_ADJUSTMENT_MUTATION,
+          {
+            id: res.createInventoryAdjustment.id,
+            idempotencyKey: generateIdempotencyKey()
+          },
+          { timeoutMs: 10000 }
+        )
+      }
+    } catch (err: unknown) {
+      console.warn('[inventoryService] Fallback local para applyStockAdjustment:', err)
+    }
+  }
 
   // Update variant stock
   const newAvailable = Math.max(0, stockContado - variant.reservedStock)
