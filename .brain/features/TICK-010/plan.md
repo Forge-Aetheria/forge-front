@@ -1,6 +1,6 @@
 # Technical Plan: FE-INV-STOCK: Conexión de Movimientos de Almacén y Quants de Inventario con Backend GraphQL
 
-- **Ticket**: .agents/tickets/in-analysis/TICK-010-fe-inv-stock-warehouse-quants.md
+- **Ticket**: legacy TICK-010-fe-inv-stock-warehouse-quants (file not present in .agents/tickets/)
 - **Repository**: forge-front
 - **Domain**: forge-front
 - **Spec**: `.brain/features/TICK-010/spec.md`

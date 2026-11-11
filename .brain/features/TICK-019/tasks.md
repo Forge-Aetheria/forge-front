@@ -1,6 +1,6 @@
 # Tasks: FE-ACC-INVOICES: Integración de Facturación CxC/CxP, Notas de Crédito y Pagos con GraphQL
 
-- **Ticket**: .agents/tickets/in-analysis/TICK-019-fe-acc-invoices-credit-notes-payments.md
+- **Ticket**: legacy TICK-019-fe-acc-invoices-credit-notes-payments (file not present in .agents/tickets/)
 - **Repository**: forge-front
 - **Plan**: `.brain/features/TICK-019/plan.md`
 - **Date**: 2026-11-10

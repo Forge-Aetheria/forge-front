@@ -1,6 +1,6 @@
 # Technical Plan: FE-IAM: Integración de Gestión de Roles, Permisos y Asignaciones con Backend GraphQL
 
-- **Ticket**: .agents/tickets/in-analysis/TICK-007-fe-iam-roles-permissions.md
+- **Ticket**: legacy TICK-007-fe-iam-roles-permissions (file not present in .agents/tickets/)
 - **Repository**: forge-front
 - **Domain**: forge-front
 - **Spec**: `.brain/features/TICK-007/spec.md`

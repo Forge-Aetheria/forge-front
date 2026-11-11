@@ -1,6 +1,6 @@
 # Tasks: FE-AUTH: Ciclo de Autenticación Pública, Registro y Recuperación de Credenciales
 
-- **Ticket**: .agents/tickets/in-analysis/TICK-006-fe-onboarding-auth-lifecycle.md
+- **Ticket**: legacy TICK-006-fe-onboarding-auth-lifecycle (file not present in .agents/tickets/)
 - **Repository**: forge-front
 - **Plan**: `.brain/features/TICK-006/plan.md`
 - **Date**: 2026-11-10

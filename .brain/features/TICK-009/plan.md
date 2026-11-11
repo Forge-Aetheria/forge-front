@@ -1,6 +1,6 @@
 # Technical Plan: FE-INV-CATALOG: Integración de Creación Atómica de Plantillas y Variantes con GraphQL
 
-- **Ticket**: .agents/tickets/in-analysis/TICK-009-fe-inv-catalog-variants.md
+- **Ticket**: legacy TICK-009-fe-inv-catalog-variants (file not present in .agents/tickets/)
 - **Repository**: forge-front
 - **Domain**: forge-front
 - **Spec**: `.brain/features/TICK-009/spec.md`

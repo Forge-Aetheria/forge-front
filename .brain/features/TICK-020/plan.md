@@ -1,6 +1,6 @@
 # Technical Plan: FE-ACC-REPORTS: Conexión de Reportes Financieros en Vivo con GraphQL
 
-- **Ticket**: .agents/tickets/in-analysis/TICK-020-fe-acc-financial-reports-graphql.md
+- **Ticket**: legacy TICK-020-fe-acc-financial-reports-graphql (file not present in .agents/tickets/)
 - **Repository**: forge-front
 - **Domain**: forge-front
 - **Spec**: `.brain/features/TICK-020/spec.md`

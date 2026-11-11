@@ -1,6 +1,6 @@
 # Tasks: FE-INV-STOCK: Conexión de Movimientos de Almacén y Quants de Inventario con Backend GraphQL
 
-- **Ticket**: .agents/tickets/in-analysis/TICK-010-fe-inv-stock-warehouse-quants.md
+- **Ticket**: legacy TICK-010-fe-inv-stock-warehouse-quants (file not present in .agents/tickets/)
 - **Repository**: forge-front
 - **Plan**: `.brain/features/TICK-010/plan.md`
 - **Date**: 2026-11-09

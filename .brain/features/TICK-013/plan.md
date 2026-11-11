@@ -1,6 +1,6 @@
 # Technical Plan: FE-CONTACTS: Integración de Mutaciones de Cuentas Bancarias y Pago Móvil con GraphQL
 
-- **Ticket**: .agents/tickets/in-analysis/TICK-013-fe-contacts-bank-accounts-mutations.md
+- **Ticket**: legacy TICK-013-fe-contacts-bank-accounts-mutations (file not present in .agents/tickets/)
 - **Repository**: forge-front
 - **Domain**: forge-front
 - **Spec**: `.brain/features/TICK-013/spec.md`

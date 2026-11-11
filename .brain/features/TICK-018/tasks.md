@@ -1,6 +1,6 @@
 # Tasks: FE-ACC-CORE: Integración del Plan de Cuentas (PUC), Diarios y Asientos Contables con GraphQL
 
-- **Ticket**: .agents/tickets/in-analysis/TICK-018-fe-acc-core-puc-journals-entries.md
+- **Ticket**: legacy TICK-018-fe-acc-core-puc-journals-entries (file not present in .agents/tickets/)
 - **Repository**: forge-front
 - **Plan**: `.brain/features/TICK-018/plan.md`
 - **Date**: 2026-11-10

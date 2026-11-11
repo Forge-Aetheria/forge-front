@@ -1,6 +1,6 @@
 # Technical Plan: FE-INV-ADVANCED: Integración de Ajustes Físicos de Inventario y Costos en Destino con GraphQL
 
-- **Ticket**: .agents/tickets/in-analysis/TICK-021-fe-inv-adjustments-landed-costs.md
+- **Ticket**: legacy TICK-021-fe-inv-adjustments-landed-costs (file not present in .agents/tickets/)
 - **Repository**: forge-front
 - **Domain**: forge-front
 - **Spec**: `.brain/features/TICK-021/spec.md`

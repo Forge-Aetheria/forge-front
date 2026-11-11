@@ -1,6 +1,6 @@
 # Technical Plan: FE-INV-INFRA: Integración de Administración de Almacenes y Ubicaciones Físicas con GraphQL
 
-- **Ticket**: .agents/tickets/in-analysis/TICK-022-fe-inv-warehouses-locations-crud.md
+- **Ticket**: legacy TICK-022-fe-inv-warehouses-locations-crud (file not present in .agents/tickets/)
 - **Repository**: forge-front
 - **Domain**: forge-front
 - **Spec**: `.brain/features/TICK-022/spec.md`

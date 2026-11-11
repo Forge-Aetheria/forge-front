@@ -1,6 +1,6 @@
 # EARS Specification: FE-PURCHASES: Integración de Solicitudes, Órdenes de Compra y Recepciones con GraphQL
 
-- **Ticket**: .agents/tickets/in-analysis/TICK-012-fe-purchases-orders-receptions.md
+- **Ticket**: legacy TICK-012-fe-purchases-orders-receptions (file not present in .agents/tickets/)
 - **Repository**: forge-front
 - **Domain**: forge-front
 - **Date**: 2026-11-09
