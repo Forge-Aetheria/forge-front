@@ -67,6 +67,24 @@ describe('normalizeRif', () => {
     assert.throws(() => normalizeRif('J', J_BODY, wrong), RifValidationError)
   })
 
+  it('rejects a non-numeric check digit with an explicit message', () => {
+    assert.throws(
+      () => normalizeRif('J', '29889183', 'X'),
+      (error: unknown) =>
+        error instanceof RifValidationError &&
+        error.field === 'checkDigit' &&
+        /número de un solo dígito/.test(error.message)
+    )
+  })
+
+  it('normalizes the example J-29889183-1', () => {
+    assert.deepEqual(normalizeRif('J', '29889183', '1'), {
+      docType: 'J',
+      docNumber: '29889183',
+      checkDigit: '1'
+    })
+  })
+
   it('rejects non-numeric bodies', () => {
     assert.throws(() => normalizeRif('V', '12A45678'), RifValidationError)
   })

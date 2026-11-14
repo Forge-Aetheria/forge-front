@@ -10,6 +10,9 @@ import type { DocType, OnboardingFieldErrors, OnboardingFormState } from '@/type
 
 const DOC_TYPES: DocType[] = ['V', 'E', 'J', 'G', 'C']
 
+const onlyDigits = (value: string, maxLength: number): string =>
+  value.replace(/\D/g, '').slice(0, maxLength)
+
 const DOC_TYPE_LABELS: Record<DocType, string> = {
   V: 'V - Cédula / Venezolano',
   E: 'E - Extranjero',
@@ -88,11 +91,12 @@ export const StepFiscalIdentity = ({ values, errors, onChange }: Props) => {
             fullWidth
             size='small'
             label='Número de documento'
-            placeholder='Ej. 40192834'
+            placeholder='Ej. 29889183'
             value={values.docNumber}
-            onChange={event => onChange({ docNumber: event.target.value })}
+            onChange={event => onChange({ docNumber: onlyDigits(event.target.value, 8) })}
             error={Boolean(errors.docNumber)}
-            helperText={errors.docNumber ?? 'Cuerpo numérico del RIF o cédula'}
+            helperText={errors.docNumber ?? 'Solo números, sin letra ni dígito verificador'}
+            inputProps={{ inputMode: 'numeric', pattern: '[0-9]*', maxLength: 8 }}
             required
           />
         </Grid>
@@ -101,14 +105,17 @@ export const StepFiscalIdentity = ({ values, errors, onChange }: Props) => {
             fullWidth
             size='small'
             label='Dígito verificador'
-            placeholder='Ej. 5'
+            placeholder='Ej. 1'
             value={values.checkDigit}
-            onChange={event => onChange({ checkDigit: event.target.value })}
+            onChange={event => onChange({ checkDigit: onlyDigits(event.target.value, 1) })}
             error={Boolean(errors.checkDigit)}
             helperText={
-              errors.checkDigit ?? (checkDigitRequired ? 'Obligatorio para J, G y C' : 'Opcional para V y E')
+              errors.checkDigit ??
+              (checkDigitRequired
+                ? 'Solo un número (0 a 9). Obligatorio para J, G y C'
+                : 'Solo un número (0 a 9). Opcional para V y E')
             }
-            inputProps={{ maxLength: 1, inputMode: 'numeric' }}
+            inputProps={{ maxLength: 1, inputMode: 'numeric', pattern: '[0-9]*' }}
           />
         </Grid>
         <Grid size={{ xs: 12 }}>

@@ -29,7 +29,7 @@ export const fiscalIdentitySchema = z
     checkDigit: z
       .string()
       .trim()
-      .max(1, 'El dígito verificador debe ser un único dígito')
+      .max(1, 'El dígito verificador debe ser un número de un solo dígito (0 a 9)')
       .optional()
       .or(z.literal('')),
     fiscalAddress: z
