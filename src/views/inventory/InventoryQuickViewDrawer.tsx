@@ -38,9 +38,9 @@ const InventoryQuickViewDrawer = ({
   template,
   fiscalEnabled
 }: Props) => {
-  if (!template) return null
-
   const bcvRate = useBcvRate()
+
+  if (!template) return null
 
   const financials = calculateFinancials(
     template.standardCost,

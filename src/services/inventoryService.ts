@@ -398,6 +398,7 @@ export const deleteProductTemplate = async (id: string): Promise<void> => {
 // ==========================================
 export const getStockMovements = async (productId?: string): Promise<StockMovement[]> => {
   void productId
+
   // El backend expone kardex por variante; no hay query de listado global de movimientos.
   return []
 }
