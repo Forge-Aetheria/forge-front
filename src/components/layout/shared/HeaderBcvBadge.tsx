@@ -1,26 +1,12 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-
 import Tooltip from '@mui/material/Tooltip'
 import Chip from '@mui/material/Chip'
 
-import { getActiveBcvRate } from '@/services/inventoryService'
+import { useBcvRate } from '@/hooks/useBcvRate'
 
 export const HeaderBcvBadge = () => {
-  const [rate, setRate] = useState<number>(36.5)
-
-  useEffect(() => {
-    try {
-      const active = getActiveBcvRate()
-
-      if (active && active > 0) {
-        setRate(active)
-      }
-    } catch {
-      // Fallback a tasa base
-    }
-  }, [])
+  const rate = useBcvRate()
 
   return (
     <Tooltip title="Tasa oficial Banco Central de Venezuela (BCV)" arrow>

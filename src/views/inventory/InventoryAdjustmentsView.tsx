@@ -1,5 +1,6 @@
 'use client'
 
+
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import Link from 'next/link'
@@ -27,6 +28,8 @@ import Popover from '@mui/material/Popover'
 import Snackbar from '@mui/material/Snackbar'
 import Alert from '@mui/material/Alert'
 
+import { useBcvRate } from '@/hooks/useBcvRate'
+
 import CustomTextField from '@core/components/mui/TextField'
 import CustomChip from '@core/components/mui/Chip'
 
@@ -35,7 +38,6 @@ import {
   getInventoryTemplates,
   getStockAdjustments,
   applyStockAdjustment,
-  getActiveBcvRate
 } from '@/services/inventoryService'
 
 const reasonLabels: Record<
@@ -97,7 +99,7 @@ const InventoryAdjustmentsView = () => {
     severity: 'success'
   })
 
-  const bcvRate = getActiveBcvRate()
+  const bcvRate = useBcvRate()
 
   const loadData = useCallback(async () => {
     const [adjData, prodData] = await Promise.all([getStockAdjustments(), getInventoryTemplates()])

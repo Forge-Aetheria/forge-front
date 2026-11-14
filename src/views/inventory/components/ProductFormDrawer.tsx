@@ -1,5 +1,6 @@
 'use client'
 
+
 import React, { useState, useEffect } from 'react'
 
 import Drawer from '@mui/material/Drawer'
@@ -18,6 +19,8 @@ import TableHead from '@mui/material/TableHead'
 import TableBody from '@mui/material/TableBody'
 import TableRow from '@mui/material/TableRow'
 import TableCell from '@mui/material/TableCell'
+
+import { useBcvRate } from '@/hooks/useBcvRate'
 
 import CustomTextField from '@core/components/mui/TextField'
 
@@ -38,7 +41,6 @@ import {
   updateProductTemplate,
   calculateSuggestedPriceFromMargin,
   calculateMarginFromPrice,
-  getActiveBcvRate,
   getProductCategories,
   createProductCategory
 } from '@/services/inventoryService'
@@ -71,7 +73,7 @@ const ProductFormDrawer: React.FC<Props> = ({
   onSuccess
 }) => {
   const isEdit = Boolean(initialProduct)
-  const bcvRate = getActiveBcvRate()
+  const bcvRate = useBcvRate()
 
   // Form States
   const [name, setName] = useState('')

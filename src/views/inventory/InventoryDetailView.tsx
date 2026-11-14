@@ -1,5 +1,6 @@
 'use client'
 
+
 import React, { useCallback, useEffect, useState } from 'react'
 
 import Link from 'next/link'
@@ -33,6 +34,8 @@ import DialogActions from '@mui/material/DialogActions'
 import Snackbar from '@mui/material/Snackbar'
 import Alert from '@mui/material/Alert'
 
+import { useBcvRate } from '@/hooks/useBcvRate'
+
 import CustomChip from '@core/components/mui/Chip'
 
 import CustomTextField from '@core/components/mui/TextField'
@@ -57,8 +60,7 @@ import {
   calculateFinancials,
   calculateSuggestedPriceFromMargin,
   calculateMarginFromPrice,
-  getFiscalConfig,
-  getActiveBcvRate,
+  getInventoryFiscalConfig,
   getProductCategories,
   getUnitsOfMeasure,
   createProductCategory,
@@ -140,7 +142,7 @@ const InventoryDetailView: React.FC<Props> = ({ id }) => {
     severity: 'success'
   })
 
-  const bcvRate = getActiveBcvRate()
+  const bcvRate = useBcvRate()
 
   const loadData = useCallback(async () => {
     try {
@@ -155,7 +157,7 @@ const InventoryDetailView: React.FC<Props> = ({ id }) => {
 
         setUomOptions(unitsData.map(u => ({ code: u.code, name: u.name })))
 
-        const fiscal = getFiscalConfig()
+        const fiscal = await getInventoryFiscalConfig()
 
         setAllTemplates(allData)
         setMovements([])
@@ -233,7 +235,7 @@ const InventoryDetailView: React.FC<Props> = ({ id }) => {
 
       setUomOptions(unitsData.map(u => ({ code: u.code, name: u.name })))
 
-      const fiscal = getFiscalConfig()
+      const fiscal = await getInventoryFiscalConfig()
 
       setAllTemplates(allData)
       setTemplate(itemData)
@@ -527,7 +529,7 @@ const InventoryDetailView: React.FC<Props> = ({ id }) => {
     )
   }
 
-  const financials = calculateFinancials(standardCost, basePrice, vatRate, fiscalEnabled)
+  const financials = calculateFinancials(standardCost, basePrice, vatRate, fiscalEnabled, bcvRate)
 
   const totalPhysical = variants.reduce((acc, v) => acc + Number(v.physicalStock || 0), 0)
   const totalReserved = variants.reduce((acc, v) => acc + Number(v.reservedStock || 0), 0)

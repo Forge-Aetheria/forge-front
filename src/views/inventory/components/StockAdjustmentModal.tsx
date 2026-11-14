@@ -1,5 +1,6 @@
 'use client'
 
+
 import React, { useState, useEffect } from 'react'
 
 import Dialog from '@mui/material/Dialog'
@@ -13,6 +14,8 @@ import MenuItem from '@mui/material/MenuItem'
 import Alert from '@mui/material/Alert'
 import CircularProgress from '@mui/material/CircularProgress'
 
+import { useBcvRate } from '@/hooks/useBcvRate'
+
 import CustomTextField from '@core/components/mui/TextField'
 
 import type {
@@ -20,7 +23,7 @@ import type {
   AdjustmentReason,
   StockAdjustmentRecord
 } from '@/types/inventoryTypes'
-import { applyStockAdjustment, getActiveBcvRate } from '@/services/inventoryService'
+import { applyStockAdjustment } from '@/services/inventoryService'
 import { stockAdjustmentFormSchema } from '../schemas/productFormSchema'
 
 interface Props {
@@ -48,7 +51,7 @@ const StockAdjustmentModal: React.FC<Props> = ({
   preselectedVariantId,
   onSuccess
 }) => {
-  const bcvRate = getActiveBcvRate()
+  const bcvRate = useBcvRate()
   const physicalTemplates = templates.filter(t => t.productType !== 'service')
 
   const [selectedProductId, setSelectedProductId] = useState('')

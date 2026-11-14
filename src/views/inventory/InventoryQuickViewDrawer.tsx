@@ -1,5 +1,6 @@
 'use client'
 
+
 // Next Imports
 import Link from 'next/link'
 
@@ -16,9 +17,11 @@ import TableBody from '@mui/material/TableBody'
 import TableRow from '@mui/material/TableRow'
 import TableCell from '@mui/material/TableCell'
 
+import { useBcvRate } from '@/hooks/useBcvRate'
+
 // Type Imports
 import type { ProductTemplate } from '@/types/inventoryTypes'
-import { calculateFinancials, getActiveBcvRate } from '@/services/inventoryService'
+import { calculateFinancials } from '@/services/inventoryService'
 
 type Props = {
   open: boolean
@@ -37,13 +40,14 @@ const InventoryQuickViewDrawer = ({
 }: Props) => {
   if (!template) return null
 
-  const bcvRate = getActiveBcvRate()
+  const bcvRate = useBcvRate()
 
   const financials = calculateFinancials(
     template.standardCost,
     template.basePrice,
     template.vatRate,
-    fiscalEnabled
+    fiscalEnabled,
+    bcvRate
   )
 
   const totalPhysicalStock = template.variants.reduce((acc, v) => acc + v.physicalStock, 0)
