@@ -1,12 +1,13 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
+
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import Button from '@mui/material/Button';
-import IconButton from '@mui/material/IconButton';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import Grid from '@mui/material/Grid';
@@ -20,9 +21,10 @@ import MenuItem from '@mui/material/MenuItem';
 import Snackbar from '@mui/material/Snackbar';
 import Alert from '@mui/material/Alert';
 import CircularProgress from '@mui/material/CircularProgress';
+
 import CustomTextField from '@core/components/mui/TextField';
 
-import {
+import type {
   BcvRate,
   ClientLookup,
   CurrencyCode,
@@ -32,9 +34,9 @@ import {
 } from '@/types/salesQuotesTypes';
 import { salesQuotesService } from '@/services/salesQuotesService';
 import { ClientAutocomplete } from './components/ClientAutocomplete';
-import { BcvRateBadge } from './components/BcvRateBadge';
 import { QuoteTotalsCard } from './components/QuoteTotalsCard';
-import { FormItemLine, QuoteItemRow } from './components/QuoteItemRow';
+import type { FormItemLine} from './components/QuoteItemRow';
+import { QuoteItemRow } from './components/QuoteItemRow';
 
 interface Props {
   initialQuote?: Quote;
@@ -49,7 +51,7 @@ export const QuoteMasterDetailForm: React.FC<Props> = ({
 
   // Configuración y Tasa BCV
   const [bcvRate, setBcvRate] = useState<BcvRate | null>(null);
-  const [flags, setFlags] = useState<SalesFeatureFlags>(salesQuotesService.getFeatureFlags());
+  const [flags] = useState<SalesFeatureFlags>(salesQuotesService.getFeatureFlags());
   const [products, setProducts] = useState<ProductLookup[]>([]);
   const [loadingInitial, setLoadingInitial] = useState(true);
 
@@ -59,6 +61,7 @@ export const QuoteMasterDetailForm: React.FC<Props> = ({
   const [vigenciaDias, setVigenciaDias] = useState<number>(initialQuote?.vigencia_dias || 15);
   const [aplicaIva, setAplicaIva] = useState<boolean>(initialQuote ? initialQuote.aplica_iva : true);
   const [observaciones, setObservaciones] = useState<string>(initialQuote?.observaciones || '');
+
   const [terminosCondiciones, setTerminosCondiciones] = useState<string>(
     initialQuote?.terminos_condiciones ||
       'Precios sujetos a la vigencia del documento. Forma de pago: Transferencia bancaria o divisas según tasa oficial BCV.'
@@ -80,12 +83,15 @@ export const QuoteMasterDetailForm: React.FC<Props> = ({
         stock_disponible: it.stock_disponible_al_momento ?? 999
       }));
     }
-    return [];
+
+    
+return [];
   });
 
   // Envío y Feedback
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitAction, setSubmitAction] = useState<'draft' | 'issue' | null>(null);
+  const [, setSubmitAction] = useState<'draft' | 'issue' | null>(null);
+
   const [toast, setToast] = useState<{
     open: boolean;
     message: string;
@@ -104,12 +110,14 @@ export const QuoteMasterDetailForm: React.FC<Props> = ({
           salesQuotesService.getActiveBcvRate(),
           salesQuotesService.getProducts()
         ]);
+
         setBcvRate(rate);
         setProducts(prods);
 
         // Si es nueva cotización y no hay ítems, agregar una línea vacía inicial
         if (mode === 'create' && items.length === 0 && prods.length > 0) {
           const first = prods[0];
+
           setItems([
             {
               id: `item-${Date.now()}`,
@@ -135,19 +143,23 @@ export const QuoteMasterDetailForm: React.FC<Props> = ({
         setLoadingInitial(false);
       }
     };
+
     init();
   }, [mode]);
 
   // Recálculo reactivo de Totales
   const totals = useMemo(() => {
     const tasa = bcvRate?.tasa || 36.50;
-    return salesQuotesService.calculateTotals(items, tasa, flags, aplicaIva);
+
+    
+return salesQuotesService.calculateTotals(items, tasa, flags, aplicaIva);
   }, [items, bcvRate, flags, aplicaIva]);
 
   // Manejadores de Líneas
   const handleAddItem = () => {
     if (products.length === 0) return;
     const prod = products[0];
+
     setItems(prev => [
       ...prev,
       {
@@ -168,8 +180,10 @@ export const QuoteMasterDetailForm: React.FC<Props> = ({
   const handleUpdateItem = (index: number, updated: FormItemLine) => {
     setItems(prev => {
       const copy = [...prev];
+
       copy[index] = updated;
-      return copy;
+      
+return copy;
     });
   };
 
@@ -186,19 +200,22 @@ export const QuoteMasterDetailForm: React.FC<Props> = ({
         message: 'Debe seleccionar un cliente antes de guardar o emitir.',
         severity: 'warning'
       });
-      return;
+      
+return;
     }
 
     // 2. Validar Formato RIF si flag VE activo
     if (flags.SENIAT_FORMAT_VALIDATION) {
       const rifRegex = /^[VEJG]-\d{7,9}(-\d)?$/i;
+
       if (!rifRegex.test(client.identificacion)) {
         setToast({
           open: true,
           message: `El cliente seleccionado posee un formato de identificación inválido (${client.identificacion}). Se requiere formato venezolano (ej: J-12345678-9).`,
           severity: 'error'
         });
-        return;
+        
+return;
       }
     }
 
@@ -209,7 +226,8 @@ export const QuoteMasterDetailForm: React.FC<Props> = ({
         message: 'Debe agregar al menos una línea de producto o servicio antes de continuar.',
         severity: 'warning'
       });
-      return;
+      
+return;
     }
 
     // 4. Validar Stock Físico si es emisión directa
@@ -221,7 +239,8 @@ export const QuoteMasterDetailForm: React.FC<Props> = ({
             message: `No se puede emitir el presupuesto: "${it.producto_nombre}" supera el stock disponible en almacén (${it.stock_disponible}).`,
             severity: 'error'
           });
-          return;
+          
+return;
         }
       }
     }
@@ -248,6 +267,7 @@ export const QuoteMasterDetailForm: React.FC<Props> = ({
       };
 
       let result: Quote;
+
       if (mode === 'edit' && initialQuote) {
         result = await salesQuotesService.updateQuote(initialQuote.id, payload);
       } else {
@@ -488,7 +508,7 @@ export const QuoteMasterDetailForm: React.FC<Props> = ({
                       <TableRow>
                         <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
                           <span className="text-sm text-[#6B7280]">
-                            No hay ítems en la cotización. Haga clic en <strong>"Agregar Ítem"</strong> para comenzar.
+                            No hay ítems en la cotización. Haga clic en <strong>&quot;Agregar Ítem&quot;</strong> para comenzar.
                           </span>
                         </TableCell>
                       </TableRow>
@@ -573,10 +593,10 @@ export const QuoteMasterDetailForm: React.FC<Props> = ({
               <i className="tabler-shield-check text-[#6C5CE7]" /> Protocolo Comercial Foundly
             </span>
             <p>
-              • Al presionar <strong>"Guardar Borrador"</strong> se genera un identificador provisional y podrá seguir editando las líneas en cualquier momento.
+              • Al presionar <strong>&quot;Guardar Borrador&quot;</strong> se genera un identificador provisional y podrá seguir editando las líneas en cualquier momento.
             </p>
             <p>
-              • Al presionar <strong>"Emitir Presupuesto"</strong> se asigna un correlativo formal inmutable format <code>COT-2026-XXXX</code>, congelando los precios pactados.
+              • Al presionar <strong>&quot;Emitir Presupuesto&quot;</strong> se asigna un correlativo formal inmutable format <code>COT-2026-XXXX</code>, congelando los precios pactados.
             </p>
           </div>
         </Grid>

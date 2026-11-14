@@ -1,4 +1,4 @@
-import { TerceroEntity } from '@/types/contactsTypes';
+import type { TerceroEntity } from '@/types/contactsTypes';
 
 export const initialMockTerceros: TerceroEntity[] = [
   {
@@ -81,6 +81,7 @@ export const initialMockTerceros: TerceroEntity[] = [
         updated_at: new Date().toISOString()
       }
     ],
+
     // Contabilidad y Cuentas Contables (SPEC-008)
     cuenta_cxc_id: 'acc-110201',
     cuenta_cxc_nombre: 'Cuentas por Cobrar Clientes Nacionales (CxC)',

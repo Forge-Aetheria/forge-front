@@ -1,14 +1,17 @@
 'use client';
 
 import React from 'react';
+
 import Link from 'next/link';
+
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
 import Divider from '@mui/material/Divider';
-import { Quote } from '@/types/salesQuotesTypes';
+
+import type { Quote } from '@/types/salesQuotesTypes';
 import { QuoteStatusChip } from './QuoteStatusChip';
 
 interface Props {

@@ -15,7 +15,7 @@ import TableRow from '@mui/material/TableRow'
 import TableCell from '@mui/material/TableCell'
 import TablePagination from '@mui/material/TablePagination'
 import Typography from '@mui/material/Typography'
-import CustomChip from '@core/components/mui/Chip'
+
 import IconButton from '@mui/material/IconButton'
 import Tooltip from '@mui/material/Tooltip'
 import Checkbox from '@mui/material/Checkbox'
@@ -23,6 +23,8 @@ import Button from '@mui/material/Button'
 import Menu from '@mui/material/Menu'
 import MenuItem from '@mui/material/MenuItem'
 import Divider from '@mui/material/Divider'
+
+import CustomChip from '@core/components/mui/Chip'
 
 // Type Imports
 import type { ProductTemplate, InventoryFilterState } from '@/types/inventoryTypes'
@@ -58,6 +60,7 @@ const InventoryTable = ({
 
   // Selección múltiple y control de columnas
   const [selectedIds, setSelectedIds] = useState<string[]>([])
+
   const [visibleColumns, setVisibleColumns] = useState<{
     tipo: boolean
     variantes: boolean
@@ -73,6 +76,7 @@ const InventoryTable = ({
     iva: true,
     estado: true
   })
+
   const [columnAnchorEl, setColumnAnchorEl] = useState<HTMLElement | null>(null)
   const [batchMenuAnchorEl, setBatchMenuAnchorEl] = useState<HTMLElement | null>(null)
 
@@ -137,12 +141,14 @@ const InventoryTable = ({
         const totalAvailable = template.variants.reduce((acc, v) => acc + v.availableStock, 0)
 
         if (filters.stockStatus === 'OUT_OF_STOCK' && totalAvailable > 0) return false
+
         if (
           filters.stockStatus === 'LOW_STOCK' &&
           (totalAvailable === 0 || !template.minStock || totalAvailable > template.minStock)
         ) {
           return false
         }
+
         if (
           filters.stockStatus === 'IN_STOCK' &&
           (totalAvailable === 0 || (template.minStock && totalAvailable <= template.minStock))
@@ -183,6 +189,7 @@ const InventoryTable = ({
   const handleBatchCopySkus = () => {
     const selected = initialTemplates.filter(t => selectedIds.includes(t.id))
     const codes = selected.map(t => t.defaultCode).join(', ')
+
     navigator.clipboard.writeText(codes)
     setBatchMenuAnchorEl(null)
   }
@@ -425,10 +432,12 @@ const InventoryTable = ({
                 const totalAvailable = template.variants.reduce((acc, v) => acc + v.availableStock, 0)
                 const isService = template.productType === 'service'
                 const isOutOfStock = !isService && totalAvailable === 0
+
                 const isLowStock =
                   !isService &&
                   !isOutOfStock &&
                   Boolean(template.minStock && totalAvailable <= template.minStock)
+
                 const isSelected = selectedIds.includes(template.id)
 
                 return (

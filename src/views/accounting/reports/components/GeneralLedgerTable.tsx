@@ -1,6 +1,9 @@
 'use client'
 
 import React from 'react'
+
+import Link from 'next/link'
+
 import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
 import Table from '@mui/material/Table'
@@ -10,7 +13,6 @@ import TableContainer from '@mui/material/TableContainer'
 import TableHead from '@mui/material/TableHead'
 import TableRow from '@mui/material/TableRow'
 import Chip from '@mui/material/Chip'
-import Link from 'next/link'
 
 import type { JournalEntry, CurrencyViewMode } from '@/types/accountingTypes'
 

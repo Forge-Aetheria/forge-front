@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+
 import BankAccountDetailView from '@/views/contacts/BankAccountDetailView'
 
 type Props = {

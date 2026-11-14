@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useMemo } from 'react'
+
 import Dialog from '@mui/material/Dialog'
 import DialogTitle from '@mui/material/DialogTitle'
 import DialogContent from '@mui/material/DialogContent'
@@ -23,7 +24,7 @@ import Alert from '@mui/material/Alert'
 import CircularProgress from '@mui/material/CircularProgress'
 
 import { accountingService } from '@/services/accountingService'
-import type { Account, Journal, JournalEntry, JournalItem } from '@/types/accountingTypes'
+import type { Account, Journal, JournalEntry } from '@/types/accountingTypes'
 import { DoubleEntryBalanceBar } from './components/DoubleEntryBalanceBar'
 
 interface Props {
@@ -102,6 +103,7 @@ export const JournalEntryFormModal: React.FC<Props> = ({
         { id: '2', cuentaId: accounts[1]?.id || '', etiqueta: '', contactoNombre: '', debeUsd: 0, haberUsd: 0 }
       ])
     }
+
     setErrorMsg(null)
   }, [currentEntry, accounts, journals, defaultTasaBcv, open])
 
@@ -201,6 +203,7 @@ export const JournalEntryFormModal: React.FC<Props> = ({
       const updated = await accountingService.resetJournalEntryToDraft(currentEntry.id)
 
       setCurrentEntry(updated)
+
       if (onSuccess) {
         onSuccess(updated, `Asiento ${updated.numeroAsiento} restablecido a Borrador.`)
       }

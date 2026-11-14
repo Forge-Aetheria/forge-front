@@ -1,9 +1,11 @@
 'use client'
 
 import React from 'react'
+
 import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
 import Button from '@mui/material/Button'
+
 import type { CurrencyViewMode } from '@/types/accountingTypes'
 import { ReportCurrencyToggle } from './ReportCurrencyToggle'
 

@@ -1,8 +1,10 @@
 'use client';
 
 import React from 'react';
+
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+
 import Drawer from '@mui/material/Drawer';
 import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
@@ -10,7 +12,8 @@ import Divider from '@mui/material/Divider';
 import Button from '@mui/material/Button';
 import Tooltip from '@mui/material/Tooltip';
 import Chip from '@mui/material/Chip';
-import { Quote } from '@/types/salesQuotesTypes';
+
+import type { Quote } from '@/types/salesQuotesTypes';
 import { QuoteStatusChip } from './QuoteStatusChip';
 import { BcvRateBadge } from './BcvRateBadge';
 

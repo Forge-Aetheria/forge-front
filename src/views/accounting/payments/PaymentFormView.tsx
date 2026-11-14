@@ -1,6 +1,7 @@
 'use client'
 
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useMemo } from 'react'
+
 import Box from '@mui/material/Box'
 import Card from '@mui/material/Card'
 import Typography from '@mui/material/Typography'
@@ -9,7 +10,7 @@ import IconButton from '@mui/material/IconButton'
 import Tooltip from '@mui/material/Tooltip'
 import TextField from '@mui/material/TextField'
 import MenuItem from '@mui/material/MenuItem'
-import CustomChip from '@core/components/mui/Chip'
+
 import Grid from '@mui/material/Grid'
 import Autocomplete from '@mui/material/Autocomplete'
 import FormControlLabel from '@mui/material/FormControlLabel'
@@ -22,6 +23,8 @@ import TableCell from '@mui/material/TableCell'
 import TableContainer from '@mui/material/TableContainer'
 import TableHead from '@mui/material/TableHead'
 import TableRow from '@mui/material/TableRow'
+
+import CustomChip from '@core/components/mui/Chip'
 
 import { accountingService } from '@/services/accountingService'
 import type {
@@ -61,28 +64,30 @@ export const PaymentFormView: React.FC<Props> = ({
   initialType = 'CUSTOMER',
   journals,
   invoices,
-  accounts,
   defaultTasaBcv = 54.00,
   onBack,
   onSuccess
 }) => {
   const [currentPayment, setCurrentPayment] = useState<Payment | null>(payment || null)
   const isReadOnly = Boolean(currentPayment)
-  const isCustomer = (currentPayment ? currentPayment.tipo : initialType) === 'CUSTOMER'
 
   // Filtrar diarios que sean de Banco o Caja
   const bankJournals = useMemo(() => {
     const filtered = journals.filter(j => j.tipo.startsWith('BANCO') || j.tipo === 'CAJA')
-    return filtered.length > 0 ? filtered : journals
+
+    
+return filtered.length > 0 ? filtered : journals
   }, [journals])
 
   // Estados del Formulario
   const [tipo, setTipo] = useState<'CUSTOMER' | 'SUPPLIER'>(payment?.tipo || initialType)
   const [contactoId, setContactoId] = useState(payment?.contactoId || '')
   const [contactoNombre, setContactoNombre] = useState(payment?.contactoNombre || '')
+
   const [facturaId, setFacturaId] = useState<string>(
     payment?.facturasConciliadas?.[0]?.facturaId || ''
   )
+
   const [diarioId, setDiarioId] = useState(payment?.diarioId || bankJournals[0]?.id || '')
   const [moneda, setMoneda] = useState<CurrencyCode>(payment?.moneda || 'USD')
   const [monto, setMonto] = useState<number | string>(payment?.monto ?? '')
@@ -100,17 +105,22 @@ export const PaymentFormView: React.FC<Props> = ({
     return invoices.filter(inv => {
       const matchType = inv.tipo === tipo
       const matchPending = inv.saldoPendienteUsd > 0.01
+
       if (!matchType || !matchPending) return false
+
       if (contactoId) {
         return inv.contactoId === contactoId
       }
-      return true
+
+      
+return true
     })
   }, [invoices, tipo, contactoId])
 
   const selectedInvoice = useMemo(() => {
     if (!facturaId) return null
-    return invoices.find(i => i.id === facturaId) || null
+    
+return invoices.find(i => i.id === facturaId) || null
   }, [invoices, facturaId])
 
   // Al seleccionar una factura, auto-rellenar contacto y monto
@@ -119,6 +129,7 @@ export const PaymentFormView: React.FC<Props> = ({
       setFacturaId(inv.id)
       setContactoId(inv.contactoId)
       setContactoNombre(inv.contactoNombre)
+
       if (moneda === 'USD') {
         setMonto(inv.saldoPendienteUsd)
       } else {
@@ -140,9 +151,11 @@ export const PaymentFormView: React.FC<Props> = ({
 
   // Diferencial Cambiario proyectado si se paga en VES
   let difCambiarioVes = 0
+
   if (selectedInvoice && moneda === 'VES' && numericMonto > 0) {
     const costoHistoricoVes = montoUsd * selectedInvoice.tasaBcv
     const costoActualVes = numericMonto
+
     difCambiarioVes = Number(
       tipo === 'CUSTOMER'
         ? (costoActualVes - costoHistoricoVes).toFixed(2)
@@ -155,17 +168,20 @@ export const PaymentFormView: React.FC<Props> = ({
 
     if (!diarioId) {
       setErrorMsg('Por favor selecciona un diario de Banco o Caja receptor/emisor.')
-      return
+      
+return
     }
 
     if (!contactoNombre && !contactoId) {
       setErrorMsg('Por favor indica el cliente o proveedor de la transacción.')
-      return
+      
+return
     }
 
     if (numericMonto <= 0) {
       setErrorMsg('El monto del pago debe ser mayor a 0.')
-      return
+      
+return
     }
 
     try {
@@ -184,11 +200,13 @@ export const PaymentFormView: React.FC<Props> = ({
           referenciaBancaria: referenciaBancaria.trim() || undefined,
           fecha
         })
+
         setCurrentPayment(res.payment)
         onSuccess(`Pago ${res.payment.numeroPago} conciliado y contabilizado exitosamente en asiento ${res.entry.numeroAsiento}.`, res.payment)
       } else {
         // Pago libre / anticipo de cliente o proveedor
         const finalContact = CONTACT_OPTIONS.find(c => c.id === contactoId)
+
         const res = await accountingService.createPayment({
           contactoId: contactoId || (tipo === 'SUPPLIER' ? 'ct-prov-gen' : 'ct-cli-gen'),
           contactoNombre: finalContact ? finalContact.nombre : (contactoNombre || 'Tercero General'),
@@ -200,6 +218,7 @@ export const PaymentFormView: React.FC<Props> = ({
           aplicaIgtf,
           referenciaBancaria: referenciaBancaria.trim() || undefined
         })
+
         setCurrentPayment(res.payment)
         onSuccess(`Pago ${res.payment.numeroPago} registrado y contabilizado en asiento ${res.entry.numeroAsiento}.`, res.payment)
       }
@@ -357,6 +376,7 @@ export const PaymentFormView: React.FC<Props> = ({
                 value={tipo}
                 onChange={e => {
                   const val = e.target.value as 'CUSTOMER' | 'SUPPLIER'
+
                   setTipo(val)
                   setContactoId('')
                   setContactoNombre('')
@@ -399,8 +419,10 @@ export const PaymentFormView: React.FC<Props> = ({
               isOptionEqualToValue={(opt, val) => opt.id === val.id}
               filterOptions={(options, state) => {
                 const q = state.inputValue.toLowerCase().trim()
+
                 if (!q) return options
-                return options.filter(c =>
+                
+return options.filter(c =>
                   c.nombre.toLowerCase().includes(q) || c.rif.toLowerCase().includes(q)
                 )
               }}
@@ -453,8 +475,10 @@ export const PaymentFormView: React.FC<Props> = ({
               isOptionEqualToValue={(opt, val) => opt.id === val.id}
               filterOptions={(options, state) => {
                 const q = state.inputValue.toLowerCase().trim()
+
                 if (!q) return options
-                return options.filter(
+                
+return options.filter(
                   i =>
                     i.numeroFactura.toLowerCase().includes(q) ||
                     i.contactoNombre.toLowerCase().includes(q)

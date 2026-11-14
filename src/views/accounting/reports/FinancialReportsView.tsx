@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+
 import Card from '@mui/material/Card'
 import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
@@ -38,6 +39,7 @@ export const FinancialReportsView: React.FC = () => {
   const loadReportData = async () => {
     try {
       setLoading(true)
+
       const [bs, pl, entList, accList] = await Promise.all([
         accountingService.getBalanceSheet(tasaBcv, targetMoves),
         accountingService.getProfitAndLoss(tasaBcv, targetMoves),
@@ -60,6 +62,7 @@ export const FinancialReportsView: React.FC = () => {
 
   const handleExport = (type: 'PDF' | 'EXCEL') => {
     setToastMessage(`Generando reporte en formato ${type}... (Listo para impresión/descarga)`)
+
     if (type === 'PDF') {
       window.print()
     }

@@ -2,6 +2,7 @@
 
 // React Imports
 import { useEffect, type ReactNode } from 'react'
+
 import { useRouter, usePathname } from 'next/navigation'
 
 // MUI Imports

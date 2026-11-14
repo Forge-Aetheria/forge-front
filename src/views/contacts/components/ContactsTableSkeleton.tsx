@@ -1,4 +1,5 @@
 import React from 'react';
+
 import Skeleton from '@mui/material/Skeleton';
 
 export const ContactsTableSkeleton: React.FC = () => {

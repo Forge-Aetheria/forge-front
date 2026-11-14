@@ -1,7 +1,9 @@
 'use client';
 
 import React from 'react';
+
 import Link from 'next/link';
+
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
@@ -11,10 +13,12 @@ import TableRow from '@mui/material/TableRow';
 import IconButton from '@mui/material/IconButton';
 import Avatar from '@mui/material/Avatar';
 import Tooltip from '@mui/material/Tooltip';
-import CustomChip from '@core/components/mui/Chip';
+
 import Checkbox from '@mui/material/Checkbox';
 import Typography from '@mui/material/Typography';
-import {
+
+import CustomChip from '@core/components/mui/Chip';
+import type {
   TerceroEntity,
   ContactVisibleColumns,
   ContactSortKey,
@@ -293,7 +297,9 @@ export const ContactsTable: React.FC<Props> = ({
                   <TableCell sx={{ whiteSpace: 'nowrap' }}>
                     {(() => {
                       const fullLocation = [t.ciudad, t.estado, t.pais || 'Venezuela'].filter(Boolean).join(', ');
-                      return (
+
+                      
+return (
                         <Tooltip title={fullLocation} arrow enterDelay={400} placement="top-start">
                           <div className="flex items-center gap-1.5 text-xs text-[#1E1B2E] max-w-[170px]">
                             <i className="tabler-map-pin text-sm text-[#6C5CE7] shrink-0" />

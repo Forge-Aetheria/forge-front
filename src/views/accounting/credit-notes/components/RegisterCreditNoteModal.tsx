@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useMemo } from 'react'
+
 import Dialog from '@mui/material/Dialog'
 import DialogTitle from '@mui/material/DialogTitle'
 import DialogContent from '@mui/material/DialogContent'
@@ -108,8 +109,10 @@ export const RegisterCreditNoteModal: React.FC<Props> = ({
     const loadContacts = async () => {
       try {
         const terceros = await contactsService.getTerceros()
+
         if (terceros && terceros.length > 0) {
           const mapped: ContactOption[] = []
+
           terceros.forEach(t => {
             if (t.is_cliente) {
               mapped.push({
@@ -120,6 +123,7 @@ export const RegisterCreditNoteModal: React.FC<Props> = ({
                 cuentaCxcId: t.cuenta_cxc_id || 'acc-110201'
               })
             }
+
             if (t.is_proveedor) {
               mapped.push({
                 id: t.id,
@@ -143,6 +147,7 @@ export const RegisterCreditNoteModal: React.FC<Props> = ({
   // Select first contact of matching type when tipo changes
   useEffect(() => {
     const matchingContacts = contacts.filter(c => c.tipo === tipo)
+
     if (matchingContacts.length > 0) {
       setSelectedContact(matchingContacts[0])
     } else {
@@ -156,11 +161,13 @@ export const RegisterCreditNoteModal: React.FC<Props> = ({
       if (!selectedContact?.id) {
         setAvailableInvoices([])
         setSelectedInvoiceId('NONE')
-        return
+        
+return
       }
 
       try {
         const allInvoices = await accountingService.getInvoices()
+
         const contactInvoices = allInvoices.filter(
           i => i.contactoId === selectedContact.id &&
                i.tipo === tipo &&
@@ -168,6 +175,7 @@ export const RegisterCreditNoteModal: React.FC<Props> = ({
                i.estado !== 'CANCELED' &&
                i.estado !== 'REVERSED'
         )
+
         setAvailableInvoices(contactInvoices)
       } catch {
         setAvailableInvoices([])
@@ -180,7 +188,8 @@ export const RegisterCreditNoteModal: React.FC<Props> = ({
   // Target invoice details
   const targetInvoice = useMemo(() => {
     if (selectedInvoiceId === 'NONE') return null
-    return availableInvoices.find(i => i.id === selectedInvoiceId) || null
+    
+return availableInvoices.find(i => i.id === selectedInvoiceId) || null
   }, [selectedInvoiceId, availableInvoices])
 
   // When target invoice changes, auto-fill amounts
@@ -239,12 +248,14 @@ export const RegisterCreditNoteModal: React.FC<Props> = ({
   const handleConfirm = async () => {
     if (!selectedContact) {
       setErrorMsg('Debes seleccionar un contacto.')
-      return
+      
+return
     }
 
     if (calculation.totalUsd <= 0) {
       setErrorMsg('El monto total de la nota de crédito debe ser mayor a 0.')
-      return
+      
+return
     }
 
     try {

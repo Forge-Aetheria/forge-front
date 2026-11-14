@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+
 import Drawer from '@mui/material/Drawer'
 import Typography from '@mui/material/Typography'
 import IconButton from '@mui/material/IconButton'
@@ -8,10 +9,8 @@ import TextField from '@mui/material/TextField'
 import MenuItem from '@mui/material/MenuItem'
 import Button from '@mui/material/Button'
 import Switch from '@mui/material/Switch'
-import FormControlLabel from '@mui/material/FormControlLabel'
 import Alert from '@mui/material/Alert'
 import CircularProgress from '@mui/material/CircularProgress'
-import Chip from '@mui/material/Chip'
 
 import { accountingService } from '@/services/accountingService'
 import type { Journal, AccountingInvoice, CurrencyCode, PaymentMethod } from '@/types/accountingTypes'

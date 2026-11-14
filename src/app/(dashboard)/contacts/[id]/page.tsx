@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+
 import ContactDetailView from '@/views/contacts/ContactDetailView';
 
 type Props = {

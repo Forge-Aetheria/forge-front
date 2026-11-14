@@ -1,14 +1,17 @@
 'use client'
 
 import React from 'react'
+
 import Link from 'next/link'
+
 import Card from '@mui/material/Card'
 import CardContent from '@mui/material/CardContent'
 import Typography from '@mui/material/Typography'
 import IconButton from '@mui/material/IconButton'
 import Button from '@mui/material/Button'
 import Divider from '@mui/material/Divider'
-import { PurchaseQuote } from '@/types/purchasesTypes'
+
+import type { PurchaseQuote } from '@/types/purchasesTypes'
 import { PurchaseStatusChip } from './PurchaseStatusChip'
 
 interface Props {
@@ -49,7 +52,9 @@ export const PurchasesMobileList: React.FC<Props> = ({
     <div className='flex flex-col gap-3'>
       {quotes.map(quote => {
         const displayCorrelativo = quote.correlativo_orden_compra || quote.correlativo
-        return (
+
+        
+return (
           <Card
             key={quote.id}
             onClick={() => onSelectQuote(quote)}

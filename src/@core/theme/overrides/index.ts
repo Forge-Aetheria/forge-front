@@ -51,7 +51,7 @@ const overrides = (skin: Skin) => {
     breadcrumbs,
     button,
     buttonGroup,
-    card(skin),
+    card(),
     Checkbox,
     chip,
     dialog(skin),

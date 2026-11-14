@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
+
 import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
 import Table from '@mui/material/Table'
@@ -24,18 +25,6 @@ export const BalanceSheetTable: React.FC<Props> = ({ rows, currencyMode }) => {
 
   const toggleCollapse = (key: string) => {
     setCollapsedKeys(prev => ({ ...prev, [key]: !prev[key] }))
-  }
-
-  const formatAmount = (usd: number, ves: number) => {
-    if (currencyMode === 'USD') {
-      return `$${usd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-    }
-
-    if (currencyMode === 'VES') {
-      return `${ves.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Bs.`
-    }
-
-    return null
   }
 
   // Check Balance Sheet Equation: Activos = Pasivos + Patrimonio

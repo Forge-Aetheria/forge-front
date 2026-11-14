@@ -1,14 +1,16 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
-import CustomChip from '@core/components/mui/Chip';
+
 import Avatar from '@mui/material/Avatar';
 import Divider from '@mui/material/Divider';
 import Grid from '@mui/material/Grid';
@@ -32,10 +34,11 @@ import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Switch from '@mui/material/Switch';
 import Autocomplete from '@mui/material/Autocomplete';
-import Box from '@mui/material/Box';
+
+import CustomChip from '@core/components/mui/Chip';
 import CustomTextField from '@core/components/mui/TextField';
 
-import {
+import type {
   TerceroEntity,
   EntityType,
   EntityOrigin,
@@ -151,11 +154,13 @@ export const ContactDetailView: React.FC<Props> = ({ id }) => {
       setLoading(false);
       setIsCliente(true);
       setCuentasBancarias([]);
-      return;
+      
+return;
     }
 
     try {
       setLoading(true);
+
       const [current, list, accList, contactConfigs, bankList, allBanks] = await Promise.all([
         contactsService.getTerceroById(id),
         contactsService.getTerceros(),
@@ -198,11 +203,13 @@ export const ContactDetailView: React.FC<Props> = ({ id }) => {
 
         const cxcId = current.cuenta_cxc_id || existingConfig?.cuentaCxcId || 'acc-110201';
         const cxcAcc = accList.find(a => a.id === cxcId);
+
         setCuentaCxcId(cxcId);
         setCuentaCxcNombre(current.cuenta_cxc_nombre || existingConfig?.cuentaCxcNombre || cxcAcc?.nombre || 'Cuentas por Cobrar Clientes Nacionales (CxC)');
 
         const cxpId = current.cuenta_cxp_id || existingConfig?.cuentaCxpId || 'acc-210101';
         const cxpAcc = accList.find(a => a.id === cxpId);
+
         setCuentaCxpId(cxpId);
         setCuentaCxpNombre(current.cuenta_cxp_nombre || existingConfig?.cuentaCxpNombre || cxpAcc?.nombre || 'Cuentas por Pagar Proveedores Nacionales (CxP)');
 
@@ -211,8 +218,9 @@ export const ContactDetailView: React.FC<Props> = ({ id }) => {
         setEsContribuyenteEspecial(current.es_contribuyente_especial ?? false);
         setPorcentajeRetencionIva(current.porcentaje_retencion_iva ?? 75);
       }
+
       setAllContacts(list);
-    } catch (err: any) {
+    } catch {
       setToast({ open: true, message: 'Error al cargar el contacto', severity: 'error' });
     } finally {
       setLoading(false);
@@ -227,6 +235,7 @@ export const ContactDetailView: React.FC<Props> = ({ id }) => {
   const currentIndex = allContacts.findIndex(c => c.id === id);
   const totalContacts = allContacts.length;
   const prevContact = currentIndex > 0 ? allContacts[currentIndex - 1] : null;
+
   const nextContact =
     currentIndex >= 0 && currentIndex < allContacts.length - 1 ? allContacts[currentIndex + 1] : null;
 
@@ -249,6 +258,7 @@ export const ContactDetailView: React.FC<Props> = ({ id }) => {
 
   const handleDeleteBankAccount = async (accId: string, bancoName: string) => {
     if (!confirm(`¿Estás seguro de eliminar la cuenta bancaria de ${bancoName}?`)) return;
+
     try {
       await bankAccountsService.deleteBankAccount(accId);
       setBankAccounts(prev => prev.filter(a => a.id !== accId));
@@ -262,6 +272,7 @@ export const ContactDetailView: React.FC<Props> = ({ id }) => {
     try {
       await bankAccountsService.setDefaultBankAccount(acc.id, id, false);
       const refreshed = await bankAccountsService.getContactBankAccounts(id);
+
       setBankAccounts(refreshed);
       setToast({ open: true, message: 'Cuenta establecida como principal', severity: 'success' });
     } catch (err: any) {
@@ -272,6 +283,7 @@ export const ContactDetailView: React.FC<Props> = ({ id }) => {
   const handleBankAccountSaved = async (saved: BankAccount) => {
     const refreshed = await bankAccountsService.getContactBankAccounts(id);
     const allRefreshed = await bankAccountsService.getBankAccounts();
+
     setBankAccounts(refreshed);
     setAllSystemBankAccounts(allRefreshed);
     setToast({ open: true, message: `Cuenta de ${saved.banco} guardada con éxito`, severity: 'success' });
@@ -279,6 +291,7 @@ export const ContactDetailView: React.FC<Props> = ({ id }) => {
 
   const handleLinkExistingAccount = async (bankAccountId: string) => {
     if (!bankAccountId || bankAccountId === 'NONE') return;
+
     try {
       await bankAccountsService.updateBankAccount(bankAccountId, {
         contacto_id: id,
@@ -289,6 +302,7 @@ export const ContactDetailView: React.FC<Props> = ({ id }) => {
       });
       const refreshed = await bankAccountsService.getContactBankAccounts(id);
       const allRefreshed = await bankAccountsService.getBankAccounts();
+
       setBankAccounts(refreshed);
       setAllSystemBankAccounts(allRefreshed);
       setToast({ open: true, message: 'Cuenta bancaria vinculada al contacto con éxito', severity: 'success' });
@@ -301,18 +315,24 @@ export const ContactDetailView: React.FC<Props> = ({ id }) => {
   const handleSaveChanges = async () => {
     if (!nombreRazonSocial.trim()) {
       setToast({ open: true, message: 'La razón social o nombre es obligatorio', severity: 'error' });
-      return;
+      
+return;
     }
+
     if (!identificacion.trim()) {
       setToast({ open: true, message: 'El RIF o C.I. es obligatorio', severity: 'error' });
-      return;
+      
+return;
     }
+
     if (!isCliente && !isProveedor && !isContacto) {
       setToast({ open: true, message: 'Debe marcar al menos una clasificación comercial', severity: 'error' });
-      return;
+      
+return;
     }
 
     setSaving(true);
+
     try {
       const payload: TerceroFormData = {
         codigo: codigo.trim() || undefined,
@@ -348,10 +368,12 @@ export const ContactDetailView: React.FC<Props> = ({ id }) => {
 
       if (isCreate) {
         const created = await contactsService.createTercero(payload);
+
         setToast({ open: true, message: '¡Contacto registrado exitosamente!', severity: 'success' });
         router.push(`/contacts/${created.id}`);
       } else {
         const updated = await contactsService.updateTercero(id, payload);
+
         setContact(updated);
 
         // Sincronizar en mapping contable para facturas y diarios
@@ -418,7 +440,8 @@ export const ContactDetailView: React.FC<Props> = ({ id }) => {
   const handleSavePerson = () => {
     if (!personNombre.trim() || !personTelefono.trim()) {
       alert('Nombre y teléfono son obligatorios');
-      return;
+      
+return;
     }
 
     if (editingPersonId) {
@@ -451,12 +474,16 @@ export const ContactDetailView: React.FC<Props> = ({ id }) => {
         rol: personRol,
         is_principal: personPrincipal
       };
+
       setContactosReferentes(prev => {
         let updated = [...prev, newPerson];
+
         if (personPrincipal) {
           updated = updated.map(p => (p.id !== newPerson.id ? { ...p, is_principal: false } : p));
         }
-        return updated;
+
+        
+return updated;
       });
     }
 
@@ -483,7 +510,8 @@ export const ContactDetailView: React.FC<Props> = ({ id }) => {
   const handleSaveAddress = () => {
     if (!addressDireccion.trim() || !addressCiudad.trim()) {
       alert('Dirección y ciudad son obligatorias');
-      return;
+      
+return;
     }
 
     if (editingAddressId) {
@@ -516,12 +544,16 @@ export const ContactDetailView: React.FC<Props> = ({ id }) => {
         codigo_postal: addressCP.trim() || undefined,
         is_predeterminada: addressPredeterminada
       };
+
       setDireccionesAdicionales(prev => {
         let updated = [...prev, newAddr];
+
         if (addressPredeterminada) {
           updated = updated.map(a => (a.id !== newAddr.id ? { ...a, is_predeterminada: false } : a));
         }
-        return updated;
+
+        
+return updated;
       });
     }
 
@@ -1069,6 +1101,7 @@ export const ContactDetailView: React.FC<Props> = ({ id }) => {
                         value={origen}
                         onChange={e => {
                           const val = e.target.value as EntityOrigin;
+
                           setOrigen(val);
                           if (val === 'NACIONAL' && (!pais || pais === '')) setPais('Venezuela');
                         }}
@@ -1578,8 +1611,10 @@ export const ContactDetailView: React.FC<Props> = ({ id }) => {
                             value={bankAccounts.find(a => a.is_predeterminada)?.id || (bankAccounts.length > 0 ? bankAccounts[0].id : 'NONE')}
                             onChange={e => {
                               const targetId = e.target.value;
+
                               if (targetId && targetId !== 'NONE') {
                                 const found = bankAccounts.find(a => a.id === targetId);
+
                                 if (found) handleSetDefaultBankAccount(found);
                               }
                             }}

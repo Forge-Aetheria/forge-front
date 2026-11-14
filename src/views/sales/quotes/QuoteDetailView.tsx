@@ -1,15 +1,16 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+
 import Card from '@mui/material/Card';
 import Box from '@mui/material/Box';
-import CardContent from '@mui/material/CardContent';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
-import CustomChip from '@core/components/mui/Chip';
+
 import Divider from '@mui/material/Divider';
 import Grid from '@mui/material/Grid';
 import Tooltip from '@mui/material/Tooltip';
@@ -29,7 +30,9 @@ import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 
-import { BcvRate, Quote, SalesFeatureFlags } from '@/types/salesQuotesTypes';
+import CustomChip from '@core/components/mui/Chip';
+
+import type { BcvRate, Quote, SalesFeatureFlags } from '@/types/salesQuotesTypes';
 import { salesQuotesService } from '@/services/salesQuotesService';
 import { getInventoryTemplates } from '@/services/inventoryService';
 import { settingsService } from '@/services/settingsService';
@@ -37,7 +40,6 @@ import type { ProductTemplate } from '@/types/inventoryTypes';
 import type { CommercialPoliciesSettings } from '@/types/settingsTypes';
 import { calculateBillableSalesLines, resolveEffectiveInvoicingPolicy } from '@/utils/policyEngine';
 import { QuoteStatusChip } from './components/QuoteStatusChip';
-import { BcvRateBadge } from './components/BcvRateBadge';
 import { QuoteTotalsCard } from './components/QuoteTotalsCard';
 import { CancelQuoteModal } from './components/CancelQuoteModal';
 
@@ -51,7 +53,7 @@ export const QuoteDetailView: React.FC<Props> = ({ id }) => {
   const [quote, setQuote] = useState<Quote | null>(null);
   const [allQuotes, setAllQuotes] = useState<Quote[]>([]);
   const [activeBcvRate, setActiveBcvRate] = useState<BcvRate | null>(null);
-  const [flags, setFlags] = useState<SalesFeatureFlags>(salesQuotesService.getFeatureFlags());
+  const [flags] = useState<SalesFeatureFlags>(salesQuotesService.getFeatureFlags());
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState(0);
 
@@ -65,6 +67,7 @@ export const QuoteDetailView: React.FC<Props> = ({ id }) => {
   // Interconexión y Motor de Políticas (SPEC-009)
   const [products, setProducts] = useState<ProductTemplate[]>([]);
   const [commercialPolicies, setCommercialPolicies] = useState<CommercialPoliciesSettings | null>(null);
+
   const [policyWarningModal, setPolicyWarningModal] = useState<{
     open: boolean;
     title: string;
@@ -86,6 +89,7 @@ export const QuoteDetailView: React.FC<Props> = ({ id }) => {
   const loadData = async () => {
     try {
       setLoading(true);
+
       const [currentQuote, quotesList, bcv, productTemplates, policies] = await Promise.all([
         salesQuotesService.getQuoteById(id),
         salesQuotesService.getQuotes(),
@@ -97,6 +101,7 @@ export const QuoteDetailView: React.FC<Props> = ({ id }) => {
       if (currentQuote) {
         setQuote(currentQuote);
       }
+
       setAllQuotes(quotesList);
       setActiveBcvRate(bcv);
       setProducts(productTemplates);
@@ -119,6 +124,7 @@ export const QuoteDetailView: React.FC<Props> = ({ id }) => {
 
     if (totalBillable <= 0) {
       const blockedLines = billableLines.filter(l => l.reason);
+
       setPolicyWarningModal({
         open: true,
         title: 'Facturación Bloqueada por Política de Entrega',
@@ -129,7 +135,8 @@ export const QuoteDetailView: React.FC<Props> = ({ id }) => {
             `• ${b.line.producto_nombre}: Pedidas: ${b.orderedQty}, Entregadas: ${b.deliveredQty}, Facturadas: ${b.alreadyBilledQty}. Motivo: ${b.reason}`
         )
       });
-      return;
+      
+return;
     }
 
     // Redirigir a Facturación con contexto de cotización
@@ -138,10 +145,12 @@ export const QuoteDetailView: React.FC<Props> = ({ id }) => {
 
   const handleGenerateDeliveryClick = async () => {
     if (!quote) return;
+
     try {
       setIsGeneratingDelivery(true);
       const res = await salesQuotesService.createDeliveryForQuote(quote.id);
       const reloaded = await salesQuotesService.getQuoteById(quote.id);
+
       if (reloaded) setQuote(reloaded);
       setToast({
         open: true,
@@ -171,6 +180,7 @@ export const QuoteDetailView: React.FC<Props> = ({ id }) => {
   const totalQuotes = allQuotes.length > 0 ? allQuotes.length : 1;
 
   const today = new Date().toISOString().split('T')[0];
+
   const isExpired = Boolean(
     quote &&
       ((quote.fecha_vencimiento < today && quote.estado === 'ISSUED') ||
@@ -186,9 +196,11 @@ export const QuoteDetailView: React.FC<Props> = ({ id }) => {
   // HU3: Aprobar Presupuesto
   const handleApprove = async () => {
     if (!quote) return;
+
     try {
       setIsApproving(true);
       const updated = await salesQuotesService.approveQuote(quote.id);
+
       setQuote(updated);
       setToast({
         open: true,
@@ -209,9 +221,11 @@ export const QuoteDetailView: React.FC<Props> = ({ id }) => {
   // HU3: Recalcular con Nueva Tasa BCV
   const handleRecalculateRate = async () => {
     if (!quote) return;
+
     try {
       setIsRecalculating(true);
       const updated = await salesQuotesService.recalculateQuoteBcvRate(quote.id);
+
       setQuote(updated);
       setToast({
         open: true,
@@ -233,6 +247,7 @@ export const QuoteDetailView: React.FC<Props> = ({ id }) => {
   const handleConfirmCancel = async (motivo: string) => {
     if (!quote) return;
     const updated = await salesQuotesService.cancelQuote(quote.id, motivo);
+
     setQuote(updated);
     setToast({
       open: true,
@@ -244,10 +259,12 @@ export const QuoteDetailView: React.FC<Props> = ({ id }) => {
   // HU5: Convertir a Orden de Venta
   const handleConvertToOrder = async () => {
     if (!quote) return;
+
     try {
       setIsConverting(true);
       const res = await salesQuotesService.convertQuoteToSalesOrder(quote.id);
       const reloaded = await salesQuotesService.getQuoteById(quote.id);
+
       if (reloaded) setQuote(reloaded);
       setToast({
         open: true,

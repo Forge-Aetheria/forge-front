@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useMemo } from 'react'
+
 import Card from '@mui/material/Card'
 import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
@@ -46,6 +47,7 @@ export const BatchPaymentsView: React.FC = () => {
   const loadData = async () => {
     try {
       setLoading(true)
+
       const [batchItems, jList] = await Promise.all([
         accountingService.getSupplierBatchItems(),
         accountingService.getJournals()

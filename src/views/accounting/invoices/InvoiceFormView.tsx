@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useMemo } from 'react'
+
 import Card from '@mui/material/Card'
 import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
@@ -11,7 +12,7 @@ import TextField from '@mui/material/TextField'
 import Autocomplete from '@mui/material/Autocomplete'
 import MenuItem from '@mui/material/MenuItem'
 import IconButton from '@mui/material/IconButton'
-import CustomChip from '@core/components/mui/Chip'
+
 import Table from '@mui/material/Table'
 import TableBody from '@mui/material/TableBody'
 import TableCell from '@mui/material/TableCell'
@@ -21,6 +22,8 @@ import TableRow from '@mui/material/TableRow'
 import Tooltip from '@mui/material/Tooltip'
 import Snackbar from '@mui/material/Snackbar'
 import Alert from '@mui/material/Alert'
+
+import CustomChip from '@core/components/mui/Chip'
 
 import { accountingService } from '@/services/accountingService'
 import { contactsService } from '@/services/contactsService'
@@ -59,6 +62,7 @@ const CATALOG_PRODUCT_SUGGESTIONS: ProductSuggestion[] = [
   { nombre: 'Licenciamiento Anual Plataforma SaaS', cuentaId: 'acc-410102', precioUnitario: 450.00, tipo: 'CUSTOMER' },
   { nombre: 'Servicio de Capacitación y Adiestramiento', cuentaId: 'acc-410101', precioUnitario: 150.00, tipo: 'CUSTOMER' },
   { nombre: 'Ingresos por Fletes y Envíos Nacionales', cuentaId: 'acc-410101', precioUnitario: 85.00, tipo: 'CUSTOMER' },
+
   // Proveedores / Compras (Gastos / Costos / Activos)
   { nombre: 'Servicio de Electricidad / Corpoelec Mes en Curso', cuentaId: 'acc-610103', precioUnitario: 150.00, tipo: 'SUPPLIER' },
   { nombre: 'Alquiler Mensual de Galpón / Oficinas Comerciales', cuentaId: 'acc-610102', precioUnitario: 650.00, tipo: 'SUPPLIER' },
@@ -115,13 +119,16 @@ export const InvoiceFormView: React.FC<Props> = ({
     currentInvoice?.estado === 'PAID' ||
     currentInvoice?.estado === 'CANCELED' ||
     currentInvoice?.estado === 'REVERSED'
+
   const [resettingDraft, setResettingDraft] = useState(false)
 
   const [activeTab, setActiveTab] = useState<number>(0)
   const [tipo, setTipo] = useState<InvoiceAccountingType>(currentInvoice?.tipo || initialType)
+
   const [tipoDocumento, setTipoDocumento] = useState<InvoiceDocumentType>(
     currentInvoice?.tipoDocumento || 'FACTURA'
   )
+
   const [moneda, setMoneda] = useState<CurrencyCode>(currentInvoice?.moneda || 'USD')
 
   const [numeroFactura, setNumeroFactura] = useState(
@@ -143,6 +150,7 @@ export const InvoiceFormView: React.FC<Props> = ({
 
         terceros.forEach(t => {
           const cfg = configs.find(c => c.contactoId === t.id || c.contactoRif === t.identificacion)
+
           if (t.is_cliente) {
             mapped.push({
               id: t.id,
@@ -152,6 +160,7 @@ export const InvoiceFormView: React.FC<Props> = ({
               cuentaCxcId: t.cuenta_cxc_id || cfg?.cuentaCxcId || 'acc-110201'
             })
           }
+
           if (t.is_proveedor) {
             mapped.push({
               id: t.id,
@@ -164,6 +173,7 @@ export const InvoiceFormView: React.FC<Props> = ({
         })
 
         const combined = [...mapped]
+
         CONTACT_OPTIONS.forEach(seed => {
           if (!combined.some(c => c.id === seed.id && c.tipo === seed.tipo)) {
             combined.push(seed)
@@ -181,11 +191,14 @@ export const InvoiceFormView: React.FC<Props> = ({
 
   const defaultContact =
     dynamicContacts.find(c => c.tipo === (currentInvoice?.tipo || initialType)) || dynamicContacts[0]
+
   const [contactoId, setContactoId] = useState(currentInvoice?.contactoId || defaultContact.id)
   const [tasaBcv, setTasaBcv] = useState<number>(currentInvoice?.tasaBcv || defaultTasaBcv)
+
   const [fechaEmision, setFechaEmision] = useState(
     currentInvoice?.fechaEmision || new Date().toISOString().split('T')[0]
   )
+
   const [fechaVencimiento, setFechaVencimiento] = useState(
     currentInvoice?.fechaVencimiento ||
       new Date(Date.now() + 15 * 86400000).toISOString().split('T')[0]
@@ -291,6 +304,7 @@ export const InvoiceFormView: React.FC<Props> = ({
             setMoneda(quote.moneda_base)
             setTasaBcv(quote.tasa_bcv.tasa)
             const originDoc = quote.correlativo_orden || quote.correlativo
+
             setDocumentoOrigen(originDoc)
             setOrigenQuoteId(quote.id)
 
@@ -300,6 +314,7 @@ export const InvoiceFormView: React.FC<Props> = ({
                 c.rif.toLowerCase() === quote.cliente.identificacion.toLowerCase() ||
                 c.id === quote.cliente.id
             )
+
             if (foundContact) {
               setContactoId(foundContact.id)
             } else {
@@ -310,6 +325,7 @@ export const InvoiceFormView: React.FC<Props> = ({
                 tipo: 'CUSTOMER' as const,
                 cuentaCxcId: 'acc-110201'
               }
+
               setDynamicContacts(prev => [newC, ...prev])
               setContactoId(newC.id)
             }
@@ -323,7 +339,9 @@ export const InvoiceFormView: React.FC<Props> = ({
                 const subtotal = b.billableQty * b.line.precio_unitario
                 const vatRate = !quote.aplica_iva || b.line.alicuota_iva === 'EXEMPT' || b.line.alicuota_iva === '0' ? 0 : 16
                 const iva = subtotal * (vatRate / 100)
-                return {
+
+                
+return {
                   id: `lin-${Date.now()}-${idx + 1}`,
                   productoOConcepto: b.line.producto_nombre,
                   cuentaContableId: 'acc-410101', // Ingresos por Ventas
@@ -336,6 +354,7 @@ export const InvoiceFormView: React.FC<Props> = ({
                   totalUsd: Number((subtotal + iva).toFixed(2))
                 }
               })
+
               setLineas(mappedLines)
             }
 
@@ -347,6 +366,7 @@ export const InvoiceFormView: React.FC<Props> = ({
           console.error('Error preloading quote context:', err)
         }
       }
+
       loadQuoteContext()
     } else if (createFromPurchaseId) {
       const loadPurchaseContext = async () => {
@@ -362,6 +382,7 @@ export const InvoiceFormView: React.FC<Props> = ({
             setMoneda(purchase.moneda_base)
             setTasaBcv(purchase.tasa_bcv.tasa)
             const originDoc = purchase.correlativo_orden_compra || purchase.correlativo
+
             setDocumentoOrigen(originDoc)
             setOrigenPurchaseId(purchase.id)
 
@@ -371,6 +392,7 @@ export const InvoiceFormView: React.FC<Props> = ({
                 c.rif.toLowerCase() === purchase.proveedor.identificacion.toLowerCase() ||
                 c.id === purchase.proveedor.id
             )
+
             if (foundContact) {
               setContactoId(foundContact.id)
             } else {
@@ -381,6 +403,7 @@ export const InvoiceFormView: React.FC<Props> = ({
                 tipo: 'SUPPLIER' as const,
                 cuentaCxpId: 'acc-210101'
               }
+
               setDynamicContacts(prev => [newC, ...prev])
               setContactoId(newC.id)
             }
@@ -394,7 +417,9 @@ export const InvoiceFormView: React.FC<Props> = ({
                 const subtotal = b.billableQty * b.line.costo_unitario
                 const vatRate = !purchase.aplica_iva_compras || b.line.alicuota_iva === 'EXEMPT' || b.line.alicuota_iva === '0' ? 0 : 16
                 const iva = subtotal * (vatRate / 100)
-                return {
+
+                
+return {
                   id: `lin-${Date.now()}-${idx + 1}`,
                   productoOConcepto: b.line.producto_nombre,
                   cuentaContableId: b.line.is_physical_stock ? 'acc-110301' : 'acc-510101',
@@ -407,6 +432,7 @@ export const InvoiceFormView: React.FC<Props> = ({
                   totalUsd: Number((subtotal + iva).toFixed(2))
                 }
               })
+
               setLineas(mappedLines)
             }
 
@@ -418,6 +444,7 @@ export const InvoiceFormView: React.FC<Props> = ({
           console.error('Error preloading purchase context:', err)
         }
       }
+
       loadPurchaseContext()
     }
   }, [createFromQuoteId, createFromPurchaseId, isEditing])
@@ -459,9 +486,11 @@ export const InvoiceFormView: React.FC<Props> = ({
       const updated = await accountingService.resetInvoiceToDraft(currentInvoice.id)
 
       setCurrentInvoice(updated)
+
       if (onInvoiceUpdated) {
         onInvoiceUpdated(updated)
       }
+
       setToastMessage(`Factura ${updated.numeroFactura} restablecida a Borrador. Ahora puedes modificarla libremente en esta pantalla.`)
     } catch (err: any) {
       setToastMessage(err?.message || 'Error al restablecer a borrador.')
@@ -552,12 +581,14 @@ export const InvoiceFormView: React.FC<Props> = ({
     currentInvoice?.saldoPendienteUsd !== undefined
       ? currentInvoice.saldoPendienteUsd
       : totalUsd
+
   const saldoPendienteVes =
     currentInvoice?.saldoPendienteVes !== undefined
       ? currentInvoice.saldoPendienteVes
       : totalVes
 
   const totalNcAplicadasUsd = (currentInvoice?.notasCreditoAplicadas || []).reduce((acc, nc) => acc + (nc.montoUsd || 0), 0)
+
   const isFullyReversed =
     currentInvoice?.estado === 'REVERSED' ||
     (totalNcAplicadasUsd >= (totalUsd - 0.01) && totalNcAplicadasUsd > 0)
@@ -565,6 +596,7 @@ export const InvoiceFormView: React.FC<Props> = ({
   const isFullyPaid =
     !isFullyReversed &&
     (currentInvoice?.estado === 'PAID' || (saldoPendienteUsd <= 0.01 && pagosAsociados.length > 0))
+
   const isPartiallyPaid = !isFullyReversed && pagosAsociados.length > 0 && !isFullyPaid
 
   // Save handler
@@ -626,9 +658,11 @@ export const InvoiceFormView: React.FC<Props> = ({
 
     setCurrentInvoice(newInvoice)
     onSaved(newInvoice)
+
     if (onInvoiceUpdated) {
       onInvoiceUpdated(newInvoice)
     }
+
     setToastMessage(
       postDirectly
         ? `Factura ${newInvoice.numeroFactura} confirmada y publicada con éxito.`
@@ -646,18 +680,22 @@ export const InvoiceFormView: React.FC<Props> = ({
   // Handle invoice cancellation success
   const handleCancelSuccess = (canceledInvoice: AccountingInvoice) => {
     setCurrentInvoice(canceledInvoice)
+
     if (onInvoiceUpdated) {
       onInvoiceUpdated(canceledInvoice)
     }
+
     setToastMessage(`Factura ${canceledInvoice.numeroFactura} anulada con éxito.`)
   }
 
   // Handle credit note creation success
   const handleCreditNoteSuccess = (creditNote: AccountingInvoice, updatedInvoice: AccountingInvoice) => {
     setCurrentInvoice(updatedInvoice)
+
     if (onInvoiceUpdated) {
       onInvoiceUpdated(updatedInvoice)
     }
+
     setToastMessage(`Nota de Crédito ${creditNote.numeroFactura} emitida y aplicada a la factura con éxito.`)
   }
 
@@ -956,8 +994,10 @@ export const InvoiceFormView: React.FC<Props> = ({
               isOptionEqualToValue={(opt, val) => opt.id === val.id}
               filterOptions={(options, state) => {
                 const q = state.inputValue.toLowerCase().trim()
+
                 if (!q) return options
-                return options.filter(c =>
+                
+return options.filter(c =>
                   c.nombre.toLowerCase().includes(q) || c.rif.toLowerCase().includes(q)
                 )
               }}
@@ -1230,16 +1270,19 @@ export const InvoiceFormView: React.FC<Props> = ({
                           }}
                           onChange={(_, newVal) => {
                             const chosenName = typeof newVal === 'string' ? newVal : newVal || ''
+
                             handleLineChange(idx, 'productoOConcepto', chosenName)
 
                             // Auto-completar precio y cuenta si coincide con catálogo predeterminado
                             const matchedProd = CATALOG_PRODUCT_SUGGESTIONS.find(
                               p => p.tipo === tipo && p.nombre.toLowerCase() === chosenName.toLowerCase()
                             )
+
                             if (matchedProd) {
                               if (matchedProd.precioUnitario && !line.precioUnitarioUsd) {
                                 handleLineChange(idx, 'precioUnitarioUsd', matchedProd.precioUnitario)
                               }
+
                               if (matchedProd.cuentaId && eligibleAccounts.some(a => a.id === matchedProd.cuentaId)) {
                                 handleLineChange(idx, 'cuentaContableId', matchedProd.cuentaId)
                               }
@@ -1277,8 +1320,10 @@ export const InvoiceFormView: React.FC<Props> = ({
                           isOptionEqualToValue={(opt, val) => opt.id === val.id}
                           filterOptions={(options, state) => {
                             const q = state.inputValue.toLowerCase().trim()
+
                             if (!q) return options
-                            return options.filter(
+                            
+return options.filter(
                               a => a.codigo.toLowerCase().includes(q) || a.nombre.toLowerCase().includes(q)
                             )
                           }}

@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
+
 import Card from '@mui/material/Card'
 import CardContent from '@mui/material/CardContent'
 import Typography from '@mui/material/Typography'
@@ -24,28 +25,36 @@ export const FiscalRulesTab: React.FC<Props> = ({ fiscalRules, onSave }) => {
   const [localizacionVeActiva, setLocalizacionVeActiva] = useState(
     fiscalRules.localizacionVeActiva
   )
+
   const [ivaGeneralPct, setIvaGeneralPct] = useState(fiscalRules.ivaGeneralPct.toString())
   const [ivaReducidoPct, setIvaReducidoPct] = useState(fiscalRules.ivaReducidoPct.toString())
   const [igtfPct, setIgtfPct] = useState(fiscalRules.igtfPct.toString())
   const [retencionIva, setRetencionIva] = useState(fiscalRules.retencionIvaPorDefecto.toString())
+
   const [diasVigencia, setDiasVigencia] = useState(
     fiscalRules.diasVigenciaCotizacion.toString()
   )
+
   const [salesInvoicingPolicyDefault, setSalesInvoicingPolicyDefault] = useState<SalesInvoicingPolicy>(
     fiscalRules.salesInvoicingPolicyDefault || 'ORDERED'
   )
+
   const [purchaseControlPolicyDefault, setPurchaseControlPolicyDefault] = useState<PurchaseControlPolicy>(
     fiscalRules.purchaseControlPolicyDefault || 'ORDERED'
   )
+
   const [deliveryPolicyDefault, setDeliveryPolicyDefault] = useState<DeliveryPolicy>(
     fiscalRules.deliveryPolicyDefault || 'PARTIAL'
   )
+
   const [negativeStockPolicy, setNegativeStockPolicy] = useState<NegativeStockPolicy>(
     fiscalRules.negativeStockPolicy || 'FLEXIBLE'
   )
+
   const [costosEnDestinoActivos, setCostosEnDestinoActivos] = useState(
     fiscalRules.costosEnDestinoActivos !== false
   )
+
   const [saving, setSaving] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {

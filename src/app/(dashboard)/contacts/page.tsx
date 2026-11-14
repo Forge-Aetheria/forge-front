@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+
 import EntityContactsTab from '@/views/contacts/EntityContactsTab';
 
 export const metadata: Metadata = {

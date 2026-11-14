@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+
 import Drawer from '@mui/material/Drawer'
 import Typography from '@mui/material/Typography'
 import IconButton from '@mui/material/IconButton'
@@ -17,6 +18,7 @@ import TableHead from '@mui/material/TableHead'
 import TableBody from '@mui/material/TableBody'
 import TableRow from '@mui/material/TableRow'
 import TableCell from '@mui/material/TableCell'
+
 import CustomTextField from '@core/components/mui/TextField'
 
 import type {
@@ -257,6 +259,7 @@ const ProductFormDrawer: React.FC<Props> = ({
       .split(',')
       .map(s => s.trim())
       .filter(Boolean)
+
     const vals2 = attrValues2
       .split(',')
       .map(s => s.trim())
@@ -471,8 +474,10 @@ const ProductFormDrawer: React.FC<Props> = ({
   }
 
   const netProfitUsd = basePrice - standardCost
+
   const taxRatePercent =
     fiscalEnabled && vatRate !== 'EXEMPT' && vatRate !== '0' ? parseFloat(vatRate) / 100 : 0
+
   const finalPriceWithTaxUsd = basePrice * (1 + taxRatePercent)
 
   return (
@@ -587,6 +592,7 @@ const ProductFormDrawer: React.FC<Props> = ({
                     checked={isLandedCost}
                     onChange={e => {
                       setIsLandedCost(e.target.checked)
+
                       if (e.target.checked) {
                         setCanBePurchased(true)
                       }
@@ -646,6 +652,7 @@ const ProductFormDrawer: React.FC<Props> = ({
                     const val = e.target.value.toUpperCase()
 
                     setDefaultCode(val)
+
                     if (variants.length === 1 && variants[0].combinationValues.length === 0) {
                       handleUpdateVariantField(0, 'sku', val)
                     }

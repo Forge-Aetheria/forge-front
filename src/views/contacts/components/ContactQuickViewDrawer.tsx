@@ -1,19 +1,22 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import Link from 'next/link';
+
 import { useRouter } from 'next/navigation';
+
 import Drawer from '@mui/material/Drawer';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
-import CustomChip from '@core/components/mui/Chip';
+
 import Avatar from '@mui/material/Avatar';
 import Divider from '@mui/material/Divider';
 import Tooltip from '@mui/material/Tooltip';
 import Snackbar from '@mui/material/Snackbar';
 import Alert from '@mui/material/Alert';
-import { TerceroEntity } from '@/types/contactsTypes';
+
+import CustomChip from '@core/components/mui/Chip';
+import type { TerceroEntity } from '@/types/contactsTypes';
 import { ContactRoleChip } from './ContactRoleChip';
 
 interface Props {
@@ -270,7 +273,9 @@ export const ContactQuickViewDrawer: React.FC<Props> = ({
                   .sort((a, b) => (b.is_principal ? 1 : 0) - (a.is_principal ? 1 : 0))
                   .map(person => {
                     const isExpanded = expandedContactId === person.id;
-                    return (
+
+                    
+return (
                       <div
                         key={person.id}
                         className="bg-white rounded-xl border border-[#E6E4F0] hover:border-[#6C5CE7] transition-all overflow-hidden shadow-sm"

@@ -1,5 +1,7 @@
 import { Suspense } from 'react'
+
 import type { Metadata } from 'next'
+
 import InventoryLocationsView from '@/views/inventory/InventoryLocationsView'
 
 export const metadata: Metadata = {

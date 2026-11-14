@@ -1,7 +1,9 @@
 'use client';
 
 import React, { useState } from 'react';
+
 import { useRouter } from 'next/navigation';
+
 import Popover from '@mui/material/Popover';
 import Drawer from '@mui/material/Drawer';
 import Typography from '@mui/material/Typography';
@@ -12,7 +14,9 @@ import Tooltip from '@mui/material/Tooltip';
 import Snackbar from '@mui/material/Snackbar';
 import Alert from '@mui/material/Alert';
 import useMediaQuery from '@mui/material/useMediaQuery';
-import { TerceroEntity, ContactPerson } from '@/types/contactsTypes';
+
+import type { TerceroEntity} from '@/types/contactsTypes';
+
 import { ContactRoleChip } from './ContactRoleChip';
 
 interface Props {
@@ -227,6 +231,7 @@ export const CompanyContactsPopoverSheet: React.FC<Props> = ({
   return (
     <>
       {isDesktop ? (
+
         /* Versión Desktop: Popover Anclado a la Celda */
         <Popover
           open={open}
@@ -270,6 +275,7 @@ export const CompanyContactsPopoverSheet: React.FC<Props> = ({
           {renderContactsList()}
         </Popover>
       ) : (
+
         /* Versión Móvil: Bottom Sheet Deslizante desde Abajo */
         <Drawer
           anchor="bottom"

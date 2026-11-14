@@ -1,14 +1,17 @@
 'use client'
 
 import React, { useState, useRef } from 'react'
+
 import Typography from '@mui/material/Typography'
 import TextField from '@mui/material/TextField'
 import Button from '@mui/material/Button'
 import MenuItem from '@mui/material/MenuItem'
 import CircularProgress from '@mui/material/CircularProgress'
-import CustomChip from '@core/components/mui/Chip'
+
 import IconButton from '@mui/material/IconButton'
 import Tooltip from '@mui/material/Tooltip'
+
+import CustomChip from '@core/components/mui/Chip'
 
 import type { CompanySettings } from '@/types/settingsTypes'
 import type { BankAccount } from '@/types/bankAccountTypes'
@@ -45,11 +48,13 @@ export const CompanySettingsTab: React.FC<Props> = ({ company, onSave }) => {
     const fetchCompanyAccounts = async () => {
       try {
         const list = await bankAccountsService.getCompanyBankAccounts()
+
         setCompanyBankAccounts(list)
       } catch (err) {
         console.error(err)
       }
     }
+
     fetchCompanyAccounts()
   }, [])
 
@@ -65,6 +70,7 @@ export const CompanySettingsTab: React.FC<Props> = ({ company, onSave }) => {
 
   const handleDeleteCompanyAccount = async (id: string, banco: string) => {
     if (!confirm(`¿Eliminar la cuenta bancaria de ${banco}?`)) return
+
     try {
       await bankAccountsService.deleteBankAccount(id)
       setCompanyBankAccounts(prev => prev.filter(a => a.id !== id))
@@ -77,6 +83,7 @@ export const CompanySettingsTab: React.FC<Props> = ({ company, onSave }) => {
     try {
       await bankAccountsService.setDefaultBankAccount(acc.id, undefined, true)
       const list = await bankAccountsService.getCompanyBankAccounts()
+
       setCompanyBankAccounts(list)
     } catch (err: any) {
       alert(err.message || 'Error al actualizar')
@@ -85,6 +92,7 @@ export const CompanySettingsTab: React.FC<Props> = ({ company, onSave }) => {
 
   const handleCompanyAccountSaved = async () => {
     const list = await bankAccountsService.getCompanyBankAccounts()
+
     setCompanyBankAccounts(list)
   }
 

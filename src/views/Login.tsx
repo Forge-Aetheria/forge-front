@@ -20,7 +20,6 @@ import Alert from '@mui/material/Alert'
 import CircularProgress from '@mui/material/CircularProgress'
 
 // Type Imports
-import type { SystemMode } from '@core/types'
 
 // Context & Hook Imports
 import { useAuth } from '@/contexts/AuthContext'
@@ -70,7 +69,7 @@ const AuthIllustrationWrapper = styled('div')(({ theme }) => ({
   }
 }))
 
-const Login = ({ mode: _mode }: { mode?: SystemMode }) => {
+const Login = () => {
   // Hooks
   const router = useRouter()
   const { signIn, isAuthenticated, isLoading: authLoading } = useAuth()
@@ -97,7 +96,8 @@ const Login = ({ mode: _mode }: { mode?: SystemMode }) => {
 
     if (!email.trim() || !password) {
       setErrorMessage('Por favor ingresa tu correo electrónico y contraseña.')
-      return
+      
+return
     }
 
     setIsSubmitting(true)

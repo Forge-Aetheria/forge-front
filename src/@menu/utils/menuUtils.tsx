@@ -53,11 +53,12 @@ export const confirmUrlInChildren = (children: ChildrenType['children'], url: st
   }
 
   if (isValidElement<MenuItemElementProps>(children)) {
-    const { component, href, exactMatch, activeUrl, children: subChildren } = children.props
+    const { component, href, children: subChildren } = children.props
 
     const matchUrl = (targetHref?: string): boolean => {
       if (!targetHref) return false
-      return targetHref === url || (targetHref !== '/' && (url.startsWith(targetHref + '/') || url.startsWith(targetHref + '?')))
+      
+return targetHref === url || (targetHref !== '/' && (url.startsWith(targetHref + '/') || url.startsWith(targetHref + '?')))
     }
 
     if (component && typeof component !== 'string' && component.props.href) {

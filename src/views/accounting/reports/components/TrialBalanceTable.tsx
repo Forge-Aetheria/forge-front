@@ -1,8 +1,7 @@
 'use client'
 
 import React from 'react'
-import Box from '@mui/material/Box'
-import Typography from '@mui/material/Typography'
+
 import Table from '@mui/material/Table'
 import TableBody from '@mui/material/TableBody'
 import TableCell from '@mui/material/TableCell'

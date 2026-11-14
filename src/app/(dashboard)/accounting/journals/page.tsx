@@ -1,4 +1,5 @@
-import { Metadata } from 'next'
+import type { Metadata } from 'next'
+
 import { JournalsListView } from '@/views/accounting/journals/JournalsListView'
 
 export const metadata: Metadata = {

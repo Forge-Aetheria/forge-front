@@ -174,6 +174,7 @@ export interface AccountingInvoice {
   terminosCondiciones?: string
   notas?: string
   pagosAsociados?: InvoicePaymentAssociation[]
+
   // Campos de Notas de Crédito y Anulación
   facturaAfectadaId?: string
   facturaAfectadaNumero?: string

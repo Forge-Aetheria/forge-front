@@ -12,8 +12,10 @@ import Dialog from '@mui/material/Dialog'
 import DialogTitle from '@mui/material/DialogTitle'
 import DialogContent from '@mui/material/DialogContent'
 import DialogActions from '@mui/material/DialogActions'
-import CustomTextField from '@core/components/mui/TextField'
+
 import MenuItem from '@mui/material/MenuItem'
+
+import CustomTextField from '@core/components/mui/TextField'
 
 // Type Imports
 import type { POSCartItem, POSCustomer } from '@/types/posTypes'

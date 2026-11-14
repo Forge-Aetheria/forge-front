@@ -1,11 +1,15 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
+
+import CircularProgress from '@mui/material/CircularProgress';
+
+import Chip from '@mui/material/Chip';
+
 import CustomAutocomplete from '@core/components/mui/Autocomplete';
 import CustomTextField from '@core/components/mui/TextField';
-import CircularProgress from '@mui/material/CircularProgress';
-import Chip from '@mui/material/Chip';
-import { ClientLookup } from '@/types/salesQuotesTypes';
+
+import type { ClientLookup } from '@/types/salesQuotesTypes';
 import { salesQuotesService } from '@/services/salesQuotesService';
 
 interface Props {
@@ -31,11 +35,13 @@ export const ClientAutocomplete: React.FC<Props> = ({
   // Debounced search
   useEffect(() => {
     let active = true;
+
     setLoading(true);
 
     const timer = setTimeout(async () => {
       try {
         const results = await salesQuotesService.searchClients(searchTerm);
+
         if (active) {
           setOptions(results);
         }

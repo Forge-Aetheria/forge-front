@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { TerceroEntity, TerceroFormData, ContactsFilterState } from '@/types/contactsTypes';
+
+import type { TerceroEntity, TerceroFormData, ContactsFilterState } from '@/types/contactsTypes';
 import { contactsService } from '@/services/contactsService';
 
 export function useEntityContacts() {
@@ -21,6 +22,7 @@ export function useEntityContacts() {
       setIsLoading(true);
       setError(null);
       const data = await contactsService.getTerceros(filters);
+
       setTerceros(data);
     } catch (err: any) {
       setError(err?.message || 'Error al obtener directorio');
@@ -35,8 +37,10 @@ export function useEntityContacts() {
 
   const saveTercero = async (formData: TerceroFormData, id?: string) => {
     setIsSubmitting(true);
+
     try {
       let saved: TerceroEntity;
+
       if (id) {
         saved = await contactsService.updateTercero(id, formData);
         setTerceros(prev => prev.map(t => (t.id === id ? saved : t)));
@@ -44,7 +48,9 @@ export function useEntityContacts() {
         saved = await contactsService.createTercero(formData);
         setTerceros(prev => [saved, ...prev]);
       }
-      return { success: true };
+
+      
+return { success: true };
     } catch (err: any) {
       return { success: false, message: err?.message || 'Error al guardar el contacto' };
     } finally {
@@ -54,10 +60,12 @@ export function useEntityContacts() {
 
   const deactivateTercero = async (id: string) => {
     setIsSubmitting(true);
+
     try {
       await contactsService.deactivateTercero(id);
       setTerceros(prev => prev.filter(t => t.id !== id));
-      return { success: true };
+      
+return { success: true };
     } catch (err: any) {
       return { success: false, message: err?.message || 'No se pudo eliminar el contacto' };
     } finally {
@@ -67,11 +75,14 @@ export function useEntityContacts() {
 
   const deactivateMultipleTerceros = async (ids: string[]) => {
     setIsSubmitting(true);
+
     try {
       await contactsService.deactivateMultipleTerceros(ids);
       const idSet = new Set(ids);
+
       setTerceros(prev => prev.filter(t => !idSet.has(t.id)));
-      return { success: true };
+      
+return { success: true };
     } catch (err: any) {
       return { success: false, message: err?.message || 'No se pudieron eliminar los contactos' };
     } finally {
@@ -91,4 +102,6 @@ export function useEntityContacts() {
     deactivateMultipleTerceros,
     refetch: fetchTerceros
   };
-};
+}
+
+;

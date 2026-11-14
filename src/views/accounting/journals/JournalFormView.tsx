@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useMemo } from 'react'
+
 import Box from '@mui/material/Box'
 import Card from '@mui/material/Card'
 import Typography from '@mui/material/Typography'
@@ -9,11 +10,13 @@ import IconButton from '@mui/material/IconButton'
 import Tooltip from '@mui/material/Tooltip'
 import TextField from '@mui/material/TextField'
 import MenuItem from '@mui/material/MenuItem'
-import CustomChip from '@core/components/mui/Chip'
+
 import Grid from '@mui/material/Grid'
 import Autocomplete from '@mui/material/Autocomplete'
 import Alert from '@mui/material/Alert'
 import CircularProgress from '@mui/material/CircularProgress'
+
+import CustomChip from '@core/components/mui/Chip'
 
 import { accountingService } from '@/services/accountingService'
 import type { Journal, JournalType, Account, CurrencyCode } from '@/types/accountingTypes'
@@ -43,13 +46,13 @@ const getIconForType = (type: JournalType): string => {
   if (type === 'CAJA') return 'tabler-cash'
   if (type === 'VENTAS') return 'tabler-file-invoice'
   if (type === 'COMPRAS') return 'tabler-receipt'
-  return 'tabler-adjustments-alt'
+  
+return 'tabler-adjustments-alt'
 }
 
 export const JournalFormView: React.FC<Props> = ({
   journal,
   accounts,
-  defaultTasaBcv = 54.00,
   onBack,
   onSuccess
 }) => {
@@ -71,8 +74,10 @@ export const JournalFormView: React.FC<Props> = ({
     if (journal) {
       setNombre(journal.nombre)
       setCodigo(journal.codigo)
+
       const mappedTipo: JournalType =
         journal.tipo === 'BANCO_VES' || journal.tipo === 'BANCO_USD' ? 'BANCO' : journal.tipo
+
       setTipo(mappedTipo)
       setMoneda(
         journal.moneda ||
@@ -92,6 +97,7 @@ export const JournalFormView: React.FC<Props> = ({
       setSaldoInicialVes(0)
       setColorIdentificador('#0284C7')
     }
+
     setErrorMsg(null)
   }, [journal, accounts])
 
@@ -100,17 +106,21 @@ export const JournalFormView: React.FC<Props> = ({
     if (tipo === 'VENTAS') {
       return accounts.filter(a => a.tipo.startsWith('INCOME'))
     }
+
     if (tipo === 'COMPRAS') {
       return accounts.filter(
         a => a.tipo.startsWith('EXPENSE') || a.tipo === 'COST_OF_GOODS' || a.codigo === '1.1.03.01'
       )
     }
+
     if (tipo === 'BANCO' || tipo === 'CAJA' || tipo === 'BANCO_VES' || tipo === 'BANCO_USD') {
       return accounts.filter(
         a => a.subtipo === 'BANCO_CAJA' || a.codigo.startsWith('1.1.01') || a.tipo.startsWith('ASSET')
       )
     }
-    return accounts
+
+    
+return accounts
   }, [accounts, tipo])
 
   const selectedAccount = useMemo(() => {
@@ -120,6 +130,7 @@ export const JournalFormView: React.FC<Props> = ({
   // Al cambiar tipo de diario: asigna automáticamente ícono, color y cuenta sugerida
   const handleTypeChange = (newTipo: JournalType) => {
     setTipo(newTipo)
+
     if (newTipo === 'VENTAS') {
       setColorIdentificador('#10B981')
       setMoneda('AMBAS')
@@ -140,8 +151,10 @@ export const JournalFormView: React.FC<Props> = ({
       if (newTipo === 'VENTAS') return a.tipo.startsWith('INCOME')
       if (newTipo === 'COMPRAS') return a.tipo.startsWith('EXPENSE') || a.tipo === 'COST_OF_GOODS'
       if (newTipo === 'BANCO' || newTipo === 'CAJA') return a.codigo.startsWith('1.1.01')
-      return true
+      
+return true
     })
+
     if (firstEligible) {
       setCuentaPorDefectoId(firstEligible.id)
     }
@@ -149,6 +162,7 @@ export const JournalFormView: React.FC<Props> = ({
 
   const handleMonedaChange = (newMoneda: CurrencyCode | 'AMBAS') => {
     setMoneda(newMoneda)
+
     if (tipo === 'BANCO') {
       setColorIdentificador(newMoneda === 'USD' ? '#6C5CE7' : '#0284C7')
     }
@@ -159,17 +173,20 @@ export const JournalFormView: React.FC<Props> = ({
 
     if (!nombre.trim()) {
       setErrorMsg('El nombre del diario es obligatorio.')
-      return
+      
+return
     }
 
     if (!codigo.trim()) {
       setErrorMsg('El código corto o secuencia es obligatorio.')
-      return
+      
+return
     }
 
     if (!cuentaPorDefectoId) {
       setErrorMsg('Debes asignar una cuenta contable por defecto del Plan de Cuentas.')
-      return
+      
+return
     }
 
     try {
@@ -191,6 +208,7 @@ export const JournalFormView: React.FC<Props> = ({
           colorIdentificador,
           icono: autoIcon
         })
+
         onSuccess(updated, `Diario contable "${updated.nombre}" actualizado exitosamente.`)
       } else {
         const created = await accountingService.createJournal({
@@ -205,6 +223,7 @@ export const JournalFormView: React.FC<Props> = ({
           colorIdentificador,
           icono: autoIcon
         })
+
         onSuccess(created, `Diario contable "${created.nombre}" creado exitosamente.`)
       }
     } catch (err: any) {
@@ -451,8 +470,10 @@ export const JournalFormView: React.FC<Props> = ({
               isOptionEqualToValue={(opt, val) => opt.id === val.id}
               filterOptions={(options, state) => {
                 const q = state.inputValue.toLowerCase().trim()
+
                 if (!q) return options
-                return options.filter(
+                
+return options.filter(
                   a => a.codigo.toLowerCase().includes(q) || a.nombre.toLowerCase().includes(q)
                 )
               }}
@@ -536,7 +557,9 @@ export const JournalFormView: React.FC<Props> = ({
             <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
               {COLOR_PALETTE.map(c => {
                 const isSelected = colorIdentificador === c.value
-                return (
+
+                
+return (
                   <Box
                     key={c.value}
                     onClick={() => setColorIdentificador(c.value)}

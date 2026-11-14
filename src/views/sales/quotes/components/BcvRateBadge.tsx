@@ -1,8 +1,10 @@
 'use client';
 
 import React from 'react';
+
 import Tooltip from '@mui/material/Tooltip';
-import { BcvRate } from '@/types/salesQuotesTypes';
+
+import type { BcvRate } from '@/types/salesQuotesTypes';
 
 interface Props {
   rate: BcvRate;

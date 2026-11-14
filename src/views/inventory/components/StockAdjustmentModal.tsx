@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+
 import Dialog from '@mui/material/Dialog'
 import DialogTitle from '@mui/material/DialogTitle'
 import DialogContent from '@mui/material/DialogContent'
@@ -11,6 +12,7 @@ import Typography from '@mui/material/Typography'
 import MenuItem from '@mui/material/MenuItem'
 import Alert from '@mui/material/Alert'
 import CircularProgress from '@mui/material/CircularProgress'
+
 import CustomTextField from '@core/components/mui/TextField'
 
 import type {
@@ -64,6 +66,7 @@ const StockAdjustmentModal: React.FC<Props> = ({
 
       if (initialProd) {
         setSelectedProductId(initialProd.id)
+
         const initialVar =
           initialProd.variants.find(v => v.id === preselectedVariantId) || initialProd.variants[0]
 

@@ -1,14 +1,17 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+
+import Link from 'next/link'
+
+import { useRouter } from 'next/navigation'
+
 import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
 import Button from '@mui/material/Button'
 import Skeleton from '@mui/material/Skeleton'
 import Snackbar from '@mui/material/Snackbar'
 import Alert from '@mui/material/Alert'
-import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 
 import { accountingService } from '@/services/accountingService'
 import type {
@@ -43,6 +46,7 @@ export const AccountingDashboardView: React.FC = () => {
   const loadData = async () => {
     try {
       setLoading(true)
+
       const [k, j, inv, acc] = await Promise.all([
         accountingService.getDashboardKpis(),
         accountingService.getJournals(),

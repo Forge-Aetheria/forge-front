@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+
 import Box from '@mui/material/Box'
 import Card from '@mui/material/Card'
 import Typography from '@mui/material/Typography'
@@ -12,10 +13,12 @@ import MenuItem from '@mui/material/MenuItem'
 import Switch from '@mui/material/Switch'
 import FormControlLabel from '@mui/material/FormControlLabel'
 import Alert from '@mui/material/Alert'
-import CustomChip from '@core/components/mui/Chip'
+
 import CircularProgress from '@mui/material/CircularProgress'
 import Grid from '@mui/material/Grid'
 import Divider from '@mui/material/Divider'
+
+import CustomChip from '@core/components/mui/Chip'
 
 import { accountingService } from '@/services/accountingService'
 import type {
@@ -253,6 +256,7 @@ export const AccountFormView: React.FC<Props> = ({ account, onBack, onSaved }) =
       setPermiteConciliacion(true)
       setActivo(true)
     }
+
     setErrorMsg(null)
   }, [account])
 
@@ -275,11 +279,13 @@ export const AccountFormView: React.FC<Props> = ({ account, onBack, onSaved }) =
   // Cálculo de nivel jerárquico
   const jerarquiaNivel = React.useMemo(() => {
     const parts = codigo.trim().split('.').filter(Boolean)
+
     if (parts.length === 0) return 'Sin código'
     if (parts.length === 1) return 'Nivel 1 - Clase'
     if (parts.length === 2) return 'Nivel 2 - Grupo'
     if (parts.length === 3) return 'Nivel 3 - Subgrupo / Mayor'
-    return `Nivel ${parts.length} - Cuenta Imputable Detalle`
+    
+return `Nivel ${parts.length} - Cuenta Imputable Detalle`
   }, [codigo])
 
   const handleSubmit = async () => {
@@ -287,12 +293,14 @@ export const AccountFormView: React.FC<Props> = ({ account, onBack, onSaved }) =
 
     if (!codigo.trim() || !codeRegex.test(codigo.trim())) {
       setErrorMsg('El código contable debe seguir la notación jerárquica con puntos (ej: 1.1.01.05 o 6.1.01.03).')
-      return
+      
+return
     }
 
     if (!nombre.trim()) {
       setErrorMsg('Debes especificar el nombre descriptivo de la cuenta contable.')
-      return
+      
+return
     }
 
     try {

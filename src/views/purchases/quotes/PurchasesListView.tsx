@@ -1,7 +1,9 @@
 'use client'
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
+
 import Link from 'next/link'
+
 import Typography from '@mui/material/Typography'
 import Button from '@mui/material/Button'
 import Card from '@mui/material/Card'
@@ -10,8 +12,6 @@ import Grid from '@mui/material/Grid'
 import Snackbar from '@mui/material/Snackbar'
 import Alert from '@mui/material/Alert'
 import useMediaQuery from '@mui/material/useMediaQuery'
-import IconButton from '@mui/material/IconButton'
-import Tooltip from '@mui/material/Tooltip'
 import Menu from '@mui/material/Menu'
 import MenuItem from '@mui/material/MenuItem'
 import Checkbox from '@mui/material/Checkbox'
@@ -20,8 +20,9 @@ import Dialog from '@mui/material/Dialog'
 import DialogTitle from '@mui/material/DialogTitle'
 import DialogContent from '@mui/material/DialogContent'
 import DialogActions from '@mui/material/DialogActions'
+
 import CustomChip from '@core/components/mui/Chip'
-import { BcvRate, PurchaseQuote, PurchasesFilterState, PurchaseVisibleColumns, SupplierLookup } from '@/types/purchasesTypes'
+import type { BcvRate, PurchaseQuote, PurchasesFilterState, PurchaseVisibleColumns, SupplierLookup } from '@/types/purchasesTypes'
 import { purchasesService } from '@/services/purchasesService'
 import { PurchasesListFilters } from './components/PurchasesListFilters'
 import { PurchasesTable } from './components/PurchasesTable'
@@ -29,7 +30,6 @@ import { PurchasesMobileList } from './components/PurchasesMobileList'
 import { PurchasesTableSkeleton } from './components/PurchasesTableSkeleton'
 import { PurchaseQuickViewDrawer } from './components/PurchaseQuickViewDrawer'
 import { CancelPurchaseModal } from './components/CancelPurchaseModal'
-import { BcvRateBadge } from './components/BcvRateBadge'
 
 export const PurchasesListView: React.FC = () => {
   const isDesktop = useMediaQuery('(min-width:768px)')
@@ -48,6 +48,7 @@ export const PurchasesListView: React.FC = () => {
 
   // Selección múltiple y control de columnas
   const [selectedIds, setSelectedIds] = useState<string[]>([])
+
   const [visibleColumns, setVisibleColumns] = useState<PurchaseVisibleColumns>({
     refProveedor: true,
     fechaVigencia: true,
@@ -55,6 +56,7 @@ export const PurchasesListView: React.FC = () => {
     costoVes: true,
     estado: true
   })
+
   const [columnAnchorEl, setColumnAnchorEl] = useState<HTMLElement | null>(null)
   const [batchMenuAnchorEl, setBatchMenuAnchorEl] = useState<HTMLElement | null>(null)
   const [batchCancelConfirmOpen, setBatchCancelConfirmOpen] = useState(false)
@@ -82,16 +84,19 @@ export const PurchasesListView: React.FC = () => {
     try {
       setLoading(true)
       setLoadError(null)
+
       const [quotesData, suppliersData, rateData] = await Promise.all([
         purchasesService.getPurchaseQuotes(filters),
         purchasesService.getSuppliers(),
         purchasesService.getActiveBcvRate()
       ])
+
       setQuotes(quotesData)
       setSuppliers(suppliersData)
       setBcvRate(rateData)
     } catch (err: any) {
       const msg = err?.message || 'Error al consultar el ciclo de compras.'
+
       setLoadError(msg)
       setToast({
         open: true,
@@ -172,6 +177,7 @@ export const PurchasesListView: React.FC = () => {
   const handleBatchCopy = () => {
     const selectedQuotes = quotes.filter(q => selectedIds.includes(q.id))
     const codes = selectedQuotes.map(q => q.correlativo_orden_compra || q.correlativo).join(', ')
+
     navigator.clipboard.writeText(codes)
     setBatchMenuAnchorEl(null)
     setToast({
@@ -184,9 +190,11 @@ export const PurchasesListView: React.FC = () => {
   const handleConfirmBatchCancel = async () => {
     setBatchCancelConfirmOpen(false)
     const count = selectedIds.length
+
     for (const id of selectedIds) {
       await purchasesService.cancelPurchaseQuote(id, 'Anulación masiva desde listado de compras')
     }
+
     setToast({
       open: true,
       message: `${count} compras anuladas exitosamente.`,

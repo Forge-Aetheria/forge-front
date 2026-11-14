@@ -33,12 +33,12 @@ const InventoryQuickViewDrawer = ({
   open,
   onClose,
   template,
-  fiscalEnabled,
-  onAdjustStock
+  fiscalEnabled
 }: Props) => {
   if (!template) return null
 
   const bcvRate = getActiveBcvRate()
+
   const financials = calculateFinancials(
     template.standardCost,
     template.basePrice,

@@ -1,4 +1,5 @@
 import React from 'react'
+
 import { PurchaseDetailView } from '@/views/purchases/quotes/PurchaseDetailView'
 
 export const metadata = {
@@ -12,5 +13,7 @@ export default async function PurchaseQuoteDetailPage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
-  return <PurchaseDetailView id={id} />
+
+  
+return <PurchaseDetailView id={id} />
 }

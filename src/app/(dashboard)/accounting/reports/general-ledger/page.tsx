@@ -1,4 +1,5 @@
 import { Suspense } from 'react'
+
 import { GeneralLedgerView } from '@/views/accounting/reports/GeneralLedgerView'
 
 export const metadata = {

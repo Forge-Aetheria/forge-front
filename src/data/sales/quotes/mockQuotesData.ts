@@ -1,4 +1,4 @@
-import { BcvRate, ClientLookup, ProductLookup, Quote, SalesFeatureFlags } from '@/types/salesQuotesTypes';
+import type { BcvRate, ClientLookup, ProductLookup, Quote, SalesFeatureFlags } from '@/types/salesQuotesTypes';
 
 export const defaultSalesFeatureFlags: SalesFeatureFlags = {
   TAXES_ENABLED: true,

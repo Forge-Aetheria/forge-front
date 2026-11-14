@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+
 import HomeDashboardView from '@/views/home/HomeDashboardView'
 
 export const metadata: Metadata = {

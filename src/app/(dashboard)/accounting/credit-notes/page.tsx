@@ -1,4 +1,5 @@
 import React, { Suspense } from 'react'
+
 import { CreditNotesListView } from '@/views/accounting/credit-notes/CreditNotesListView'
 
 export const metadata = {

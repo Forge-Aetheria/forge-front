@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
+
 import Dialog from '@mui/material/Dialog'
 import DialogTitle from '@mui/material/DialogTitle'
 import DialogContent from '@mui/material/DialogContent'
@@ -12,7 +13,6 @@ import Button from '@mui/material/Button'
 import Switch from '@mui/material/Switch'
 import FormControlLabel from '@mui/material/FormControlLabel'
 import CircularProgress from '@mui/material/CircularProgress'
-import Box from '@mui/material/Box'
 
 import { accountingService } from '@/services/accountingService'
 import type { Journal, Account, CurrencyCode, DirectExpenseForm } from '@/types/accountingTypes'
@@ -253,7 +253,7 @@ export const DirectExpenseModal: React.FC<Props> = ({
             </div>
 
             <div className='flex flex-col gap-3'>
-              {lineas.map((l, index) => (
+              {lineas.map(l => (
                 <div
                   key={l.id}
                   className='grid grid-cols-1 sm:grid-cols-12 gap-3 p-3.5 rounded-2xl border border-[#E6E4F0] bg-[#FAFAFC] items-center'

@@ -103,6 +103,7 @@ const UserDropdown = () => {
     : 'U'
 
   const userDisplayName = profile?.nombre || user?.email?.split('@')[0] || 'Usuario'
+
   const effectiveRole = profile?.rol
     ? String(profile.rol).toUpperCase()
     : String(user?.role || (user?.roles && user?.roles[0]) || 'UNASSIGNED').toUpperCase()

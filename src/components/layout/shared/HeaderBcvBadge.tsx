@@ -1,8 +1,10 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+
 import Tooltip from '@mui/material/Tooltip'
 import Chip from '@mui/material/Chip'
+
 import { getActiveBcvRate } from '@/services/inventoryService'
 
 export const HeaderBcvBadge = () => {
@@ -11,6 +13,7 @@ export const HeaderBcvBadge = () => {
   useEffect(() => {
     try {
       const active = getActiveBcvRate()
+
       if (active && active > 0) {
         setRate(active)
       }
