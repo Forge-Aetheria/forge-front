@@ -9,6 +9,7 @@ const verticalMenuData = (): VerticalMenuDataType[] => [
   },
   {
     label: 'Inventario',
+    module: 'INVENTORY',
     icon: 'tabler-packages',
     children: [
       {
@@ -104,16 +105,19 @@ const verticalMenuData = (): VerticalMenuDataType[] => [
   },
   {
     label: 'Ventas',
+    module: 'SALES',
     href: '/sales/quotes',
     icon: 'tabler-file-invoice'
   },
   {
     label: 'Compras',
+    module: 'PURCHASES',
     href: '/purchases/quotes',
     icon: 'tabler-shopping-bag'
   },
   {
     label: 'POS',
+    module: 'POS',
     icon: 'tabler-cash-register',
     children: [
       {
@@ -130,6 +134,7 @@ const verticalMenuData = (): VerticalMenuDataType[] => [
   },
   {
     label: 'Contabilidad',
+    module: 'ACCOUNTING',
     icon: 'tabler-calculator',
     children: [
       {

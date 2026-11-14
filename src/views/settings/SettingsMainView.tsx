@@ -59,25 +59,35 @@ const SettingsMainView: React.FC = () => {
   const loadData = async () => {
     setLoading(true)
 
-    try {
-      const [prof, comp, bcv, usrs, rules] = await Promise.all([
-        settingsService.getUserProfile(),
-        settingsService.getCompanySettings(),
-        settingsService.getBcvSettings(),
-        settingsService.getErpUsers(),
-        settingsService.getFiscalRules()
-      ])
+    const [prof, comp, bcv, usrs, rules] = await Promise.allSettled([
+      settingsService.getUserProfile(),
+      settingsService.getCompanySettings(),
+      settingsService.getBcvSettings(),
+      settingsService.getErpUsers(),
+      settingsService.getFiscalRules()
+    ])
 
-      setProfile(prof)
-      setCompany(comp)
-      setBcvConfig(bcv)
-      setErpUsers(usrs)
-      setFiscalRules(rules)
-    } catch {
-      setToast({ open: true, message: 'Error al cargar la configuración.', severity: 'error' })
-    } finally {
-      setLoading(false)
+    if (prof.status === 'fulfilled') setProfile(prof.value)
+    if (comp.status === 'fulfilled') setCompany(comp.value)
+    if (bcv.status === 'fulfilled') setBcvConfig(bcv.value)
+    if (usrs.status === 'fulfilled') setErpUsers(usrs.value)
+    if (rules.status === 'fulfilled') setFiscalRules(rules.value)
+
+    const failed = [prof, comp, bcv, usrs, rules].find(
+      result => result.status === 'rejected'
+    ) as PromiseRejectedResult | undefined
+
+    if (failed) {
+      const reason = failed.reason instanceof Error ? failed.reason.message : 'Error desconocido'
+
+      setToast({
+        open: true,
+        message: `No se pudo cargar toda la configuración: ${reason}`,
+        severity: 'error'
+      })
     }
+
+    setLoading(false)
   }
 
   useEffect(() => {
