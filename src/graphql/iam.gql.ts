@@ -191,3 +191,48 @@ export const SET_ROLE_PERMISSIONS_MUTATION = `
     }
   }
 `
+
+// Tenant onboarding (TICK-014, consumes forge-backend TICK-015/TICK-017/TICK-014)
+
+export const GET_MY_TENANT_ONBOARDING_STATUS_QUERY = `
+  query GetMyTenantOnboardingStatus {
+    myTenantOnboardingStatus {
+      tenantId
+      onboardingCompleted
+      onboardingCompletedAt
+    }
+  }
+`
+
+export const GET_TENANT_ONBOARDING_QUERY = `
+  query GetTenantOnboarding {
+    tenantOnboarding {
+      tenantId
+      onboardingCompleted
+      onboardingCompletedAt
+      baseCurrency
+      defaultVatAliquot
+      legalName
+      tradeName
+      docType
+      docNumber
+      checkDigit
+      fiscalAddress
+    }
+  }
+`
+
+export const COMPLETE_TENANT_ONBOARDING_MUTATION = `
+  mutation CompleteTenantOnboarding($input: CompleteTenantOnboardingInput!) {
+    completeTenantOnboarding(input: $input) {
+      tenantId
+      legalName
+      tradeName
+      docType
+      docNumber
+      checkDigit
+      baseCurrency
+      onboardingCompleted
+    }
+  }
+`
