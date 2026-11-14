@@ -26,22 +26,10 @@ import Snackbar from '@mui/material/Snackbar'
 import CustomChip from '@core/components/mui/Chip'
 
 import { accountingService } from '@/services/accountingService'
+import { contactsService } from '@/services/contactsService'
 import type { Account, Journal, JournalEntry, EntryStatus } from '@/types/accountingTypes'
 import { DoubleEntryBalanceBar } from './components/DoubleEntryBalanceBar'
 
-const DEFAULT_CONTACT_SUGGESTIONS = [
-  'Inversiones Caroní C.A.',
-  'Distribuidora Oriental S.A.S.',
-  'Corporación Metalmecánica Bolivariana',
-  'Corpoelec / Servicios Eléctricos',
-  'Distribuidora Eléctrica del Sur C.A.',
-  'Inmobiliaria Los Próceres (Alquiler Galpón)',
-  'Cantv / Internet y Telecomunicaciones',
-  'Ferretería Industrial Roscio C.A.',
-  'SENIAT (Impuestos)',
-  'Banco Mercantil C.A.',
-  'Banesco Banco Universal'
-];
 
 interface Props {
   entry?: JournalEntry | null
@@ -71,6 +59,12 @@ export const JournalEntryFormView: React.FC<Props> = ({
   onSuccess,
   onEntryUpdated
 }) => {
+  const [contactSuggestions, setContactSuggestions] = useState<string[]>([])
+
+  useEffect(() => {
+    contactsService.getTerceros().then(list => setContactSuggestions(list.map(t => t.nombre_razon_social))).catch(() => setContactSuggestions([]))
+  }, [])
+
   const [currentEntry, setCurrentEntry] = useState<JournalEntry | null>(entry || null)
   const isReadOnly = Boolean(currentEntry && currentEntry.estado === 'POSTED')
 
@@ -751,7 +745,7 @@ return options.filter(
                         freeSolo
                         size='small'
                         disabled={isReadOnly}
-                        options={DEFAULT_CONTACT_SUGGESTIONS}
+                        options={contactSuggestions}
                         value={line.contactoNombre || ''}
                         onInputChange={(_, newInputValue) => {
                           handleLineChange(idx, 'contactoNombre', newInputValue)
