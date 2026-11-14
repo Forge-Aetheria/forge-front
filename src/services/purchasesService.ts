@@ -10,13 +10,7 @@ import type {
   PurchaseTotalsCalculation,
   SupplierLookup
 } from '@/types/purchasesTypes'
-import {
-  defaultPurchasesFeatureFlags,
-  initialMockPurchaseBcvRate,
-  initialMockPurchaseQuotes,
-  mockPurchaseProductsLookup,
-  mockSuppliersLookup
-} from '@/data/purchases/mockPurchasesData'
+import { fetchActiveBcvRate } from '@/services/bcvService'
 import { venezuelanRifRegex } from '@/views/purchases/quotes/schemas/purchaseFormSchema'
 import { createWarehouseOperationOrder } from '@/services/inventory/operationOrdersService'
 import { executeGraphQL } from '@/libs/graphqlClient'
@@ -41,93 +35,70 @@ import {
   type GqlPurchaseQuote
 } from '@/services/adapters/purchasesAdapter'
 
-const STORAGE_KEY_QUOTES = 'forge_purchases_quotes_v1'
-const STORAGE_KEY_FLAGS = 'forge_purchases_feature_flags_v1'
-const STORAGE_KEY_TRANSIT_LOG = 'forge_purchases_transit_notifications_v1'
+const EMPTY_BCV_RATE: BcvRate = {
+  id: '',
+  tasa: 0,
+  fecha_valor: '',
+  fuente: 'BCV_OFICIAL',
+  sincronizado_at: ''
+}
+
+const DEFAULT_PURCHASES_FLAGS: PurchasesFeatureFlags = {
+  IVA_COMPRAS: true,
+  IGTF: true,
+  SENIAT_FORMAT: true,
+  STOCK_TRANSIT_MODE: 'ENABLED'
+}
 
 class PurchasesService {
-  private quotes: PurchaseQuote[] = [...initialMockPurchaseQuotes]
-  private suppliers: SupplierLookup[] = [...mockSuppliersLookup]
-  private products: PurchaseProductLookup[] = [...mockPurchaseProductsLookup]
-  private bcvRate: BcvRate = { ...initialMockPurchaseBcvRate }
-  private quoteCounter = 18
-  private orderCounter = 9
-
-  constructor() {
-    this.hydrateFromStorage()
-  }
+  private quotes: PurchaseQuote[] = []
+  private suppliers: SupplierLookup[] = []
+  private products: PurchaseProductLookup[] = []
+  private bcvRate: BcvRate = { ...EMPTY_BCV_RATE }
+  private featureFlags: PurchasesFeatureFlags = { ...DEFAULT_PURCHASES_FLAGS }
+  private quoteCounter = 1
+  private orderCounter = 1
 
   private hydrateFromStorage(): void {
-    if (typeof window === 'undefined') return
-
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY_QUOTES)
-
-      if (saved) {
-        const parsed = JSON.parse(saved)
-
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          this.quotes = parsed
-        }
-      }
-    } catch {
-      // Fallback to initialMockPurchaseQuotes
-    }
+    // Sin persistencia local: los datos viven en el backend.
   }
 
   private persistToStorage(): void {
-    if (typeof window === 'undefined') return
-
-    try {
-      localStorage.setItem(STORAGE_KEY_QUOTES, JSON.stringify(this.quotes))
-    } catch {
-      // Ignore storage quota errors
-    }
+    // Sin persistencia local: los datos viven en el backend.
   }
 
-  // Feature Flags (Regla R4)
   public getFeatureFlags(): PurchasesFeatureFlags {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem(STORAGE_KEY_FLAGS)
-
-      if (saved) {
-        try {
-          return { ...defaultPurchasesFeatureFlags, ...JSON.parse(saved) }
-        } catch {
-          // Fallback to default
-        }
-      }
-    }
-
-    
-return defaultPurchasesFeatureFlags
+    return { ...this.featureFlags }
   }
 
   public setFeatureFlags(flags: Partial<PurchasesFeatureFlags>): PurchasesFeatureFlags {
-    const updated = { ...this.getFeatureFlags(), ...flags }
+    this.featureFlags = { ...this.featureFlags, ...flags }
 
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(STORAGE_KEY_FLAGS, JSON.stringify(updated))
-    }
-
-    
-return updated
+    return { ...this.featureFlags }
   }
 
-  // Tasa BCV Oficial (Sincronizada por CRON diario 7:00 AM)
   public async getActiveBcvRate(): Promise<BcvRate> {
+    const result = await fetchActiveBcvRate()
+
+    if (!result.ok) {
+      throw new Error(result.error.message)
+    }
+
+    this.bcvRate = {
+      id: result.data.rateId,
+      tasa: result.data.rate,
+      fecha_valor: result.data.valueDate,
+      fuente: 'BCV_OFICIAL',
+      sincronizado_at: result.data.capturedAt
+    }
+
     return { ...this.bcvRate }
   }
 
-  public async updateActiveBcvRate(nuevaTasa: number): Promise<BcvRate> {
-    this.bcvRate = {
-      ...this.bcvRate,
-      tasa: Number(nuevaTasa.toFixed(2)),
-      fecha_valor: new Date().toISOString().split('T')[0],
-      sincronizado_at: new Date().toISOString()
-    }
-    
-return { ...this.bcvRate }
+  public async updateActiveBcvRate(_nuevaTasa: number): Promise<BcvRate> {
+    void _nuevaTasa
+
+    throw new Error('La tasa BCV es administrada por el backend y no se modifica desde compras.')
   }
 
   // Adaptador Desacoplado: GET /api/suppliers?search= (o /api/terceros?rol=PROVEEDOR)
@@ -356,12 +327,7 @@ return { ...this.bcvRate }
       if (res?.purchaseQuotes && Array.isArray(res.purchaseQuotes)) {
         const mapped = res.purchaseQuotes.map(q => mapGqlPurchaseQuoteToFrontend(q, this.bcvRate.tasa))
 
-        if (mapped.length > 0) {
-          const backendIds = new Set(mapped.map(q => q.id))
-          const localOnly = this.quotes.filter(q => !backendIds.has(q.id) && q.id.startsWith('pc-'))
-
-          this.quotes = [...mapped, ...localOnly]
-        }
+        this.quotes = mapped
       }
     } catch (err) {
       console.warn('[purchasesService] Error al consultar purchaseQuotes en backend:', err)
@@ -1003,23 +969,8 @@ return {
             })
         : []
 
-    // Emitir notificación desacoplada de mercancía en tránsito sin alterar vistas internas de Inventario
-    if (typeof window !== 'undefined' && lineasFisicasEnTransito.length > 0) {
-      try {
-        const currentLogs = JSON.parse(localStorage.getItem(STORAGE_KEY_TRANSIT_LOG) || '[]')
-
-        currentLogs.unshift({
-          correlativo_orden_compra: correlativoOC,
-          quote_id: quote.id,
-          proveedor: quote.proveedor.razon_social,
-          lineas_fisicas_en_transito: lineasFisicasEnTransito,
-          notificado_at: new Date().toISOString()
-        })
-        localStorage.setItem(STORAGE_KEY_TRANSIT_LOG, JSON.stringify(currentLogs))
-      } catch {
-        // Ignore storage error
-      }
-    }
+    // La notificación de mercancía en tránsito ya no se persiste localmente.
+    void lineasFisicasEnTransito
 
     const nowIso = new Date().toISOString()
 

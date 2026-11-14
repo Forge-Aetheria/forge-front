@@ -10,13 +10,6 @@ import type {
   SalesFeatureFlags,
   SalesOrderConversionResponse
 } from '@/types/salesQuotesTypes';
-import {
-  defaultSalesFeatureFlags,
-  initialMockBcvRate,
-  initialMockQuotes,
-  mockClientsLookup,
-  mockProductsLookup
-} from '@/data/sales/quotes/mockQuotesData';
 import { createWarehouseOperationOrder } from '@/services/inventory/operationOrdersService';
 import { contactsService } from '@/services/contactsService';
 import { executeGraphQL } from '@/libs/graphqlClient';
@@ -32,8 +25,6 @@ import {
 import { CREATE_STOCK_MOVE_MUTATION } from '@/graphql/inventory.gql';
 import { serializeCreateStockMoveInput } from '@/services/adapters/inventoryAdapter';
 import { fetchStockLocations, resolveDefaultStockLocations } from '@/services/inventoryService';
-
-const STORAGE_KEY_QUOTES = 'forge_sales_quotes';
 
 function generateUUID(): string {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
@@ -103,71 +94,45 @@ interface BackendSalesQuote {
   }>;
 }
 
-class SalesQuotesService {
-  private quotes: Quote[] = [...initialMockQuotes];
-  private clients: ClientLookup[] = [...mockClientsLookup];
-  private products: ProductLookup[] = [...mockProductsLookup];
-  private bcvRate: BcvRate = { ...initialMockBcvRate };
-  private quoteCounter = 43;
-  private orderCounter = 16;
+const EMPTY_SALES_BCV: BcvRate = {
+  id: '',
+  tasa: 0,
+  fecha_valor: '',
+  fuente: 'BCV_OFICIAL',
+  sincronizado_at: ''
+};
 
-  constructor() {
-    this.hydrateFromStorage();
-  }
+const DEFAULT_SALES_FLAGS: SalesFeatureFlags = {
+  TAXES_ENABLED: true,
+  IVA_RATE: 16,
+  IGTF_ENABLED: true,
+  SENIAT_FORMAT_VALIDATION: true,
+  STOCK_VALIDATION_MODE: 'FLEXIBLE'
+};
+
+class SalesQuotesService {
+  private quotes: Quote[] = [];
+  private clients: ClientLookup[] = [];
+  private products: ProductLookup[] = [];
+  private bcvRate: BcvRate = { ...EMPTY_SALES_BCV };
+  private featureFlags: SalesFeatureFlags = { ...DEFAULT_SALES_FLAGS };
+  private quoteCounter = 1;
+  private orderCounter = 1;
 
   private hydrateFromStorage(): void {
-    if (typeof window === 'undefined') return;
-
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY_QUOTES);
-
-      if (saved) {
-        const parsed = JSON.parse(saved);
-
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          this.quotes = parsed;
-        }
-      }
-    } catch {
-      // Fallback a initialMockQuotes
-    }
+    // Sin persistencia local: los datos viven en el backend.
   }
 
   private persistToStorage(): void {
-    if (typeof window === 'undefined') return;
-
-    try {
-      localStorage.setItem(STORAGE_KEY_QUOTES, JSON.stringify(this.quotes));
-    } catch {
-      // Ignore quota errors
-    }
+    // Sin persistencia local: los datos viven en el backend.
   }
 
-  // Feature Flags
   public getFeatureFlags(): SalesFeatureFlags {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('forge_sales_feature_flags');
-
-      if (saved) {
-        try {
-          return { ...defaultSalesFeatureFlags, ...JSON.parse(saved) };
-        } catch {
-          // Fallback a default
-        }
-      }
-    }
-
-    
-return defaultSalesFeatureFlags;
+    return { ...this.featureFlags };
   }
 
   public setFeatureFlags(flags: Partial<SalesFeatureFlags>): void {
-    if (typeof window !== 'undefined') {
-      const current = this.getFeatureFlags();
-      const updated = { ...current, ...flags };
-
-      localStorage.setItem('forge_sales_feature_flags', JSON.stringify(updated));
-    }
+    this.featureFlags = { ...this.featureFlags, ...flags };
   }
 
   // Tasa BCV Oficial
@@ -177,31 +142,29 @@ return defaultSalesFeatureFlags;
         activeBcvRate: { rate: string; rateId: string; source: string; valueDate: string; capturedAt: string };
       }>(GET_ACTIVE_BCV_RATE_QUERY, undefined, { timeoutMs: 3000 });
 
-      if (res?.activeBcvRate) {
-        this.bcvRate = {
-          id: res.activeBcvRate.rateId,
-          tasa: Number(res.activeBcvRate.rate),
-          fecha_valor: res.activeBcvRate.valueDate,
-          fuente: 'BCV_OFICIAL',
-          sincronizado_at: res.activeBcvRate.capturedAt
-        };
+      if (!res?.activeBcvRate) {
+        throw new Error('No hay una tasa BCV activa configurada.');
       }
-    } catch {
-      // Fallback silencioso a la tasa en memoria / mock
+
+      this.bcvRate = {
+        id: res.activeBcvRate.rateId,
+        tasa: Number(res.activeBcvRate.rate),
+        fecha_valor: res.activeBcvRate.valueDate,
+        fuente: 'BCV_OFICIAL',
+        sincronizado_at: res.activeBcvRate.capturedAt
+      };
+    } catch (err) {
+      console.error('[salesQuotesService] No se pudo obtener la tasa BCV:', err);
+      throw err;
     }
 
-    
-return { ...this.bcvRate };
+    return { ...this.bcvRate };
   }
 
-  public async updateBcvRate(nuevaTasa: number): Promise<BcvRate> {
-    this.bcvRate = {
-      ...this.bcvRate,
-      tasa: nuevaTasa,
-      sincronizado_at: new Date().toISOString()
-    };
-    
-return { ...this.bcvRate };
+  public async updateBcvRate(_nuevaTasa: number): Promise<BcvRate> {
+    void _nuevaTasa
+
+    throw new Error('La tasa BCV es administrada por el backend y no se modifica desde ventas.');
   }
 
   // Búsqueda de Clientes Conectada al Directorio de Terceros (Partners)
@@ -515,14 +478,7 @@ return [...this.products];
       if (res?.salesQuotes && Array.isArray(res.salesQuotes)) {
         const mappedQuotes: Quote[] = res.salesQuotes.map(q => this.mapBackendQuoteToFrontend(q));
 
-        if (mappedQuotes.length > 0) {
-          // Mantener borradores locales que no hayan sido sincronizados aún
-          const backendIds = new Set(mappedQuotes.map(bq => bq.id));
-          const localDrafts = this.quotes.filter(lq => !backendIds.has(lq.id) && lq.id.startsWith('quote-'));
-
-          this.quotes = [...mappedQuotes, ...localDrafts];
-          this.persistToStorage();
-        }
+        this.quotes = mappedQuotes
       }
     } catch (err) {
       console.warn('[salesQuotesService] Backend salesQuotes no disponible, usando caché local:', err);
