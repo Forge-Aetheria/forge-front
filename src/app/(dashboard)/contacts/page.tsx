@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 };
 
 const ContactsPage = () => {
-  return <EntityContactsTab terceroId="tercero-demo" />;
+  return <EntityContactsTab />;
 };
 
 export default ContactsPage;
