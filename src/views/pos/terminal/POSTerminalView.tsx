@@ -15,12 +15,10 @@ import Button from '@mui/material/Button'
 import type { ProductTemplate, ProductVariant } from '@/types/inventoryTypes'
 import type { POSCartItem, POSCustomer, ParkedOrder, POSPaymentRecord, ChangeResolutionType } from '@/types/posTypes'
 import { getInventoryTemplates } from '@/services/inventoryService'
-import { defaultCustomer } from '@/data/pos/mockPosData'
 import {
-  getBCVRate,
-  setBCVRate,
-  getFiscalMode,
-  setFiscalMode,
+  getPosBCVRate,
+  getPosFiscalMode,
+  setPosFiscalMode,
   calculateCartTotals,
   getParkedOrders,
   saveParkedOrder,
@@ -34,13 +32,19 @@ import POSCart from './POSCart'
 import POSPaymentModal from './POSPaymentModal'
 import POSParkedOrdersModal from './POSParkedOrdersModal'
 
+const DEFAULT_POS_CUSTOMER: POSCustomer = {
+  id: '',
+  name: 'Consumidor Final',
+  identification: 'V-00000000'
+}
+
 const POSTerminalView = () => {
   // States
   const [templates, setTemplates] = useState<ProductTemplate[]>([])
   const [bcvRate, setBcvRateState] = useState(36.5)
   const [fiscalMode, setFiscalModeState] = useState(true)
   const [cart, setCart] = useState<POSCartItem[]>([])
-  const [customer, setCustomer] = useState<POSCustomer>(defaultCustomer)
+  const [customer, setCustomer] = useState<POSCustomer>(DEFAULT_POS_CUSTOMER)
   const [parkedOrders, setParkedOrders] = useState<ParkedOrder[]>([])
 
   // Modal States
@@ -51,11 +55,15 @@ const POSTerminalView = () => {
   // Initialize
   useEffect(() => {
     const init = async () => {
-      const prods = await getInventoryTemplates()
+      const [prods, rate, fiscal] = await Promise.all([
+        getInventoryTemplates(),
+        getPosBCVRate().catch(() => 0),
+        getPosFiscalMode().catch(() => true)
+      ])
 
       setTemplates(prods)
-      setBcvRateState(getBCVRate())
-      setFiscalModeState(getFiscalMode())
+      setBcvRateState(rate)
+      setFiscalModeState(fiscal)
       setParkedOrders(getParkedOrders())
     }
 
@@ -64,12 +72,11 @@ const POSTerminalView = () => {
 
   const handleUpdateBCV = (newRate: number) => {
     setBcvRateState(newRate)
-    setBCVRate(newRate)
   }
 
   const handleToggleFiscal = (fiscal: boolean) => {
     setFiscalModeState(fiscal)
-    setFiscalMode(fiscal)
+    void setPosFiscalMode(fiscal)
   }
 
   // Cart Totals
@@ -176,7 +183,7 @@ const POSTerminalView = () => {
 
     setParkedOrders(updated)
     setCart([])
-    setCustomer(defaultCustomer)
+    setCustomer(DEFAULT_POS_CUSTOMER)
   }
 
   const handleResumeOrder = (order: ParkedOrder) => {
@@ -213,7 +220,7 @@ const POSTerminalView = () => {
 
     setCompletedSaleModal(saleRecord)
     setCart([])
-    setCustomer(defaultCustomer)
+    setCustomer(DEFAULT_POS_CUSTOMER)
   }
 
   return (

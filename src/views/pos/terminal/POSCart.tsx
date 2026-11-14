@@ -1,7 +1,7 @@
 'use client'
 
 // React Imports
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 // MUI Imports
 import Typography from '@mui/material/Typography'
@@ -19,7 +19,7 @@ import CustomTextField from '@core/components/mui/TextField'
 
 // Type Imports
 import type { POSCartItem, POSCustomer } from '@/types/posTypes'
-import { mockCustomers } from '@/data/pos/mockPosData'
+import { contactsService } from '@/services/contactsService'
 
 type Props = {
   items: POSCartItem[]
@@ -59,9 +59,28 @@ const POSCart = ({
   // States
   const [customerModalOpen, setCustomerModalOpen] = useState(false)
   const [selectedCustomerId, setSelectedCustomerId] = useState(customer.id)
+  const [customers, setCustomers] = useState<POSCustomer[]>([])
+
+  useEffect(() => {
+    contactsService
+      .getTerceros({ clasificacion: 'CLIENTE' })
+      .then(list =>
+        setCustomers(
+          list.map(t => ({
+            id: t.id,
+            name: t.nombre_razon_social,
+            identification: t.identificacion,
+            email: t.email_principal || undefined,
+            phone: t.telefono_principal || undefined,
+            address: t.direccion || undefined
+          }))
+        )
+      )
+      .catch(() => setCustomers([]))
+  }, [])
 
   const handleSaveCustomer = () => {
-    const found = mockCustomers.find(c => c.id === selectedCustomerId)
+    const found = customers.find(c => c.id === selectedCustomerId)
 
     if (found) {
       onUpdateCustomer(found)
@@ -271,7 +290,7 @@ const POSCart = ({
             value={selectedCustomerId}
             onChange={e => setSelectedCustomerId(e.target.value)}
           >
-            {mockCustomers.map(c => (
+            {customers.map(c => (
               <MenuItem key={c.id} value={c.id}>
                 {c.name} ({c.identification})
               </MenuItem>

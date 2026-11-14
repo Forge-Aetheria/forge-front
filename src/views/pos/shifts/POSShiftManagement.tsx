@@ -21,7 +21,7 @@ import CustomTextField from '@core/components/mui/TextField'
 
 // Type Imports
 import type { POSShift } from '@/types/posTypes'
-import { getActiveShift, saveActiveShift } from '@/services/posService'
+import { closePosShift, getActivePosShiftForFirstTerminal, openPosShift } from '@/services/posService'
 
 const POSShiftManagement = () => {
   // States
@@ -31,31 +31,25 @@ const POSShiftManagement = () => {
   const [closed, setClosed] = useState(false)
 
   useEffect(() => {
-    setShift(getActiveShift())
+    getActivePosShiftForFirstTerminal()
+      .then(current => setShift(current))
+      .catch(() => setShift(null))
   }, [])
 
   if (!shift) return null
 
-  const handleBlindClose = () => {
+  const handleBlindClose = async () => {
     const decUSD = parseFloat(declaredUSD) || 0
     const decVES = parseFloat(declaredVES) || 0
 
-    const diffUSD = decUSD - shift.totalCashUSD
-    const diffVES = decVES - shift.totalCashVES
+    try {
+      const updated = await closePosShift(shift.id, decUSD, decVES)
 
-    const updated: POSShift = {
-      ...shift,
-      status: 'CLOSED',
-      closingDate: new Date().toISOString(),
-      declaredCashUSD: decUSD,
-      declaredCashVES: decVES,
-      differenceUSD: diffUSD,
-      differenceVES: diffVES
+      setShift(updated)
+      setClosed(true)
+    } catch {
+      setClosed(false)
     }
-
-    setShift(updated)
-    saveActiveShift(updated)
-    setClosed(true)
   }
 
   return (
@@ -229,12 +223,20 @@ const POSShiftManagement = () => {
                   <Button
                     variant='outlined'
                     color='primary'
-                    onClick={() => {
-                      setClosed(false)
-                      const reopened = { ...shift, status: 'OPEN' as const }
+                    onClick={async () => {
+                      try {
+                        const reopened = await openPosShift(
+                          shift.terminalId ?? '',
+                          shift.exchangeRateBCV,
+                          shift.initialCashUSD,
+                          shift.initialCashVES
+                        )
 
-                      setShift(reopened)
-                      saveActiveShift(reopened)
+                        setShift(reopened)
+                        setClosed(false)
+                      } catch {
+                        setClosed(true)
+                      }
                     }}
                   >
                     Reabrir Turno para Pruebas

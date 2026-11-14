@@ -21,7 +21,7 @@ import CustomTextField from '@core/components/mui/TextField'
 
 // Type Imports
 import type { POSPaymentRecord, PaymentMethodType, ChangeResolutionType } from '@/types/posTypes'
-import { posPaymentMethods } from '@/data/pos/mockPosData'
+import { posPaymentMethods } from '@/configs/posPaymentMethods'
 import { calculateTransaction } from '@/services/posService'
 
 type Props = {
