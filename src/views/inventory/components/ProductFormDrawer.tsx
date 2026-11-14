@@ -62,14 +62,6 @@ const DEFAULT_CATEGORIES = [
   'Servicios Profesionales'
 ]
 
-const DEFAULT_UOMS = [
-  { code: 'un', label: 'Unidad (un)' },
-  { code: 'kg', label: 'Kilogramo (kg)' },
-  { code: 'L', label: 'Litro (L)' },
-  { code: 'm', label: 'Metro (m)' },
-  { code: 'paquete', label: 'Paquete / Caja' },
-  { code: 'servicio', label: 'Servicio / Hora' }
-]
 
 const ProductFormDrawer: React.FC<Props> = ({
   open,
