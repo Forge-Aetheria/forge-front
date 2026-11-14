@@ -57,7 +57,7 @@ export const normalizeRif = (
       : null
 
   if (explicitDigit !== null && !/^\d$/.test(explicitDigit)) {
-    throw new RifValidationError('El dígito verificador debe ser un único dígito', 'checkDigit')
+    throw new RifValidationError('El dígito verificador debe ser un número de un solo dígito (0 a 9)', 'checkDigit')
   }
 
   const trimmed = rawNumber.trim().toUpperCase()
@@ -70,7 +70,7 @@ export const normalizeRif = (
   }
 
   if (!/^\d+$/.test(digits)) {
-    throw new RifValidationError(`El número de un documento ${docType} debe ser numérico`, 'docNumber')
+    throw new RifValidationError(`El número de un documento ${docType} debe contener solo números`, 'docNumber')
   }
 
   if (checkDigit === null && digits.length === RIF_BODY_LENGTH + 1) {
