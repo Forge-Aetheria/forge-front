@@ -1,14 +1,14 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+
 import Link from 'next/link';
+
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
 import Snackbar from '@mui/material/Snackbar';
 import Alert from '@mui/material/Alert';
 import useMediaQuery from '@mui/material/useMediaQuery';
-import IconButton from '@mui/material/IconButton';
-import Tooltip from '@mui/material/Tooltip';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import Checkbox from '@mui/material/Checkbox';
@@ -17,8 +17,9 @@ import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
+
 import CustomChip from '@core/components/mui/Chip';
-import { BcvRate, Quote, QuotesFilterState, QuoteVisibleColumns } from '@/types/salesQuotesTypes';
+import type { BcvRate, Quote, QuotesFilterState, QuoteVisibleColumns } from '@/types/salesQuotesTypes';
 import { salesQuotesService } from '@/services/salesQuotesService';
 import { QuotesListFilters } from './components/QuotesListFilters';
 import { QuotesTable } from './components/QuotesTable';
@@ -26,13 +27,12 @@ import { QuotesMobileList } from './components/QuotesMobileList';
 import { QuotesTableSkeleton } from './components/QuotesTableSkeleton';
 import { QuoteQuickViewDrawer } from './components/QuoteQuickViewDrawer';
 import { CancelQuoteModal } from './components/CancelQuoteModal';
-import { BcvRateBadge } from './components/BcvRateBadge';
 
 export const QuotesListView: React.FC = () => {
   const isDesktop = useMediaQuery('(min-width:768px)');
 
   const [quotes, setQuotes] = useState<Quote[]>([]);
-  const [bcvRate, setBcvRate] = useState<BcvRate | null>(null);
+  const [, setBcvRate] = useState<BcvRate | null>(null);
   const [loading, setLoading] = useState(true);
 
   const [filters, setFilters] = useState<QuotesFilterState>({
@@ -42,6 +42,7 @@ export const QuotesListView: React.FC = () => {
 
   // Selección múltiple y control de columnas
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+
   const [visibleColumns, setVisibleColumns] = useState<QuoteVisibleColumns>({
     cliente: true,
     emision: true,
@@ -50,6 +51,7 @@ export const QuotesListView: React.FC = () => {
     montoVes: true,
     estado: true
   });
+
   const [columnAnchorEl, setColumnAnchorEl] = useState<HTMLElement | null>(null);
   const [batchMenuAnchorEl, setBatchMenuAnchorEl] = useState<HTMLElement | null>(null);
   const [batchCancelConfirmOpen, setBatchCancelConfirmOpen] = useState(false);
@@ -76,10 +78,12 @@ export const QuotesListView: React.FC = () => {
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
+
       const [quotesData, rateData] = await Promise.all([
         salesQuotesService.getQuotes(filters),
         salesQuotesService.getActiveBcvRate()
       ]);
+
       setQuotes(quotesData);
       setBcvRate(rateData);
     } catch (err: any) {
@@ -144,6 +148,7 @@ export const QuotesListView: React.FC = () => {
   const handleBatchCopy = () => {
     const selectedQuotes = quotes.filter(q => selectedIds.includes(q.id));
     const codes = selectedQuotes.map(q => q.correlativo).join(', ');
+
     navigator.clipboard.writeText(codes);
     setBatchMenuAnchorEl(null);
     setToast({
@@ -156,9 +161,11 @@ export const QuotesListView: React.FC = () => {
   const handleConfirmBatchCancel = async () => {
     setBatchCancelConfirmOpen(false);
     const count = selectedIds.length;
+
     for (const id of selectedIds) {
       await salesQuotesService.cancelQuote(id, 'Anulación masiva desde listado de ventas');
     }
+
     setToast({
       open: true,
       message: `${count} cotizaciones anuladas exitosamente.`,

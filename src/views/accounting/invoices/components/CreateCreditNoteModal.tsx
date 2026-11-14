@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useMemo } from 'react'
+
 import Dialog from '@mui/material/Dialog'
 import DialogTitle from '@mui/material/DialogTitle'
 import DialogContent from '@mui/material/DialogContent'
@@ -76,6 +77,7 @@ export const CreateCreditNoteModal: React.FC<Props> = ({
 
     // Initialize line return quantities to 0
     const initialQty: Record<string, number> = {}
+
     invoice.lineas.forEach(l => {
       initialQty[l.id] = 0
     })
@@ -131,6 +133,7 @@ export const CreateCreditNoteModal: React.FC<Props> = ({
 
     invoice.lineas.forEach((origLine, idx) => {
       const qtyToReturn = Number(returnQuantities[origLine.id]) || 0
+
       if (qtyToReturn > 0) {
         const lineSubtotal = Number((qtyToReturn * origLine.precioUnitarioUsd).toFixed(2))
         const lineIva = Number(((lineSubtotal * origLine.tasaImpuestoPct) / 100).toFixed(2))
@@ -167,7 +170,6 @@ export const CreateCreditNoteModal: React.FC<Props> = ({
   }, [mode, montoPersonalizadoUsd, returnQuantities, invoice, selectedReason])
 
   const nuevoSaldoPendienteUsd = Math.max(0, Number((invoice.saldoPendienteUsd - calculation.totalUsd).toFixed(2)))
-  const nuevoSaldoPendienteVes = Math.max(0, Number((nuevoSaldoPendienteUsd * invoice.tasaBcv).toFixed(2)))
 
   const isFormValid =
     calculation.totalUsd > 0 &&
@@ -368,6 +370,7 @@ export const CreateCreditNoteModal: React.FC<Props> = ({
                             value={currentQty}
                             onChange={e => {
                               const val = Math.min(line.cantidad, Math.max(0, Number(e.target.value)))
+
                               setReturnQuantities(prev => ({ ...prev, [line.id]: val }))
                             }}
                             inputProps={{ min: 0, max: line.cantidad, style: { textAlign: 'center', padding: '4px' } }}

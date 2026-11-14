@@ -1,10 +1,13 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+
+import Link from 'next/link';
+
 import CircularProgress from '@mui/material/CircularProgress';
 import Button from '@mui/material/Button';
-import Link from 'next/link';
-import { Quote } from '@/types/salesQuotesTypes';
+
+import type { Quote } from '@/types/salesQuotesTypes';
 import { salesQuotesService } from '@/services/salesQuotesService';
 import { QuoteMasterDetailForm } from './QuoteMasterDetailForm';
 
@@ -22,14 +25,19 @@ export const QuoteEditWrapper: React.FC<Props> = ({ id }) => {
       try {
         setLoading(true);
         const data = await salesQuotesService.getQuoteById(id);
+
         if (!data) {
           setError('La cotización solicitada no existe.');
-          return;
+          
+return;
         }
+
         if (data.estado !== 'DRAFT') {
           setError(`La cotización ${data.correlativo} está en estado "${data.estado}" y no puede ser modificada.`);
-          return;
+          
+return;
         }
+
         setQuote(data);
       } catch (err: any) {
         setError(err?.message || 'Error al cargar la cotización.');
@@ -37,6 +45,7 @@ export const QuoteEditWrapper: React.FC<Props> = ({ id }) => {
         setLoading(false);
       }
     };
+
     fetchQuote();
   }, [id]);
 

@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+
 import POSTerminalView from '@/views/pos/terminal/POSTerminalView'
 
 export const metadata: Metadata = {

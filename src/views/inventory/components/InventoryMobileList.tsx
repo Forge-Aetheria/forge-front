@@ -1,7 +1,9 @@
 'use client'
 
 import React from 'react'
+
 import Link from 'next/link'
+
 import Chip from '@mui/material/Chip'
 import IconButton from '@mui/material/IconButton'
 import Tooltip from '@mui/material/Tooltip'
@@ -21,7 +23,6 @@ const InventoryMobileList: React.FC<Props> = ({
   templates,
   fiscalEnabled,
   onQuickView,
-  onEdit,
   onAdjustStock
 }) => {
   if (templates.length === 0) {
@@ -42,9 +43,11 @@ const InventoryMobileList: React.FC<Props> = ({
           template.vatRate,
           fiscalEnabled
         )
+
         const totalAvailable = template.variants.reduce((acc, v) => acc + v.availableStock, 0)
         const isService = template.productType === 'service'
         const isOutOfStock = !isService && totalAvailable === 0
+
         const isLowStock =
           !isService && !isOutOfStock && Boolean(template.minStock && totalAvailable <= template.minStock)
 

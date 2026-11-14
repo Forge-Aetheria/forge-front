@@ -1,7 +1,9 @@
 'use client'
 
 import React from 'react'
+
 import Link from 'next/link'
+
 import Table from '@mui/material/Table'
 import TableBody from '@mui/material/TableBody'
 import TableCell from '@mui/material/TableCell'
@@ -12,7 +14,8 @@ import IconButton from '@mui/material/IconButton'
 import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 import Checkbox from '@mui/material/Checkbox'
-import { PurchaseQuote, PurchaseVisibleColumns } from '@/types/purchasesTypes'
+
+import type { PurchaseQuote, PurchaseVisibleColumns } from '@/types/purchasesTypes'
 import { PurchaseStatusChip } from './PurchaseStatusChip'
 
 interface Props {
@@ -50,6 +53,7 @@ export const PurchasesTable: React.FC<Props> = ({
 
   // Calcular número total de columnas visibles para el colSpan del estado vacío
   let totalCols = 3 // Checkbox, Correlativo, Proveedor, Acciones = 4
+
   if (visibleColumns.refProveedor) totalCols++
   if (visibleColumns.fechaVigencia) totalCols++
   if (visibleColumns.costoUsd) totalCols++
@@ -137,10 +141,13 @@ export const PurchasesTable: React.FC<Props> = ({
           ) : (
             quotes.map(quote => {
               const displayCorrelativo = quote.correlativo_orden_compra || quote.correlativo
+
               const isValidityExpired =
                 quote.estado === 'RFQ_SENT' && quote.fecha_vencimiento_cotizacion < today
+
               const isRateOutdated =
                 quote.estado === 'RFQ_SENT' && Math.abs(quote.tasa_bcv.tasa - activeBcvRate) > 0.001
+
               const isSelected = selectedIds.includes(quote.id)
 
               return (

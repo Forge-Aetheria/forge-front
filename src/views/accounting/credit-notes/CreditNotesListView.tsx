@@ -1,13 +1,16 @@
 'use client'
 
 import React, { useState, useEffect, useMemo } from 'react'
+
+import { useSearchParams, useRouter } from 'next/navigation'
+
 import Card from '@mui/material/Card'
 import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
 import Button from '@mui/material/Button'
 import TextField from '@mui/material/TextField'
 import MenuItem from '@mui/material/MenuItem'
-import CustomChip from '@core/components/mui/Chip'
+
 import TablePagination from '@mui/material/TablePagination'
 import Table from '@mui/material/Table'
 import TableBody from '@mui/material/TableBody'
@@ -21,7 +24,8 @@ import Tooltip from '@mui/material/Tooltip'
 import Snackbar from '@mui/material/Snackbar'
 import Alert from '@mui/material/Alert'
 import Skeleton from '@mui/material/Skeleton'
-import { useSearchParams, useRouter } from 'next/navigation'
+
+import CustomChip from '@core/components/mui/Chip'
 
 import { accountingService } from '@/services/accountingService'
 import type { AccountingInvoice, InvoiceAccountingType } from '@/types/accountingTypes'
@@ -59,6 +63,7 @@ export const CreditNotesListView: React.FC = () => {
     try {
       setLoading(true)
       const list = await accountingService.getCreditNotes()
+
       setCreditNotes(list)
     } finally {
       setLoading(false)
@@ -82,6 +87,7 @@ export const CreditNotesListView: React.FC = () => {
       const matchType = typeFilter === 'ALL' || nc.tipo === typeFilter
 
       const isDirect = !nc.facturaAfectadaId && !nc.facturaAfectadaNumero
+
       const matchOrigin =
         originFilter === 'ALL' ||
         (originFilter === 'DIRECT' && isDirect) ||
@@ -108,12 +114,17 @@ export const CreditNotesListView: React.FC = () => {
   const handleCreditNoteSaved = (savedNc: AccountingInvoice) => {
     setCreditNotes(prev => {
       const index = prev.findIndex(item => item.id === savedNc.id)
+
       if (index >= 0) {
         const updated = [...prev]
+
         updated[index] = savedNc
-        return updated
+        
+return updated
       }
-      return [savedNc, ...prev]
+
+      
+return [savedNc, ...prev]
     })
     setToastMessage(`Nota de Crédito ${savedNc.numeroFactura} guardada con éxito.`)
     setIsFormActive(false)

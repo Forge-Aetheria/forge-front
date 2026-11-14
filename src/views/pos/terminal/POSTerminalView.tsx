@@ -81,6 +81,7 @@ const POSTerminalView = () => {
   const handleAddToCart = (template: ProductTemplate, variant: ProductVariant) => {
     const existing = cart.find(i => i.variantId === variant.id)
     const unitPriceUSD = template.basePrice + variant.priceExtra
+
     const variantLabel =
       variant.combinationValues.length > 0
         ? variant.combinationValues.map(c => `${c.attributeName}: ${c.valueName}`).join(' · ')

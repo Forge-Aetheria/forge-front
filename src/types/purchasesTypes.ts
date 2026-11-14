@@ -184,12 +184,16 @@ export interface PurchaseVisibleColumns {
 }
 
 export interface PurchasesFeatureFlags {
+
   // Desglose de Crédito Fiscal (IVA Compras 16% / 8% / Exento). Si es false, opera en modo Costo Neto Universal
   IVA_COMPRAS: boolean
+
   // Cálculo opcional de IGTF (3%) para pagos proyectados en divisas o según negociación con el proveedor
   IGTF: boolean
+
   // Validación estricta de formato fiscal venezolano (RIF/Cédula ^[VEJG]-\d{8,9}$) e indicadores de Retención IVA/ISLR
   SENIAT_FORMAT: boolean
+
   // Modo de notificación de inventario en tránsito al confirmar Orden de Compra ('ENABLED' | 'DISABLED')
   STOCK_TRANSIT_MODE: 'ENABLED' | 'DISABLED'
 }

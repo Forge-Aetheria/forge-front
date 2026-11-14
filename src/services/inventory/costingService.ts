@@ -1,7 +1,7 @@
 // Servicio de Costeo y Valorización de Inventario (AVCO / Costo Promedio Ponderado por Variante)
 // Cumple con la normativa VEN-NIF (NIC 2) y el Código Orgánico Tributario / SENIAT
 
-import type { ProductVariant, ProductTemplate, NegativeStockPolicy } from '@/types/inventoryTypes'
+import type { ProductVariant, NegativeStockPolicy } from '@/types/inventoryTypes'
 import { settingsService } from '@/services/settingsService'
 
 /**

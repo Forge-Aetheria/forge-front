@@ -14,8 +14,10 @@ import Chip from '@mui/material/Chip'
 import IconButton from '@mui/material/IconButton'
 import Divider from '@mui/material/Divider'
 import Alert from '@mui/material/Alert'
-import CustomTextField from '@core/components/mui/TextField'
+
 import MenuItem from '@mui/material/MenuItem'
+
+import CustomTextField from '@core/components/mui/TextField'
 
 // Type Imports
 import type { POSPaymentRecord, PaymentMethodType, ChangeResolutionType } from '@/types/posTypes'

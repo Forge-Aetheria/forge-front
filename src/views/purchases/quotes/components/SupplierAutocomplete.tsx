@@ -1,11 +1,15 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+
+import CircularProgress from '@mui/material/CircularProgress'
+
+import Chip from '@mui/material/Chip'
+
 import CustomAutocomplete from '@core/components/mui/Autocomplete'
 import CustomTextField from '@core/components/mui/TextField'
-import CircularProgress from '@mui/material/CircularProgress'
-import Chip from '@mui/material/Chip'
-import { SupplierLookup } from '@/types/purchasesTypes'
+
+import type { SupplierLookup } from '@/types/purchasesTypes'
 import { purchasesService } from '@/services/purchasesService'
 
 interface Props {
@@ -31,11 +35,13 @@ export const SupplierAutocomplete: React.FC<Props> = ({
   // Búsqueda predictiva debounced (300ms) por RIF/Cédula o Razón Social (EARS-EV-01)
   useEffect(() => {
     let active = true
+
     setLoading(true)
 
     const timer = setTimeout(async () => {
       try {
         const results = await purchasesService.searchSuppliers(searchTerm)
+
         if (active) {
           setOptions(results)
         }

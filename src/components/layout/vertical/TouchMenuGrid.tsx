@@ -1,7 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+
 import { usePathname } from 'next/navigation'
+
 import Typography from '@mui/material/Typography'
 import Chip from '@mui/material/Chip'
 import Button from '@mui/material/Button'
@@ -26,12 +28,16 @@ interface NavLayer {
 const isItemActive = (item: VerticalMenuDataType, path: string): boolean => {
   if ('href' in item && item.href) {
     if (item.href === '/') return path === '/'
-    return path === item.href || path.startsWith(item.href + '/') || path.startsWith(item.href + '?')
+    
+return path === item.href || path.startsWith(item.href + '/') || path.startsWith(item.href + '?')
   }
+
   if ('children' in item && Array.isArray((item as VerticalSubMenuDataType).children)) {
     return (item as VerticalSubMenuDataType).children.some(child => isItemActive(child, path))
   }
-  return false
+
+  
+return false
 }
 
 const findPathStack = (
@@ -43,17 +49,23 @@ const findPathStack = (
     if ('children' in item && Array.isArray((item as VerticalSubMenuDataType).children)) {
       const sub = item as VerticalSubMenuDataType
       const newStack = [...currentStack, { title: sub.label, items: sub.children }]
+
       const hasDirectMatch = sub.children.some(
         c => 'href' in c && c.href && (path === c.href || path.startsWith(c.href + '/') || path.startsWith(c.href + '?'))
       )
+
       if (hasDirectMatch) {
         return newStack
       }
+
       const deep = findPathStack(sub.children, path, newStack)
+
       if (deep) return deep
     }
   }
-  return null
+
+  
+return null
 }
 
 export const TouchMenuGrid = ({ items }: Props) => {
@@ -63,6 +75,7 @@ export const TouchMenuGrid = ({ items }: Props) => {
   // Sincronizar automáticamente la pila con la ruta activa al cargar o navegar
   useEffect(() => {
     const matchingStack = findPathStack(items, pathname)
+
     if (matchingStack && matchingStack.length > 0) {
       setNavStack(matchingStack)
     }
@@ -161,6 +174,7 @@ export const TouchMenuGrid = ({ items }: Props) => {
 
           // Si es un ítem navegable final
           const menuItem = item as VerticalMenuItemDataType
+
           const isCurrentActive = menuItem.href
             ? menuItem.href === '/'
               ? pathname === '/'

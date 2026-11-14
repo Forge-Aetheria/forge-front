@@ -1,8 +1,10 @@
 'use client'
 
 import React, { useEffect, useMemo, useState } from 'react'
+
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+
 import Typography from '@mui/material/Typography'
 import Card from '@mui/material/Card'
 import CardContent from '@mui/material/CardContent'
@@ -12,8 +14,6 @@ import Snackbar from '@mui/material/Snackbar'
 import Alert from '@mui/material/Alert'
 import Skeleton from '@mui/material/Skeleton'
 import Checkbox from '@mui/material/Checkbox'
-import IconButton from '@mui/material/IconButton'
-import Tooltip from '@mui/material/Tooltip'
 import Menu from '@mui/material/Menu'
 import MenuItem from '@mui/material/MenuItem'
 import Divider from '@mui/material/Divider'
@@ -31,27 +31,13 @@ import TablePagination from '@mui/material/TablePagination'
 import CustomChip from '@core/components/mui/Chip'
 import CustomTextField from '@core/components/mui/TextField'
 
-import type {
-  ProductTemplate,
-  Warehouse,
-  WarehouseOperationOrder,
-  WarehouseOperationType
-} from '@/types/inventoryTypes'
+import type { WarehouseOperationOrder, WarehouseOperationType } from '@/types/inventoryTypes'
 import {
-  getInventoryTemplates,
-  getWarehouses,
   getWarehouseOperationOrders,
-  createWarehouseOperationOrder,
   validateWarehouseOperationOrder,
   cancelWarehouseOperationOrder,
-  getActiveBcvRate
 } from '@/services/inventoryService'
-import {
-  OPERATION_CONFIG,
-  STATUS_META,
-  type FlattenedVariantOption,
-  type NewOrderLineDraft
-} from './components/operations/operationConstants'
+import { OPERATION_CONFIG, STATUS_META } from './components/operations/operationConstants'
 
 interface WarehouseOperationsListViewProps {
   operationType: WarehouseOperationType
@@ -62,7 +48,6 @@ const WarehouseOperationsListView: React.FC<WarehouseOperationsListViewProps> = 
 }) => {
   const router = useRouter()
   const cfg = OPERATION_CONFIG[operationType]
-  const bcvRate = getActiveBcvRate()
 
   const currentBaseRoute = useMemo(() => {
     switch (operationType) {
@@ -78,12 +63,11 @@ const WarehouseOperationsListView: React.FC<WarehouseOperationsListViewProps> = 
   }, [operationType])
 
   const [orders, setOrders] = useState<WarehouseOperationOrder[]>([])
-  const [templates, setTemplates] = useState<ProductTemplate[]>([])
-  const [warehouses, setWarehouses] = useState<Warehouse[]>([])
   const [loading, setLoading] = useState(true)
 
   // Filters
   const [search, setSearch] = useState('')
+
   const [statusFilter, setStatusFilter] = useState<
     'ALL' | 'READY' | 'WAITING' | 'COMPLETED' | 'CANCELLED'
   >('ALL')
@@ -94,6 +78,7 @@ const WarehouseOperationsListView: React.FC<WarehouseOperationsListViewProps> = 
 
   // Selección múltiple y control de columnas
   const [selectedIds, setSelectedIds] = useState<string[]>([])
+
   const [visibleColumns, setVisibleColumns] = useState<{
     partner: boolean
     flujo: boolean
@@ -107,28 +92,14 @@ const WarehouseOperationsListView: React.FC<WarehouseOperationsListViewProps> = 
     articulos: true,
     estado: true
   })
+
   const [columnAnchorEl, setColumnAnchorEl] = useState<HTMLElement | null>(null)
   const [batchMenuAnchorEl, setBatchMenuAnchorEl] = useState<HTMLElement | null>(null)
   const [batchCancelConfirmOpen, setBatchCancelConfirmOpen] = useState(false)
 
   // Detail & Validation Drawer
-  const [selectedOrder, setSelectedOrder] = useState<WarehouseOperationOrder | null>(null)
-  const [editedQtys, setEditedQtys] = useState<Record<string, string>>({})
-  const [validating, setValidating] = useState(false)
 
   // Creation Drawer
-  const [createOpen, setCreateOpen] = useState(false)
-  const [creating, setCreating] = useState(false)
-  const [newPartner, setNewPartner] = useState('')
-  const [newDocOrigin, setNewDocOrigin] = useState('')
-  const [newDate, setNewDate] = useState(() => new Date().toISOString().slice(0, 10))
-  const [newResponsable, setNewResponsable] = useState('Elena Rivas')
-  const [newNotes, setNewNotes] = useState('')
-  const [originWhId, setOriginWhId] = useState('')
-  const [originLocCode, setOriginLocCode] = useState('')
-  const [destWhId, setDestWhId] = useState('')
-  const [destLocCode, setDestLocCode] = useState('')
-  const [newLines, setNewLines] = useState<NewOrderLineDraft[]>([])
 
   const [toast, setToast] = useState<{
     open: boolean
@@ -138,34 +109,10 @@ const WarehouseOperationsListView: React.FC<WarehouseOperationsListViewProps> = 
 
   const loadData = async () => {
     setLoading(true)
-    const [ords, tpls, whs] = await Promise.all([
-      getWarehouseOperationOrders(operationType),
-      getInventoryTemplates(),
-      getWarehouses()
-    ])
+
+    const ords = await getWarehouseOperationOrders(operationType)
 
     setOrders(ords)
-    setTemplates(tpls)
-    setWarehouses(whs)
-
-    if (whs.length > 0) {
-      const defWh = whs.find(w => w.isDefault) || whs[0]
-      const secondWh = whs[1] || defWh
-
-      setOriginWhId(defWh.id)
-      setOriginLocCode(
-        defWh.locations[0] ? `${defWh.locations[0].code} · ${defWh.locations[0].name}` : ''
-      )
-      setDestWhId(operationType === 'INTERNAL_TRANSFER' ? secondWh.id : defWh.id)
-      const targetWh = operationType === 'INTERNAL_TRANSFER' ? secondWh : defWh
-
-      setDestLocCode(
-        targetWh.locations[0]
-          ? `${targetWh.locations[0].code} · ${targetWh.locations[0].name}`
-          : ''
-      )
-    }
-
     setLoading(false)
   }
 
@@ -174,39 +121,10 @@ const WarehouseOperationsListView: React.FC<WarehouseOperationsListViewProps> = 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [operationType])
 
-  // Flatten variants for Autocomplete
-  const variantOptions = useMemo<FlattenedVariantOption[]>(() => {
-    const list: FlattenedVariantOption[] = []
-
-    templates.forEach(t => {
-      if (t.productType === 'service') return
-      t.variants.forEach(v => {
-        const comb =
-          v.combinationValues.length > 0
-            ? v.combinationValues.map(c => `${c.attributeName}: ${c.valueName}`).join(' / ')
-            : 'Estándar'
-
-        list.push({
-          key: `${t.id}__${v.id}`,
-          templateId: t.id,
-          productName: t.name,
-          variantId: v.id,
-          sku: v.sku,
-          combinationLabel: comb,
-          uomCode: t.uomCode,
-          physicalStock: v.physicalStock,
-          availableStock: v.availableStock,
-          unitCost: v.costPrice || t.standardCost
-        })
-      })
-    })
-
-    return list
-  }, [templates])
-
   const filteredOrders = useMemo(() => {
     return orders.filter(o => {
       if (statusFilter === 'READY' && o.estado !== 'READY') return false
+
       if (
         statusFilter === 'WAITING' &&
         o.estado !== 'WAITING' &&
@@ -215,6 +133,7 @@ const WarehouseOperationsListView: React.FC<WarehouseOperationsListViewProps> = 
       ) {
         return false
       }
+
       if (statusFilter === 'COMPLETED' && o.estado !== 'COMPLETED') return false
       if (statusFilter === 'CANCELLED' && o.estado !== 'CANCELLED') return false
 
@@ -223,9 +142,11 @@ const WarehouseOperationsListView: React.FC<WarehouseOperationsListViewProps> = 
         const matchCode = o.codigo.toLowerCase().includes(q)
         const matchPartner = o.tercero_nombre.toLowerCase().includes(q)
         const matchDoc = (o.documento_origen || '').toLowerCase().includes(q)
+
         const matchWh =
           o.almacen_origen_nombre.toLowerCase().includes(q) ||
           o.almacen_destino_nombre.toLowerCase().includes(q)
+
         const matchLine = o.lineas.some(
           l =>
             l.producto_nombre.toLowerCase().includes(q) ||
@@ -261,6 +182,7 @@ const WarehouseOperationsListView: React.FC<WarehouseOperationsListViewProps> = 
   const handleBatchCopyCodes = () => {
     const selected = orders.filter(o => selectedIds.includes(o.id))
     const codes = selected.map(o => o.codigo).join(', ')
+
     navigator.clipboard.writeText(codes)
     setBatchMenuAnchorEl(null)
     setToast({
@@ -273,17 +195,21 @@ const WarehouseOperationsListView: React.FC<WarehouseOperationsListViewProps> = 
   const handleBatchValidate = async () => {
     setBatchMenuAnchorEl(null)
     const readyOrders = orders.filter(o => selectedIds.includes(o.id) && o.estado === 'READY')
+
     if (readyOrders.length === 0) {
       setToast({
         open: true,
         message: 'Ninguna de las órdenes seleccionadas está en estado "Lista" para validar.',
         severity: 'info'
       })
-      return
+      
+return
     }
+
     for (const ord of readyOrders) {
       await validateWarehouseOperationOrder(ord.id)
     }
+
     setToast({
       open: true,
       message: `${readyOrders.length} operaciones validadas exitosamente.`,
@@ -296,9 +222,11 @@ const WarehouseOperationsListView: React.FC<WarehouseOperationsListViewProps> = 
   const handleConfirmBatchCancel = async () => {
     setBatchCancelConfirmOpen(false)
     const count = selectedIds.length
+
     for (const id of selectedIds) {
       await cancelWarehouseOperationOrder(id)
     }
+
     setToast({
       open: true,
       message: `${count} operaciones canceladas.`,
@@ -318,193 +246,6 @@ const WarehouseOperationsListView: React.FC<WarehouseOperationsListViewProps> = 
     visibleColumns.articulos,
     visibleColumns.estado
   ].filter(Boolean).length
-
-  const openOrderDetail = (order: WarehouseOperationOrder) => {
-    setSelectedOrder(order)
-    const map: Record<string, string> = {}
-
-    order.lineas.forEach(l => {
-      map[l.id] = String(l.cantidad_procesada > 0 ? l.cantidad_procesada : l.cantidad_demanda)
-    })
-    setEditedQtys(map)
-  }
-
-  const handleValidateOrder = async (
-    orderToValidate: WarehouseOperationOrder,
-    customQtys?: Record<string, number>
-  ) => {
-    setValidating(true)
-
-    try {
-      const updated = await validateWarehouseOperationOrder(orderToValidate.id, customQtys)
-
-      await loadData()
-      setSelectedOrder(updated)
-      setToast({
-        open: true,
-        message: `Operación ${updated.codigo} validada exitosamente. Stock y Kárdex actualizados.`,
-        severity: 'success'
-      })
-    } catch (err: any) {
-      setToast({
-        open: true,
-        message: err?.message || 'Error al validar la operación.',
-        severity: 'error'
-      })
-    } finally {
-      setValidating(false)
-    }
-  }
-
-  const handleCancelOrder = async (orderId: string) => {
-    try {
-      const updated = await cancelWarehouseOperationOrder(orderId)
-
-      await loadData()
-      setSelectedOrder(updated)
-      setToast({
-        open: true,
-        message: `Operación ${updated.codigo} cancelada.`,
-        severity: 'info'
-      })
-    } catch (err: any) {
-      setToast({
-        open: true,
-        message: err?.message || 'No se pudo cancelar la operación.',
-        severity: 'error'
-      })
-    }
-  }
-
-  const handleOpenCreateDrawer = () => {
-    setNewPartner(
-      operationType === 'INTERNAL_TRANSFER' ? 'Traslado Interno entre Ubicaciones' : ''
-    )
-    setNewDocOrigin('')
-    setNewDate(new Date().toISOString().slice(0, 10))
-    setNewNotes('')
-    setNewLines([
-      {
-        tempId: `draft-line-${Date.now()}`,
-        variantOption: variantOptions[0] || null,
-        cantidad: '1'
-      }
-    ])
-    setCreateOpen(true)
-  }
-
-  const handleAddDraftLine = () => {
-    setNewLines(prev => [
-      ...prev,
-      {
-        tempId: `draft-line-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`,
-        variantOption: null,
-        cantidad: '1'
-      }
-    ])
-  }
-
-  const handleRemoveDraftLine = (tempId: string) => {
-    setNewLines(prev => prev.filter(l => l.tempId !== tempId))
-  }
-
-  const handleCreateOrder = async (validateImmediately: boolean) => {
-    const validLines = newLines.filter(
-      l => l.variantOption && Number(l.cantidad) > 0
-    )
-
-    if (validLines.length === 0) {
-      setToast({
-        open: true,
-        message: 'Agrega al menos un artículo con cantidad mayor a 0.',
-        severity: 'error'
-      })
-
-      return
-    }
-
-    if (!newPartner.trim()) {
-      setToast({
-        open: true,
-        message: `Completa el campo "${cfg.partnerLabel}".`,
-        severity: 'error'
-      })
-
-      return
-    }
-
-    const originWh = warehouses.find(w => w.id === originWhId)
-    const destWh = warehouses.find(w => w.id === destWhId)
-
-    setCreating(true)
-
-    try {
-      const created = await createWarehouseOperationOrder({
-        tipo: operationType,
-        tercero_nombre: newPartner.trim(),
-        documento_origen: newDocOrigin.trim() || undefined,
-        almacen_origen_id: operationType === 'RECEIPT' ? undefined : originWh?.id,
-        almacen_origen_nombre:
-          operationType === 'RECEIPT'
-            ? 'Proveedor Externo'
-            : originWh?.name || 'Almacén Central',
-        ubicacion_origen_nombre:
-          operationType === 'RECEIPT' ? undefined : originLocCode || undefined,
-        almacen_destino_id: operationType === 'DELIVERY' ? undefined : destWh?.id,
-        almacen_destino_nombre:
-          operationType === 'DELIVERY'
-            ? 'Despacho a Cliente'
-            : destWh?.name || 'Almacén Central',
-        ubicacion_destino_nombre:
-          operationType === 'DELIVERY' ? undefined : destLocCode || undefined,
-        fecha_programada: newDate,
-        responsable: newResponsable,
-        notas: newNotes.trim() || undefined,
-        estado: 'READY',
-        lineas: validLines.map(l => {
-          const opt = l.variantOption!
-          const qty = Number(l.cantidad)
-
-          return {
-            producto_id: opt.templateId,
-            producto_nombre: opt.productName,
-            variante_id: opt.variantId,
-            variante_sku: opt.sku,
-            uom_code: opt.uomCode,
-            cantidad_demanda: qty,
-            cantidad_procesada: qty,
-            costo_unitario_usd: opt.unitCost
-          }
-        })
-      })
-
-      if (validateImmediately) {
-        await validateWarehouseOperationOrder(created.id)
-        setToast({
-          open: true,
-          message: `Operación ${created.codigo} creada y validada. Stock y Kárdex actualizados.`,
-          severity: 'success'
-        })
-      } else {
-        setToast({
-          open: true,
-          message: `Operación ${created.codigo} registrada como Lista para Procesar.`,
-          severity: 'success'
-        })
-      }
-
-      setCreateOpen(false)
-      await loadData()
-    } catch (err: any) {
-      setToast({
-        open: true,
-        message: err?.message || 'Error al crear la operación.',
-        severity: 'error'
-      })
-    } finally {
-      setCreating(false)
-    }
-  }
 
   return (
     <div className='flex flex-col gap-5'>

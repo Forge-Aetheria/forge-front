@@ -1,7 +1,8 @@
 'use client';
 
 import React from 'react';
-import { TerceroEntity } from '@/types/contactsTypes';
+
+import type { TerceroEntity } from '@/types/contactsTypes';
 import { ContactCard } from './ContactCard';
 
 interface Props {

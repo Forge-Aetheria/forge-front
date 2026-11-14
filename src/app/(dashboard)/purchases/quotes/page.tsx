@@ -1,4 +1,5 @@
 import React from 'react'
+
 import { PurchasesListView } from '@/views/purchases/quotes/PurchasesListView'
 
 export const metadata = {

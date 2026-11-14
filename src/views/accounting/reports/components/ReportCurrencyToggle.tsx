@@ -1,9 +1,11 @@
 'use client'
 
 import React from 'react'
+
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import Tooltip from '@mui/material/Tooltip'
+
 import type { CurrencyViewMode } from '@/types/accountingTypes'
 
 interface Props {
@@ -14,6 +16,7 @@ interface Props {
 export const ReportCurrencyToggle: React.FC<Props> = ({ mode, onChange }) => {
   const handleSelect = (newMode: CurrencyViewMode) => {
     onChange(newMode)
+
     if (typeof window !== 'undefined') {
       localStorage.setItem('forge_accounting_currency_mode', newMode)
     }

@@ -1,13 +1,14 @@
 'use client'
 
 import React from 'react'
+
 import { useRouter } from 'next/navigation'
+
 import Card from '@mui/material/Card'
 import CardContent from '@mui/material/CardContent'
 import Typography from '@mui/material/Typography'
 import Chip from '@mui/material/Chip'
 import Button from '@mui/material/Button'
-import Box from '@mui/material/Box'
 
 import type { Journal } from '@/types/accountingTypes'
 
@@ -17,7 +18,7 @@ interface Props {
   onQuickAction: (actionType: 'NEW_INVOICE_CUSTOMER' | 'NEW_INVOICE_SUPPLIER' | 'NEW_PAYMENT' | 'NEW_EXPENSE' | 'NEW_ENTRY', journalId: string) => void
 }
 
-export const JournalCardGrid: React.FC<Props> = ({ journals, tasaBcv, onQuickAction }) => {
+export const JournalCardGrid: React.FC<Props> = ({ journals, onQuickAction }) => {
   const router = useRouter()
 
   const getJournalConfig = (j: Journal) => {
@@ -44,10 +45,13 @@ export const JournalCardGrid: React.FC<Props> = ({ journals, tasaBcv, onQuickAct
         }
       case 'BANCO':
       case 'BANCO_VES':
+
       case 'BANCO_USD': {
         const isUsd = j.moneda === 'USD' || j.tipo === 'BANCO_USD'
         const isVes = j.moneda === 'VES' || j.tipo === 'BANCO_VES'
-        return {
+
+        
+return {
           badge: isUsd ? 'Cuenta Divisas (USD)' : isVes ? 'Banco Nacional (VES)' : 'Banco Multimoneda',
           badgeBg: '#E0F2FE',
           badgeColor: '#0284C7',
@@ -57,6 +61,7 @@ export const JournalCardGrid: React.FC<Props> = ({ journals, tasaBcv, onQuickAct
           secondaryBtnAction: () => router.push('/accounting/payments/batches')
         }
       }
+
       case 'CAJA':
         return {
           badge: 'Efectivo y Caja Chica',

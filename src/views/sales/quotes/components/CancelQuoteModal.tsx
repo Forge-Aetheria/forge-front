@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
@@ -8,6 +9,7 @@ import DialogActions from '@mui/material/DialogActions';
 import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
 import CircularProgress from '@mui/material/CircularProgress';
+
 import CustomTextField from '@core/components/mui/TextField';
 
 interface Props {
@@ -30,7 +32,8 @@ export const CancelQuoteModal: React.FC<Props> = ({
   const handleConfirm = async () => {
     if (!motivo.trim() || motivo.trim().length < 5) {
       setError('El motivo de anulación es obligatorio y debe tener al menos 5 caracteres.');
-      return;
+      
+return;
     }
 
     try {

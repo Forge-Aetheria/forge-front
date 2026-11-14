@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+
 import { QuoteEditWrapper } from '@/views/sales/quotes/QuoteEditWrapper';
 
 type Props = {

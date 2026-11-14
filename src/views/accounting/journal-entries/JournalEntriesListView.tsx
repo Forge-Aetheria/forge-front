@@ -1,13 +1,16 @@
 'use client'
 
 import React, { useState, useEffect, useMemo } from 'react'
+
+import { useSearchParams } from 'next/navigation'
+
 import Card from '@mui/material/Card'
 import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
 import Button from '@mui/material/Button'
 import TextField from '@mui/material/TextField'
 import MenuItem from '@mui/material/MenuItem'
-import CustomChip from '@core/components/mui/Chip'
+
 import TablePagination from '@mui/material/TablePagination'
 import Table from '@mui/material/Table'
 import TableBody from '@mui/material/TableBody'
@@ -21,7 +24,8 @@ import Snackbar from '@mui/material/Snackbar'
 import Alert from '@mui/material/Alert'
 import Skeleton from '@mui/material/Skeleton'
 
-import { useSearchParams } from 'next/navigation'
+import CustomChip from '@core/components/mui/Chip'
+
 
 import { accountingService } from '@/services/accountingService'
 import type { Account, Journal, JournalEntry, EntrySource } from '@/types/accountingTypes'
@@ -50,6 +54,7 @@ export const JournalEntriesListView: React.FC = () => {
   const loadData = async () => {
     try {
       setLoading(true)
+
       const [eList, jList, aList] = await Promise.all([
         accountingService.getJournalEntries('ALL'),
         accountingService.getJournals(),

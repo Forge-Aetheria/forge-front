@@ -1,16 +1,17 @@
 'use client';
 
 import React, { useState } from 'react';
+
 import TableRow from '@mui/material/TableRow';
 import TableCell from '@mui/material/TableCell';
 import IconButton from '@mui/material/IconButton';
 import Tooltip from '@mui/material/Tooltip';
 import Popover from '@mui/material/Popover';
-import Typography from '@mui/material/Typography';
 import Divider from '@mui/material/Divider';
+
 import CustomTextField from '@core/components/mui/TextField';
 import CustomAutocomplete from '@core/components/mui/Autocomplete';
-import { ProductLookup } from '@/types/salesQuotesTypes';
+import type { ProductLookup } from '@/types/salesQuotesTypes';
 
 export interface FormItemLine {
   id: string;
@@ -154,6 +155,7 @@ export const QuoteItemRow: React.FC<Props> = ({
             value={line.cantidad}
             onChange={e => {
               const val = parseFloat(e.target.value);
+
               onUpdate({ ...line, cantidad: isNaN(val) ? 1 : Math.max(1, val) });
             }}
             inputProps={{ min: 1, step: 1 }}
@@ -338,6 +340,7 @@ export const QuoteItemRow: React.FC<Props> = ({
           value={line.precio_unitario}
           onChange={e => {
             const val = parseFloat(e.target.value);
+
             onUpdate({ ...line, precio_unitario: isNaN(val) ? 0 : Math.max(0, val) });
           }}
           inputProps={{ min: 0, step: 0.5 }}
@@ -368,6 +371,7 @@ export const QuoteItemRow: React.FC<Props> = ({
           value={line.descuento_porcentaje}
           onChange={e => {
             const val = parseFloat(e.target.value);
+
             onUpdate({
               ...line,
               descuento_porcentaje: isNaN(val) ? 0 : Math.min(100, Math.max(0, val))

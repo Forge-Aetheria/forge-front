@@ -4,7 +4,6 @@
 import CardContent from '@mui/material/CardContent'
 import Grid from '@mui/material/Grid'
 import MenuItem from '@mui/material/MenuItem'
-import Switch from '@mui/material/Switch'
 import Typography from '@mui/material/Typography'
 import InputAdornment from '@mui/material/InputAdornment'
 import Button from '@mui/material/Button'
@@ -27,8 +26,6 @@ type Props = {
 const InventoryTableFilters = ({
   filters,
   onFilterChange,
-  fiscalEnabled,
-  onToggleFiscal,
   categories,
   onResetFilters
 }: Props) => {

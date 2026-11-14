@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+
 import { BankAccountsListView } from '@/views/contacts/BankAccountsListView'
 
 export const metadata: Metadata = {

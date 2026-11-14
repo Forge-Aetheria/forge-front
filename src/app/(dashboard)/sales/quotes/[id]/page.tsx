@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+
 import { QuoteDetailView } from '@/views/sales/quotes/QuoteDetailView';
 
 type Props = {

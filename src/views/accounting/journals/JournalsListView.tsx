@@ -1,6 +1,9 @@
 'use client'
 
 import React, { useState, useEffect, useMemo } from 'react'
+
+import { useSearchParams } from 'next/navigation'
+
 import Box from '@mui/material/Box'
 import Card from '@mui/material/Card'
 import Typography from '@mui/material/Typography'
@@ -10,7 +13,7 @@ import MenuItem from '@mui/material/MenuItem'
 import Checkbox from '@mui/material/Checkbox'
 import Menu from '@mui/material/Menu'
 import Divider from '@mui/material/Divider'
-import CustomChip from '@core/components/mui/Chip'
+
 import TablePagination from '@mui/material/TablePagination'
 import Table from '@mui/material/Table'
 import TableBody from '@mui/material/TableBody'
@@ -21,10 +24,11 @@ import TableRow from '@mui/material/TableRow'
 import Skeleton from '@mui/material/Skeleton'
 import Snackbar from '@mui/material/Snackbar'
 import Alert from '@mui/material/Alert'
-import { useSearchParams } from 'next/navigation'
+
+import CustomChip from '@core/components/mui/Chip'
 
 import { accountingService } from '@/services/accountingService'
-import type { Journal, Account, JournalType } from '@/types/accountingTypes'
+import type { Journal, Account } from '@/types/accountingTypes'
 import { JournalFormView } from './JournalFormView'
 
 export const JournalsListView: React.FC = () => {
@@ -41,6 +45,7 @@ export const JournalsListView: React.FC = () => {
   const [currentView, setCurrentView] = useState<'list' | 'form'>(
     searchParams.get('action') === 'new' ? 'form' : 'list'
   )
+
   const [selectedJournal, setSelectedJournal] = useState<Journal | null>(null)
   const [toastMessage, setToastMessage] = useState<string | null>(null)
 
@@ -54,6 +59,7 @@ export const JournalsListView: React.FC = () => {
     saldoUsd: true,
     saldoVes: true
   }
+
   const [visibleColumns, setVisibleColumns] = useState(DEFAULT_VISIBLE_COLUMNS)
   const [columnAnchorEl, setColumnAnchorEl] = useState<null | HTMLElement>(null)
 
@@ -65,10 +71,12 @@ export const JournalsListView: React.FC = () => {
   const loadData = async () => {
     try {
       setLoading(true)
+
       const [jList, aList] = await Promise.all([
         accountingService.getJournals(),
         accountingService.getAccounts()
       ])
+
       setJournals(jList)
       setAccounts(aList)
     } finally {
@@ -87,6 +95,7 @@ export const JournalsListView: React.FC = () => {
         j.codigo.toLowerCase().includes(searchTerm.toLowerCase())
 
       let matchType = true
+
       if (typeFilter !== 'ALL') {
         if (typeFilter === 'BANCO') {
           matchType = j.tipo === 'BANCO' || j.tipo === 'BANCO_VES' || j.tipo === 'BANCO_USD'
@@ -112,31 +121,37 @@ export const JournalsListView: React.FC = () => {
 
   const getTypeChip = (j: Journal) => {
     const isBank = j.tipo === 'BANCO' || j.tipo === 'BANCO_VES' || j.tipo === 'BANCO_USD'
+
     if (isBank) {
       return {
         label: 'Banco',
         color: 'info' as const
       }
     }
+
     if (j.tipo === 'CAJA') {
       return {
         label: 'Caja / Efectivo',
         color: 'warning' as const
       }
     }
+
     if (j.tipo === 'VENTAS') {
       return {
         label: 'Ventas',
         color: 'primary' as const
       }
     }
+
     if (j.tipo === 'COMPRAS') {
       return {
         label: 'Compras',
         color: 'error' as const
       }
     }
-    return {
+
+    
+return {
       label: 'Operaciones Varias',
       color: 'secondary' as const
     }
@@ -163,9 +178,11 @@ export const JournalsListView: React.FC = () => {
   const handleToggleSelectAll = () => {
     if (isAllSelected) {
       const pageIds = new Set(paginatedJournals.map(j => j.id))
+
       setSelectedIds(prev => prev.filter(id => !pageIds.has(id)))
     } else {
       const pageIds = paginatedJournals.map(j => j.id)
+
       setSelectedIds(prev => Array.from(new Set([...prev, ...pageIds])))
     }
   }
@@ -179,6 +196,7 @@ export const JournalsListView: React.FC = () => {
   const handleCopySelected = () => {
     const selectedJournals = journals.filter(j => selectedIds.includes(j.id))
     const text = selectedJournals.map(j => `${j.codigo} - ${j.nombre}`).join('\n')
+
     navigator.clipboard.writeText(text)
     setToastMessage(`${selectedIds.length} diarios copiados al portapapeles.`)
     setBatchMenuAnchorEl(null)
@@ -400,6 +418,7 @@ export const JournalsListView: React.FC = () => {
                   const typeChip = getTypeChip(j)
                   const color = j.colorIdentificador || '#6C5CE7'
                   const icon = j.icono || 'tabler-notebook'
+
                   const monedaLabel =
                     j.moneda === 'USD'
                       ? 'USD ($)'

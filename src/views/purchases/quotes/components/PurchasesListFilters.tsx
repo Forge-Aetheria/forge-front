@@ -1,13 +1,15 @@
 'use client'
 
 import React from 'react'
+
 import Grid from '@mui/material/Grid'
 import MenuItem from '@mui/material/MenuItem'
 import Button from '@mui/material/Button'
 import Tooltip from '@mui/material/Tooltip'
 import InputAdornment from '@mui/material/InputAdornment'
+
 import CustomTextField from '@core/components/mui/TextField'
-import { PurchaseStatus, PurchasesFilterState, SupplierLookup } from '@/types/purchasesTypes'
+import type { PurchaseStatus, PurchasesFilterState, SupplierLookup } from '@/types/purchasesTypes'
 
 interface Props {
   filters: PurchasesFilterState

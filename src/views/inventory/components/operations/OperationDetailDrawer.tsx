@@ -1,12 +1,15 @@
 'use client'
 
 import React from 'react'
+
 import Drawer from '@mui/material/Drawer'
 import Typography from '@mui/material/Typography'
-import CustomChip from '@core/components/mui/Chip'
+
 import IconButton from '@mui/material/IconButton'
 import TextField from '@mui/material/TextField'
 import Button from '@mui/material/Button'
+
+import CustomChip from '@core/components/mui/Chip'
 
 import type { WarehouseOperationOrder } from '@/types/inventoryTypes'
 import type { OperationConfigMeta } from './operationConstants'

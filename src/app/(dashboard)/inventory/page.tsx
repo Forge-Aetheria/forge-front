@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+
 import InventoryDashboard from '@/views/inventory/InventoryDashboard'
 
 export const metadata: Metadata = {

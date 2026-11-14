@@ -1,17 +1,21 @@
 'use client';
 
 import React, { useState } from 'react';
+
 import { useRouter } from 'next/navigation';
+
 import Card from '@mui/material/Card';
 import IconButton from '@mui/material/IconButton';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import Avatar from '@mui/material/Avatar';
-import CustomChip from '@core/components/mui/Chip';
+
 import Checkbox from '@mui/material/Checkbox';
 import Typography from '@mui/material/Typography';
 import Tooltip from '@mui/material/Tooltip';
-import { TerceroEntity } from '@/types/contactsTypes';
+
+import CustomChip from '@core/components/mui/Chip';
+import type { TerceroEntity } from '@/types/contactsTypes';
 import { ContactRoleChip } from './ContactRoleChip';
 
 interface CardProps {

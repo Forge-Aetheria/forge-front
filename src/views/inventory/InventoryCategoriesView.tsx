@@ -8,7 +8,7 @@ import Typography from '@mui/material/Typography'
 import Button from '@mui/material/Button'
 import IconButton from '@mui/material/IconButton'
 import Tooltip from '@mui/material/Tooltip'
-import CustomChip from '@core/components/mui/Chip'
+
 import TextField from '@mui/material/TextField'
 import InputAdornment from '@mui/material/InputAdornment'
 import Table from '@mui/material/Table'
@@ -22,6 +22,8 @@ import Autocomplete from '@mui/material/Autocomplete'
 import FormControlLabel from '@mui/material/FormControlLabel'
 import Switch from '@mui/material/Switch'
 import Divider from '@mui/material/Divider'
+
+import CustomChip from '@core/components/mui/Chip'
 
 import type { Account } from '@/types/accountingTypes'
 import { accountingService } from '@/services/accountingService'

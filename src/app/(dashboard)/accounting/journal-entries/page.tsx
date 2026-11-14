@@ -1,4 +1,5 @@
 import React, { Suspense } from 'react'
+
 import { JournalEntriesListView } from '@/views/accounting/journal-entries/JournalEntriesListView'
 
 export const metadata = {

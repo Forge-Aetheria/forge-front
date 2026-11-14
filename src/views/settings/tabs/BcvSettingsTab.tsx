@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
+
 import Card from '@mui/material/Card'
 import CardContent from '@mui/material/CardContent'
 import Typography from '@mui/material/Typography'
@@ -8,9 +9,11 @@ import TextField from '@mui/material/TextField'
 import Button from '@mui/material/Button'
 import Switch from '@mui/material/Switch'
 import FormControlLabel from '@mui/material/FormControlLabel'
-import CustomChip from '@core/components/mui/Chip'
+
 import InputAdornment from '@mui/material/InputAdornment'
 import CircularProgress from '@mui/material/CircularProgress'
+
+import CustomChip from '@core/components/mui/Chip'
 
 import { BcvAuditHistoryTable } from '../components/BcvAuditHistoryTable'
 import type { BcvRateConfig } from '@/types/settingsTypes'

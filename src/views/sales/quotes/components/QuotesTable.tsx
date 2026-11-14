@@ -1,7 +1,9 @@
 'use client';
 
 import React from 'react';
+
 import Link from 'next/link';
+
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
@@ -12,7 +14,8 @@ import IconButton from '@mui/material/IconButton';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import Checkbox from '@mui/material/Checkbox';
-import { Quote, QuoteVisibleColumns } from '@/types/salesQuotesTypes';
+
+import type { Quote, QuoteVisibleColumns } from '@/types/salesQuotesTypes';
 import { QuoteStatusChip } from './QuoteStatusChip';
 
 interface Props {

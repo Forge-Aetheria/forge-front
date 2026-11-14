@@ -1,4 +1,5 @@
-import { Metadata } from 'next';
+import type { Metadata } from 'next';
+
 import { QuoteMasterDetailForm } from '@/views/sales/quotes/QuoteMasterDetailForm';
 
 export const metadata: Metadata = {

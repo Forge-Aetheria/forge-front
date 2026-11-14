@@ -1,8 +1,9 @@
 'use client'
 
 import React from 'react'
+
 import CustomChip from '@core/components/mui/Chip'
-import { PurchaseStatus } from '@/types/purchasesTypes'
+import type { PurchaseStatus } from '@/types/purchasesTypes'
 
 interface Props {
   status: PurchaseStatus

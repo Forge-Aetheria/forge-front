@@ -1,6 +1,7 @@
 'use client'
 
 import React from 'react'
+
 import Skeleton from '@mui/material/Skeleton'
 import Card from '@mui/material/Card'
 

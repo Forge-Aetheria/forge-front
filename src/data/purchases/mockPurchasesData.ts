@@ -1,4 +1,4 @@
-import {
+import type {
   BcvRate,
   PurchaseProductLookup,
   PurchaseQuote,
@@ -284,6 +284,7 @@ export const initialMockPurchaseQuotes: PurchaseQuote[] = [
     condicion_pago: 'CREDITO',
     dias_credito: 30,
     moneda_base: 'USD',
+
     // Tasa BCV anterior (35.80) y vigencia vencida para probar HU3 (Recalcular con nueva tasa BCV)
     tasa_bcv: {
       id: 'bcv-2026-10-10',

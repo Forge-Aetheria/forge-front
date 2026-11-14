@@ -1,7 +1,9 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
+
 import Link from 'next/link'
+
 import Typography from '@mui/material/Typography'
 import Grid from '@mui/material/Grid'
 import Card from '@mui/material/Card'
@@ -46,6 +48,7 @@ const InventoryDashboard = () => {
 
   const loadDashboardData = async () => {
     setLoading(true)
+
     const [tpls, dashOps, movs] = await Promise.all([
       getInventoryTemplates(),
       getWarehouseOperationsDashboard(),
@@ -149,6 +152,7 @@ const InventoryDashboard = () => {
                 {filteredOperations.map(op => {
                   const isDelivery = op.tipo === 'DELIVERY'
                   const isTransfer = op.tipo === 'INTERNAL_TRANSFER'
+
                   const targetHref =
                     op.tipo === 'RECEIPT'
                       ? '/inventory/operations/receipts'

@@ -4,7 +4,6 @@
 import { useEffect, useState } from 'react'
 
 // MUI Imports
-import { useTheme } from '@mui/material/styles'
 import Typography from '@mui/material/Typography'
 import IconButton from '@mui/material/IconButton'
 import Tooltip from '@mui/material/Tooltip'

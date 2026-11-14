@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useMemo } from 'react'
+
 import Box from '@mui/material/Box'
 import Card from '@mui/material/Card'
 import Typography from '@mui/material/Typography'
@@ -9,7 +10,7 @@ import TextField from '@mui/material/TextField'
 import Autocomplete from '@mui/material/Autocomplete'
 import MenuItem from '@mui/material/MenuItem'
 import IconButton from '@mui/material/IconButton'
-import CustomChip from '@core/components/mui/Chip'
+
 import Table from '@mui/material/Table'
 import TableBody from '@mui/material/TableBody'
 import TableCell from '@mui/material/TableCell'
@@ -22,8 +23,10 @@ import CircularProgress from '@mui/material/CircularProgress'
 import Grid from '@mui/material/Grid'
 import Snackbar from '@mui/material/Snackbar'
 
+import CustomChip from '@core/components/mui/Chip'
+
 import { accountingService } from '@/services/accountingService'
-import type { Account, Journal, JournalEntry, JournalItem, EntryStatus } from '@/types/accountingTypes'
+import type { Account, Journal, JournalEntry, EntryStatus } from '@/types/accountingTypes'
 import { DoubleEntryBalanceBar } from './components/DoubleEntryBalanceBar'
 
 const DEFAULT_CONTACT_SUGGESTIONS = [
@@ -122,6 +125,7 @@ export const JournalEntryFormView: React.FC<Props> = ({
         { id: '2', cuentaId: accounts[1]?.id || '', etiqueta: '', contactoNombre: '', debeUsd: 0, haberUsd: 0 }
       ])
     }
+
     setErrorMsg(null)
   }, [currentEntry, accounts, journals, defaultTasaBcv])
 
@@ -136,8 +140,10 @@ export const JournalEntryFormView: React.FC<Props> = ({
   const handleLineChange = (index: number, field: keyof EditableLine, value: any) => {
     setLines(prev => {
       const copy = [...prev]
+
       copy[index] = { ...copy[index], [field]: value }
-      return copy
+      
+return copy
     })
   }
 
@@ -164,7 +170,8 @@ export const JournalEntryFormView: React.FC<Props> = ({
   const handleSave = async (targetStatus: EntryStatus) => {
     if (targetStatus === 'POSTED' && !isBalanced) {
       setErrorMsg('El asiento no cumple con la partida doble obligatoria para su confirmación (Debe != Haber).')
-      return
+      
+return
     }
 
     try {
@@ -202,6 +209,7 @@ export const JournalEntryFormView: React.FC<Props> = ({
           lineas: journalItems
         })
         setCurrentEntry(savedEntry)
+
         if (onEntryUpdated) {
           onEntryUpdated(savedEntry)
         }
@@ -242,9 +250,11 @@ export const JournalEntryFormView: React.FC<Props> = ({
       const updated = await accountingService.resetJournalEntryToDraft(currentEntry.id)
 
       setCurrentEntry(updated)
+
       if (onEntryUpdated) {
         onEntryUpdated(updated)
       }
+
       setToast({
         open: true,
         message: `Asiento ${updated.numeroAsiento} restablecido a Borrador. Ahora puedes editar sus líneas libremente en esta pantalla.`,
@@ -681,8 +691,10 @@ export const JournalEntryFormView: React.FC<Props> = ({
                         isOptionEqualToValue={(opt, val) => opt.id === val.id}
                         filterOptions={(options, state) => {
                           const q = state.inputValue.toLowerCase().trim()
+
                           if (!q) return options
-                          return options.filter(
+                          
+return options.filter(
                             a => a.codigo.toLowerCase().includes(q) || a.nombre.toLowerCase().includes(q)
                           )
                         }}

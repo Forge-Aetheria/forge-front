@@ -1,10 +1,13 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
+
 import Link from 'next/link'
+
 import CircularProgress from '@mui/material/CircularProgress'
 import Button from '@mui/material/Button'
-import { PurchaseQuote } from '@/types/purchasesTypes'
+
+import type { PurchaseQuote } from '@/types/purchasesTypes'
 import { purchasesService } from '@/services/purchasesService'
 import { PurchaseMasterDetailForm } from './PurchaseMasterDetailForm'
 
@@ -22,16 +25,21 @@ export const PurchaseEditWrapper: React.FC<Props> = ({ id }) => {
       try {
         setLoading(true)
         const data = await purchasesService.getPurchaseQuoteById(id)
+
         if (!data) {
           setError('La solicitud de compra solicitada no existe.')
-          return
+          
+return
         }
+
         if (data.estado !== 'DRAFT' && data.estado !== 'RFQ_SENT') {
           setError(
             `El documento ${data.correlativo_orden_compra || data.correlativo} se encuentra en estado "${data.estado}" con costos congelados y no puede ser editado.`
           )
-          return
+          
+return
         }
+
         setQuote(data)
       } catch (err: any) {
         setError(err?.message || 'Error al cargar la solicitud de compra.')
@@ -39,6 +47,7 @@ export const PurchaseEditWrapper: React.FC<Props> = ({ id }) => {
         setLoading(false)
       }
     }
+
     fetchQuote()
   }, [id])
 

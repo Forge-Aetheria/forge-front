@@ -1,4 +1,5 @@
-import { Metadata } from 'next';
+import type { Metadata } from 'next';
+
 import { QuotesListView } from '@/views/sales/quotes/QuotesListView';
 
 export const metadata: Metadata = {

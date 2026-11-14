@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useMemo } from 'react'
+
 import Card from '@mui/material/Card'
 import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
@@ -11,7 +12,7 @@ import TextField from '@mui/material/TextField'
 import Autocomplete from '@mui/material/Autocomplete'
 import MenuItem from '@mui/material/MenuItem'
 import IconButton from '@mui/material/IconButton'
-import CustomChip from '@core/components/mui/Chip'
+
 import Table from '@mui/material/Table'
 import TableBody from '@mui/material/TableBody'
 import TableCell from '@mui/material/TableCell'
@@ -24,6 +25,8 @@ import Alert from '@mui/material/Alert'
 import RadioGroup from '@mui/material/RadioGroup'
 import FormControlLabel from '@mui/material/FormControlLabel'
 import Radio from '@mui/material/Radio'
+
+import CustomChip from '@core/components/mui/Chip'
 
 import { accountingService } from '@/services/accountingService'
 import { contactsService } from '@/services/contactsService'
@@ -93,7 +96,7 @@ export const CreditNoteFormView: React.FC<Props> = ({
   const isReadOnly = creditNote?.estado === 'POSTED'
 
   const [activeTab, setActiveTab] = useState<number>(0)
-  const [tipo, setTipo] = useState<InvoiceAccountingType>(creditNote?.tipo || initialType)
+  const [tipo] = useState<InvoiceAccountingType>(creditNote?.tipo || initialType)
   const [contacts, setContacts] = useState<ContactOption[]>(DEFAULT_CONTACTS)
   const [selectedContact, setSelectedContact] = useState<ContactOption | null>(null)
 
@@ -106,14 +109,19 @@ export const CreditNoteFormView: React.FC<Props> = ({
   const [numeroFactura, setNumeroFactura] = useState(
     creditNote?.numeroFactura || `NC-2026-${Math.floor(1000 + Math.random() * 9000)}`
   )
+
   const [moneda, setMoneda] = useState<CurrencyCode>(creditNote?.moneda || 'USD')
+
   const [fechaEmision, setFechaEmision] = useState<string>(
     creditNote?.fechaEmision || new Date().toISOString().split('T')[0]
   )
+
   const [tasaBcv, setTasaBcv] = useState<number>(creditNote?.tasaBcv || 54.00)
+
   const [selectedReason, setSelectedReason] = useState<string>(
     creditNote?.motivoNotaCredito || COMMON_REASONS[0]
   )
+
   const [customReason, setCustomReason] = useState<string>('')
   const [observaciones, setObservaciones] = useState<string>(creditNote?.terminosCondiciones || '')
 
@@ -142,8 +150,10 @@ export const CreditNoteFormView: React.FC<Props> = ({
     const loadContacts = async () => {
       try {
         const terceros = await contactsService.getTerceros()
+
         if (terceros && terceros.length > 0) {
           const mapped: ContactOption[] = []
+
           terceros.forEach(t => {
             if (t.is_cliente) {
               mapped.push({
@@ -154,6 +164,7 @@ export const CreditNoteFormView: React.FC<Props> = ({
                 cuentaCxcId: t.cuenta_cxc_id || 'acc-110201'
               })
             }
+
             if (t.is_proveedor) {
               mapped.push({
                 id: t.id,
@@ -165,18 +176,22 @@ export const CreditNoteFormView: React.FC<Props> = ({
             }
           })
           const combined = [...mapped, ...DEFAULT_CONTACTS.filter(d => !mapped.some(m => m.id === d.id))]
+
           setContacts(combined)
 
           if (creditNote?.contactoId) {
             const found = combined.find(c => c.id === creditNote.contactoId)
+
             if (found) setSelectedContact(found)
           } else {
             const defaultOfTipo = combined.find(c => c.tipo === tipo) || combined[0]
+
             setSelectedContact(defaultOfTipo)
           }
         }
       } catch {
         const defaultOfTipo = DEFAULT_CONTACTS.find(c => c.tipo === tipo) || DEFAULT_CONTACTS[0]
+
         setSelectedContact(defaultOfTipo)
       }
     }
@@ -188,12 +203,14 @@ export const CreditNoteFormView: React.FC<Props> = ({
   useEffect(() => {
     if (!selectedContact?.id) {
       setAvailableInvoices([])
-      return
+      
+return
     }
 
     const fetchInvoices = async () => {
       try {
         const all = await accountingService.getInvoices()
+
         const match = all.filter(
           i => i.contactoId === selectedContact.id &&
                i.tipo === tipo &&
@@ -201,6 +218,7 @@ export const CreditNoteFormView: React.FC<Props> = ({
                i.estado !== 'CANCELED' &&
                i.estado !== 'REVERSED'
         )
+
         setAvailableInvoices(match)
       } catch {
         setAvailableInvoices([])
@@ -213,7 +231,8 @@ export const CreditNoteFormView: React.FC<Props> = ({
   // Target invoice
   const targetInvoice = useMemo(() => {
     if (selectedInvoiceId === 'NONE') return null
-    return availableInvoices.find(i => i.id === selectedInvoiceId) || null
+    
+return availableInvoices.find(i => i.id === selectedInvoiceId) || null
   }, [selectedInvoiceId, availableInvoices])
 
   // When target invoice is selected and mode is TOTAL, sync lines
@@ -222,8 +241,10 @@ export const CreditNoteFormView: React.FC<Props> = ({
     if (invId === 'NONE') return
 
     const inv = availableInvoices.find(i => i.id === invId)
+
     if (inv) {
       setTasaBcv(inv.tasaBcv || 54.0)
+
       if (invoiceMode === 'TOTAL') {
         setLineas(inv.lineas.map((l, idx) => ({ ...l, id: `line-nc-${idx}` })))
       }
@@ -232,6 +253,7 @@ export const CreditNoteFormView: React.FC<Props> = ({
 
   const handleModeChange = (newMode: 'TOTAL' | 'PARCIAL') => {
     setInvoiceMode(newMode)
+
     if (newMode === 'TOTAL' && targetInvoice) {
       setLineas(targetInvoice.lineas.map((l, idx) => ({ ...l, id: `line-nc-${idx}` })))
     }
@@ -258,12 +280,14 @@ export const CreditNoteFormView: React.FC<Props> = ({
       }
 
       updated[index] = current
-      return updated
+      
+return updated
     })
   }
 
   const handleAddLine = () => {
     const ctaDefault = tipo === 'CUSTOMER' ? 'acc-410101' : 'acc-510101'
+
     const newLine: InvoiceLine = {
       id: `line-${Date.now()}-${lineas.length}`,
       productoOConcepto: '',
@@ -276,6 +300,7 @@ export const CreditNoteFormView: React.FC<Props> = ({
       ivaUsd: 0,
       totalUsd: 0
     }
+
     setLineas(prev => [...prev, newLine])
   }
 
@@ -293,6 +318,7 @@ export const CreditNoteFormView: React.FC<Props> = ({
   // Live accounting items
   const entryPreviewItems: JournalItem[] = useMemo(() => {
     const items: JournalItem[] = []
+
     const contactoCuentaId =
       tipo === 'CUSTOMER'
         ? selectedContact?.cuentaCxcId || 'acc-110201'
@@ -301,6 +327,7 @@ export const CreditNoteFormView: React.FC<Props> = ({
     if (tipo === 'CUSTOMER') {
       lineas.forEach((l, idx) => {
         const subtotalVes = Number((l.subtotalUsd * tasaBcv).toFixed(2))
+
         items.push({
           id: `preview-nc-${idx}`,
           cuentaId: l.cuentaContableId || 'acc-410101',
@@ -362,6 +389,7 @@ export const CreditNoteFormView: React.FC<Props> = ({
 
       lineas.forEach((l, idx) => {
         const subtotalVes = Number((l.subtotalUsd * tasaBcv).toFixed(2))
+
         items.push({
           id: `preview-nc-${idx}`,
           cuentaId: l.cuentaContableId || 'acc-510101',
@@ -401,12 +429,14 @@ export const CreditNoteFormView: React.FC<Props> = ({
   const handleSave = async (postDirectly: boolean) => {
     if (!selectedContact) {
       setToastMessage('Debes seleccionar un cliente o proveedor.')
-      return
+      
+return
     }
 
     if (totalUsd <= 0) {
       setToastMessage('La nota de crédito debe tener al menos una línea con importe mayor a 0.')
-      return
+      
+return
     }
 
     try {

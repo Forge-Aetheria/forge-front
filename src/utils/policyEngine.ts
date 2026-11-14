@@ -32,7 +32,9 @@ export function resolveEffectiveInvoicingPolicy(
   if (product?.invoicingPolicy && product.invoicingPolicy !== 'DEFAULT') {
     return product.invoicingPolicy
   }
-  return settings?.salesInvoicingPolicyDefault || DEFAULT_COMMERCIAL_POLICIES.salesInvoicingPolicyDefault
+
+  
+return settings?.salesInvoicingPolicyDefault || DEFAULT_COMMERCIAL_POLICIES.salesInvoicingPolicyDefault
 }
 
 /**
@@ -47,7 +49,9 @@ export function resolveEffectivePurchaseControlPolicy(
   if (product?.purchaseControlPolicy && product.purchaseControlPolicy !== 'DEFAULT') {
     return product.purchaseControlPolicy
   }
-  return settings?.purchaseControlPolicyDefault || DEFAULT_COMMERCIAL_POLICIES.purchaseControlPolicyDefault
+
+  
+return settings?.purchaseControlPolicyDefault || DEFAULT_COMMERCIAL_POLICIES.purchaseControlPolicyDefault
 }
 
 /**
@@ -62,7 +66,9 @@ export function resolveEffectiveDeliveryPolicy(
   if (product?.deliveryPolicy && product.deliveryPolicy !== 'DEFAULT') {
     return product.deliveryPolicy
   }
-  return settings?.deliveryPolicyDefault || DEFAULT_COMMERCIAL_POLICIES.deliveryPolicyDefault
+
+  
+return settings?.deliveryPolicyDefault || DEFAULT_COMMERCIAL_POLICIES.deliveryPolicyDefault
 }
 
 export interface BillableSalesLineResult {
@@ -96,12 +102,14 @@ export function calculateBillableSalesLines(
 
     if (effectivePolicy === 'ORDERED') {
       billableQty = Math.max(0, orderedQty - alreadyBilledQty)
+
       if (billableQty === 0 && orderedQty > 0) {
         reason = 'Toda la cantidad pedida ya ha sido facturada.'
       }
     } else {
       // DELIVERED: Solo lo efectivamente despachado por almacén
       billableQty = Math.max(0, deliveredQty - alreadyBilledQty)
+
       if (deliveredQty === 0) {
         reason = 'Pendiente por despachar en almacén antes de facturar.'
       } else if (billableQty === 0) {
@@ -152,12 +160,14 @@ export function calculateBillablePurchaseLines(
 
     if (effectivePolicy === 'ORDERED') {
       billableQty = Math.max(0, orderedQty - alreadyBilledQty)
+
       if (billableQty === 0 && orderedQty > 0) {
         reason = 'Toda la cantidad ordenada ya ha sido registrada en CxP.'
       }
     } else {
       // RECEIVED: Solo lo efectivamente recibido en almacén
       billableQty = Math.max(0, receivedQty - alreadyBilledQty)
+
       if (receivedQty === 0) {
         reason = 'Pendiente por recibir en almacén antes de registrar factura de proveedor.'
       } else if (billableQty === 0) {

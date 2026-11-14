@@ -1,7 +1,9 @@
 'use client'
 
 import React, { useState, useEffect, useMemo } from 'react'
+
 import { useRouter } from 'next/navigation'
+
 import Dialog from '@mui/material/Dialog'
 import DialogTitle from '@mui/material/DialogTitle'
 import DialogContent from '@mui/material/DialogContent'
@@ -71,9 +73,11 @@ export const InvoiceDetailModal: React.FC<Props> = ({
   const [contactoId, setContactoId] = useState(invoice?.contactoId || CONTACT_OPTIONS[0].id)
   const [tasaBcv, setTasaBcv] = useState<number>(invoice?.tasaBcv || defaultTasaBcv)
   const [fechaEmision, setFechaEmision] = useState(invoice?.fechaEmision || new Date().toISOString().split('T')[0])
+
   const [fechaVencimiento, setFechaVencimiento] = useState(
     invoice?.fechaVencimiento || new Date(Date.now() + 15 * 86400000).toISOString().split('T')[0]
   )
+
   const [costosEnDestinoActivos, setCostosEnDestinoActivos] = useState<boolean>(true)
 
   useEffect(() => {

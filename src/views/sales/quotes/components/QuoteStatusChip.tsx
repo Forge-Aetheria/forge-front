@@ -1,8 +1,9 @@
 'use client';
 
 import React from 'react';
+
 import CustomChip from '@core/components/mui/Chip';
-import { QuoteStatus } from '@/types/salesQuotesTypes';
+import type { QuoteStatus } from '@/types/salesQuotesTypes';
 
 interface Props {
   status: QuoteStatus;

@@ -1,7 +1,9 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+
 import { useRouter } from 'next/navigation';
+
 import Drawer from '@mui/material/Drawer';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
@@ -10,12 +12,14 @@ import MenuItem from '@mui/material/MenuItem';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Checkbox from '@mui/material/Checkbox';
 import CircularProgress from '@mui/material/CircularProgress';
-import CustomChip from '@core/components/mui/Chip';
+
 import Divider from '@mui/material/Divider';
 import Card from '@mui/material/Card';
 import Tooltip from '@mui/material/Tooltip';
+
+import CustomChip from '@core/components/mui/Chip';
 import CustomTextField from '@core/components/mui/TextField';
-import {
+import type {
   TerceroEntity,
   TerceroFormData,
   EntityType,
@@ -119,6 +123,7 @@ export const ContactFormDrawer: React.FC<Props> = ({ open, onClose, onSubmit, in
       setContactosReferentes([]);
       setDireccionesAdicionales([]);
     }
+
     setFormError(null);
     setShowAddPerson(false);
     setShowAddAddress(false);
@@ -128,8 +133,10 @@ export const ContactFormDrawer: React.FC<Props> = ({ open, onClose, onSubmit, in
   const handleAddPerson = () => {
     if (!newPersonNombre.trim() || !newPersonTelefono.trim()) {
       alert('Nombre y teléfono de la persona son obligatorios');
-      return;
+      
+return;
     }
+
     const newPerson: ContactPerson = {
       id: `ref-${Date.now()}`,
       nombre: newPersonNombre.trim(),
@@ -143,10 +150,13 @@ export const ContactFormDrawer: React.FC<Props> = ({ open, onClose, onSubmit, in
 
     setContactosReferentes(prev => {
       let updated = [...prev, newPerson];
+
       if (newPersonPrincipal) {
         updated = updated.map(p => (p.id !== newPerson.id ? { ...p, is_principal: false } : p));
       }
-      return updated;
+
+      
+return updated;
     });
 
     // Reset modal interno
@@ -168,8 +178,10 @@ export const ContactFormDrawer: React.FC<Props> = ({ open, onClose, onSubmit, in
   const handleAddAddress = () => {
     if (!newAddrDireccion.trim()) {
       alert('La dirección es obligatoria');
-      return;
+      
+return;
     }
+
     const newAddr: EntityAddress = {
       id: `dir-${Date.now()}`,
       tipo: newAddrTipo,
@@ -179,6 +191,7 @@ export const ContactFormDrawer: React.FC<Props> = ({ open, onClose, onSubmit, in
       pais: pais,
       is_predeterminada: false
     };
+
     setDireccionesAdicionales(prev => [...prev, newAddr]);
     setNewAddrDireccion('');
     setNewAddrCiudad('');
@@ -196,19 +209,26 @@ export const ContactFormDrawer: React.FC<Props> = ({ open, onClose, onSubmit, in
 
     if (!nombreRazonSocial.trim()) {
       setFormError('El nombre o razón social es obligatorio');
-      return;
+      
+return;
     }
+
     if (!identificacion.trim()) {
       setFormError('El RIF o Cédula de Identidad es obligatorio');
-      return;
+      
+return;
     }
+
     if (!isCliente && !isProveedor && !isContacto) {
       setFormError('Debe marcar al menos una relación comercial (Cliente o Proveedor)');
-      return;
+      
+return;
     }
+
     if (!direccion.trim() || !ciudad.trim() || !estado.trim()) {
       setFormError('La dirección, ciudad y estado son obligatorios');
-      return;
+      
+return;
     }
 
     const payload: TerceroFormData = {
@@ -234,6 +254,7 @@ export const ContactFormDrawer: React.FC<Props> = ({ open, onClose, onSubmit, in
 
     setIsSubmitting(true);
     const res = await onSubmit(payload);
+
     setIsSubmitting(false);
 
     if (res.success) {
@@ -395,6 +416,7 @@ export const ContactFormDrawer: React.FC<Props> = ({ open, onClose, onSubmit, in
                 value={origen}
                 onChange={e => {
                   const val = e.target.value as EntityOrigin;
+
                   setOrigen(val);
                   if (val === 'NACIONAL' && (!pais || pais === '')) setPais('Venezuela');
                 }}

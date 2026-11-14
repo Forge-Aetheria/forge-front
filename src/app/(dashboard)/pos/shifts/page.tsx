@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+
 import POSShiftManagement from '@/views/pos/shifts/POSShiftManagement'
 
 export const metadata: Metadata = {

@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+
 import { LandedCostDetailView } from '@/views/inventory/LandedCostDetailView'
 
 export const metadata: Metadata = {

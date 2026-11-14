@@ -35,6 +35,7 @@ export interface ContactPerson {
 }
 
 import type { BankAccount, BankAccountType, BankCurrency } from './bankAccountTypes';
+
 export type { BankAccount, BankAccountType, BankCurrency };
 
 export type EntityOrigin = 'NACIONAL' | 'EXTRANJERO';

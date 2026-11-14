@@ -1,13 +1,15 @@
 'use client';
 
 import React from 'react';
+
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import Typography from '@mui/material/Typography';
 import Divider from '@mui/material/Divider';
 import Chip from '@mui/material/Chip';
 import Switch from '@mui/material/Switch';
-import { QuoteTotalsCalculation, SalesFeatureFlags } from '@/types/salesQuotesTypes';
+
+import type { QuoteTotalsCalculation, SalesFeatureFlags } from '@/types/salesQuotesTypes';
 
 interface Props {
   totals: QuoteTotalsCalculation;

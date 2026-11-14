@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+
 import Dialog from '@mui/material/Dialog'
 import DialogTitle from '@mui/material/DialogTitle'
 import DialogContent from '@mui/material/DialogContent'
@@ -15,12 +16,14 @@ import Switch from '@mui/material/Switch'
 import Autocomplete from '@mui/material/Autocomplete'
 import Alert from '@mui/material/Alert'
 import IconButton from '@mui/material/IconButton'
+
 import CustomChip from '@core/components/mui/Chip'
 
-import {
+import type {
   BankAccount,
   BankAccountType,
-  BankCurrency,
+  BankCurrency} from '@/types/bankAccountTypes';
+import {
   ALL_BANKS,
   VENEZUELAN_BANKS
 } from '@/types/bankAccountTypes'
@@ -33,6 +36,7 @@ interface Props {
   onClose: () => void
   onSuccess: (savedAccount: BankAccount) => void
   initialAccount?: BankAccount | null
+
   // Si se abre desde la ficha del contacto o empresa, se bloquea la pertenencia
   lockedContactId?: string
   lockedContactName?: string
@@ -55,6 +59,7 @@ export const BankAccountModal: React.FC<Props> = ({
   const [ownerType, setOwnerType] = useState<'COMPANY' | 'CONTACT'>(
     isCompanyOnly || initialAccount?.is_empresa ? 'COMPANY' : 'CONTACT'
   )
+
   const [contactsList, setContactsList] = useState<TerceroEntity[]>([])
   const [selectedContact, setSelectedContact] = useState<TerceroEntity | null>(null)
 
@@ -77,14 +82,17 @@ export const BankAccountModal: React.FC<Props> = ({
   // Load contacts for assignment
   useEffect(() => {
     if (!open) return
+
     const fetchContacts = async () => {
       try {
         const list = await contactsService.getTerceros()
+
         setContactsList(list)
       } catch (err) {
         console.error(err)
       }
     }
+
     fetchContacts()
   }, [open])
 
@@ -108,6 +116,7 @@ export const BankAccountModal: React.FC<Props> = ({
     } else {
       // Default new
       const isCo = isCompanyOnly || lockedContactId === 'COMPANY'
+
       setOwnerType(isCo ? 'COMPANY' : 'CONTACT')
       setBanco(VENEZUELAN_BANKS[0].nombre)
       setNumeroCuenta('')
@@ -121,12 +130,14 @@ export const BankAccountModal: React.FC<Props> = ({
       setIsPredeterminada(false)
       setNotas('')
     }
+
     setErrorMsg(null)
   }, [open, initialAccount, lockedContactId, lockedContactName, lockedContactRif, isCompanyOnly])
 
   const handleBankChange = (newBankName: string) => {
     setBanco(newBankName)
     const bankFound = ALL_BANKS.find(b => b.nombre === newBankName)
+
     if (bankFound) {
       if (bankFound.codigo === 'ZELLE' || bankFound.codigo === 'PAYPAL' || bankFound.codigo === 'BINANCE') {
         setTipoCuenta('VIRTUAL')
@@ -141,6 +152,7 @@ export const BankAccountModal: React.FC<Props> = ({
 
   const handleContactSelect = (contact: TerceroEntity | null) => {
     setSelectedContact(contact)
+
     if (contact && !titular) {
       setTitular(contact.nombre_razon_social)
       setIdentificacionTitular(contact.identificacion)
@@ -152,23 +164,32 @@ export const BankAccountModal: React.FC<Props> = ({
   const handleSubmit = async () => {
     if (!banco.trim()) {
       setErrorMsg('Selecciona o ingresa la entidad bancaria.')
-      return
+      
+return
     }
+
     if (!numeroCuenta.trim()) {
       setErrorMsg('Ingresa el número de cuenta, correo o identificador de la cuenta.')
-      return
+      
+return
     }
+
     if (!titular.trim()) {
       setErrorMsg('Ingresa el nombre o razón social del titular.')
-      return
+      
+return
     }
+
     if (!identificacionTitular.trim()) {
       setErrorMsg('Ingresa el RIF o Cédula de Identidad del titular.')
-      return
+      
+return
     }
+
     if (isPagoMovil && !telefonoPagoMovil.trim()) {
       setErrorMsg('Para habilitar Pago Móvil debes registrar el número telefónico receptor.')
-      return
+      
+return
     }
 
     try {
@@ -178,6 +199,7 @@ export const BankAccountModal: React.FC<Props> = ({
       const isCompany = isCompanyOnly || ownerType === 'COMPANY' || lockedContactId === 'COMPANY'
       const assignedContactId = isCompany ? 'COMPANY' : (lockedContactId || selectedContact?.id || undefined)
       const assignedContactName = isCompany ? 'Empresa (Forge Global)' : (lockedContactName || selectedContact?.nombre_razon_social || undefined)
+
       const assignedContactType: 'EMPRESA' | 'CLIENTE' | 'PROVEEDOR' | 'AMBOS' = isCompany
         ? 'EMPRESA'
         : selectedContact?.is_cliente && selectedContact?.is_proveedor
@@ -208,6 +230,7 @@ export const BankAccountModal: React.FC<Props> = ({
       }
 
       let saved: BankAccount
+
       if (initialAccount?.id) {
         saved = await bankAccountsService.updateBankAccount(initialAccount.id, payload)
       } else {

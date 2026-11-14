@@ -1,6 +1,7 @@
 'use client'
 
 import React from 'react'
+
 import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
 import Table from '@mui/material/Table'
@@ -11,6 +12,7 @@ import TableHead from '@mui/material/TableHead'
 import TableRow from '@mui/material/TableRow'
 import Chip from '@mui/material/Chip'
 import Alert from '@mui/material/Alert'
+
 import type { JournalItem } from '@/types/accountingTypes'
 
 interface Props {

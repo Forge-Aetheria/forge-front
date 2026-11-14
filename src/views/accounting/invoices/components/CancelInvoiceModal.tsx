@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
+
 import Dialog from '@mui/material/Dialog'
 import DialogTitle from '@mui/material/DialogTitle'
 import DialogContent from '@mui/material/DialogContent'
@@ -56,6 +57,7 @@ export const CancelInvoiceModal: React.FC<Props> = ({
         : (customReason.trim() ? `${selectedReason} - ${customReason.trim()}` : selectedReason)
 
       const canceledInvoice = await accountingService.cancelInvoice(invoice.id, finalReason)
+
       onSuccess(canceledInvoice)
       onClose()
     } catch (err: any) {

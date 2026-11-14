@@ -1,7 +1,9 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
+
 import Link from 'next/link';
+
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import Button from '@mui/material/Button';
@@ -17,13 +19,12 @@ import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
-import IconButton from '@mui/material/IconButton';
-import Tooltip from '@mui/material/Tooltip';
 import InputAdornment from '@mui/material/InputAdornment';
 import useMediaQuery from '@mui/material/useMediaQuery';
+
 import CustomTextField from '@core/components/mui/TextField';
 import CustomChip from '@core/components/mui/Chip';
-import {
+import type {
   ContactsTabProps,
   TerceroEntity,
   TerceroFormData,
@@ -43,6 +44,7 @@ import { CompanyContactsPopoverSheet } from './components/CompanyContactsPopover
 
 export const EntityContactsTab: React.FC<ContactsTabProps> = ({ readOnly = false }) => {
   const isDesktop = useMediaQuery('(min-width:768px)');
+
   const {
     terceros,
     filters,
@@ -86,6 +88,7 @@ export const EntityContactsTab: React.FC<ContactsTabProps> = ({ readOnly = false
 
   // Estados de Columnas Visibles
   const [columnAnchorEl, setColumnAnchorEl] = useState<null | HTMLElement>(null);
+
   const [visibleColumns, setVisibleColumns] = useState<ContactVisibleColumns>({
     clasificacion: false, // Oculto por defecto para ahorrar espacio horizontal
     ubicacion: true,
@@ -105,12 +108,13 @@ export const EntityContactsTab: React.FC<ContactsTabProps> = ({ readOnly = false
 
   // Lista ordenada dinámicamente
   const sortedTerceros = useMemo(() => {
-    let result = [...terceros];
+    const result = [...terceros];
 
     if (!sortKey) return result;
 
     return result.sort((a, b) => {
       let comparison = 0;
+
       if (sortKey === 'nombre') {
         comparison = (a.nombre_razon_social || '').localeCompare(b.nombre_razon_social || '', 'es', { sensitivity: 'base' });
       } else if (sortKey === 'identificacion') {
@@ -120,10 +124,12 @@ export const EntityContactsTab: React.FC<ContactsTabProps> = ({ readOnly = false
       } else if (sortKey === 'ciudad') {
         const cityA = a.ciudad || '';
         const cityB = b.ciudad || '';
+
         comparison = cityA.localeCompare(cityB, 'es', { sensitivity: 'base' });
       } else if (sortKey === 'referentes') {
         const valA = a.parent_company_name || (a.contactos_referentes?.length ? `${a.contactos_referentes.length}` : '');
         const valB = b.parent_company_name || (b.contactos_referentes?.length ? `${b.contactos_referentes.length}` : '');
+
         comparison = valA.localeCompare(valB, 'es', { numeric: true });
       }
 
@@ -156,6 +162,7 @@ export const EntityContactsTab: React.FC<ContactsTabProps> = ({ readOnly = false
     setBatchDeleteConfirmOpen(false);
     const count = selectedIds.length;
     const res = await deactivateMultipleTerceros(selectedIds);
+
     if (res.success) {
       setToast({
         open: true,
@@ -179,13 +186,16 @@ export const EntityContactsTab: React.FC<ContactsTabProps> = ({ readOnly = false
   const handleOpenQuickView = (tercero: TerceroEntity) => {
     if (tercero.parent_company_id) {
       const parentCompany = terceros.find(t => t.id === tercero.parent_company_id);
+
       if (parentCompany) {
         setSelectedContact(parentCompany);
         setQuickViewExpandedId(tercero.contact_person_ref?.id || null);
         setQuickViewOpen(true);
-        return;
+        
+return;
       }
     }
+
     setSelectedContact(tercero);
     setQuickViewExpandedId(null);
     setQuickViewOpen(true);
@@ -193,6 +203,7 @@ export const EntityContactsTab: React.FC<ContactsTabProps> = ({ readOnly = false
 
   const handleSubmitForm = async (formData: TerceroFormData) => {
     const res = await saveTercero(formData);
+
     if (res.success) {
       setToast({
         open: true,
@@ -203,11 +214,14 @@ export const EntityContactsTab: React.FC<ContactsTabProps> = ({ readOnly = false
     } else {
       setToast({ open: true, message: res.message || 'Error al guardar el contacto', severity: 'error' });
     }
-    return res;
+
+    
+return res;
   };
 
   const handleDeactivate = async (id: string) => {
     const res = await deactivateTercero(id);
+
     if (res.success) {
       setToast({ open: true, message: 'Contacto eliminado exitosamente', severity: 'success' });
       setSelectedIds(prev => prev.filter(item => item !== id));

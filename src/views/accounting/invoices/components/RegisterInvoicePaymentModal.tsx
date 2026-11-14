@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+
 import Dialog from '@mui/material/Dialog'
 import DialogTitle from '@mui/material/DialogTitle'
 import DialogContent from '@mui/material/DialogContent'
@@ -65,8 +66,10 @@ export const RegisterInvoicePaymentModal: React.FC<Props> = ({
     const fetchBankAccounts = async () => {
       try {
         const list = await bankAccountsService.getContactBankAccounts(invoice.contactoId)
+
         setContactBankAccounts(list)
         const defAcc = list.find(a => a.is_predeterminada) || list[0]
+
         if (defAcc) {
           setSelectedBankAccountId(defAcc.id)
         } else {
@@ -83,6 +86,7 @@ export const RegisterInvoicePaymentModal: React.FC<Props> = ({
       try {
         setLoadingJournals(true)
         const allJournals = await accountingService.getJournals()
+
         const bankJournals = allJournals.filter(
           j => j.tipo.startsWith('BANCO') || j.tipo === 'CAJA'
         )
@@ -140,7 +144,6 @@ export const RegisterInvoicePaymentModal: React.FC<Props> = ({
   const montoVes = moneda === 'VES' ? monto : Number((monto * tasaBcvPago).toFixed(2))
 
   const saldoRestanteUsd = Math.max(0, Number((invoice.saldoPendienteUsd - montoUsd).toFixed(2)))
-  const saldoRestanteVes = Math.max(0, Number((saldoRestanteUsd * tasaBcvPago).toFixed(2)))
 
   // Exchange difference calculation for VES payments
   const showExchangeDifference = moneda === 'VES' && tasaBcvPago !== invoice.tasaBcv
@@ -171,6 +174,7 @@ export const RegisterInvoicePaymentModal: React.FC<Props> = ({
       setErrorMsg(null)
 
       const matchedAccount = contactBankAccounts.find(a => a.id === selectedBankAccountId)
+
       const cuentaInfo = matchedAccount
         ? `${matchedAccount.banco} (${matchedAccount.numero_cuenta})${matchedAccount.is_pago_movil && matchedAccount.telefono_pago_movil ? ` - PM: ${matchedAccount.telefono_pago_movil}` : ''}`
         : undefined

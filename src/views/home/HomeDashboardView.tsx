@@ -1,7 +1,9 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+
 import Link from 'next/link'
+
 import Card from '@mui/material/Card'
 import CardContent from '@mui/material/CardContent'
 import Typography from '@mui/material/Typography'
@@ -111,17 +113,20 @@ export const HomeDashboardView = () => {
   const [bcvRate, setBcvRate] = useState<number>(36.5)
   const [parallelRate] = useState<number>(41.2)
   const [converterUsd, setConverterUsd] = useState<string>('100')
+
   const [visibleMetricIds, setVisibleMetricIds] = useState<string[]>([
     'inv_valuation',
     'sales_pipeline',
     'purchases_pending',
     'pos_today'
   ])
+
   const [customizerOpen, setCustomizerOpen] = useState(false)
 
   useEffect(() => {
     try {
       const active = getActiveBcvRate()
+
       if (active && active > 0) setBcvRate(active)
     } catch {
       // Usar base
@@ -129,8 +134,10 @@ export const HomeDashboardView = () => {
 
     try {
       const saved = localStorage.getItem(STORAGE_KEY)
+
       if (saved) {
         const parsed = JSON.parse(saved)
+
         if (Array.isArray(parsed) && parsed.length > 0) {
           setVisibleMetricIds(parsed)
         }
@@ -143,11 +150,14 @@ export const HomeDashboardView = () => {
   const handleToggleMetric = (id: string) => {
     setVisibleMetricIds(prev => {
       const exists = prev.includes(id)
+
       if (exists && prev.length === 1) return prev // Mantener al menos una
 
       const updated = exists ? prev.filter(m => m !== id) : [...prev, id]
+
       localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
-      return updated
+      
+return updated
     })
   }
 

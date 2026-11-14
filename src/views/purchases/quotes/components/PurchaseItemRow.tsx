@@ -1,13 +1,15 @@
 'use client'
 
 import React from 'react'
+
 import TableRow from '@mui/material/TableRow'
 import TableCell from '@mui/material/TableCell'
 import IconButton from '@mui/material/IconButton'
 import Tooltip from '@mui/material/Tooltip'
+
 import CustomTextField from '@core/components/mui/TextField'
 import CustomAutocomplete from '@core/components/mui/Autocomplete'
-import { PurchaseProductLookup } from '@/types/purchasesTypes'
+import type { PurchaseProductLookup } from '@/types/purchasesTypes'
 
 export interface FormPurchaseItemLine {
   id: string
@@ -167,6 +169,7 @@ export const PurchaseItemRow: React.FC<Props> = ({
           value={line.cantidad}
           onChange={e => {
             const val = parseFloat(e.target.value)
+
             onUpdate({ ...line, cantidad: isNaN(val) ? 0 : val })
           }}
           inputProps={{ min: 1, step: 1 }}
@@ -198,6 +201,7 @@ export const PurchaseItemRow: React.FC<Props> = ({
           value={line.costo_unitario}
           onChange={e => {
             const val = parseFloat(e.target.value)
+
             onUpdate({ ...line, costo_unitario: isNaN(val) ? 0 : val })
           }}
           inputProps={{ min: 0.01, step: 0.5 }}
@@ -229,6 +233,7 @@ export const PurchaseItemRow: React.FC<Props> = ({
           value={line.descuento_proveedor_porcentaje}
           onChange={e => {
             const val = parseFloat(e.target.value)
+
             onUpdate({
               ...line,
               descuento_proveedor_porcentaje: isNaN(val) ? 0 : Math.min(100, Math.max(0, val))

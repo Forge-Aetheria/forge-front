@@ -1,7 +1,9 @@
 import React from 'react';
-import CustomChip from '@core/components/mui/Chip';
+
 import Tooltip from '@mui/material/Tooltip';
-import { ContactRole } from '@/types/contactsTypes';
+
+import CustomChip from '@core/components/mui/Chip';
+import type { ContactRole } from '@/types/contactsTypes';
 
 interface Props {
   rol: ContactRole;

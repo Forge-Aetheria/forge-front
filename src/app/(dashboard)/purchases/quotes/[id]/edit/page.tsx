@@ -1,4 +1,5 @@
 import React from 'react'
+
 import { PurchaseEditWrapper } from '@/views/purchases/quotes/PurchaseEditWrapper'
 
 export const metadata = {
@@ -12,5 +13,7 @@ export default async function EditPurchaseQuotePage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
-  return <PurchaseEditWrapper id={id} />
+
+  
+return <PurchaseEditWrapper id={id} />
 }

@@ -7,6 +7,7 @@ import { useState, useMemo } from 'react'
 import Typography from '@mui/material/Typography'
 import Chip from '@mui/material/Chip'
 import InputAdornment from '@mui/material/InputAdornment'
+
 import CustomTextField from '@core/components/mui/TextField'
 
 // Type Imports
@@ -49,6 +50,7 @@ const POSProductCatalog = ({ templates, bcvRate, onAddToCart }: Props) => {
         const matchCode = template.defaultCode.toLowerCase().includes(query)
         const matchBarcode = template.barcode?.toLowerCase().includes(query)
         const matchTag = template.tags.some(tag => tag.toLowerCase().includes(query))
+
         const matchVariant = template.variants.some(
           v => v.sku.toLowerCase().includes(query) || (v.barcode && v.barcode.toLowerCase().includes(query))
         )

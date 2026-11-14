@@ -1,11 +1,12 @@
 'use client'
 
 import { useEffect, useState, useMemo } from 'react'
+
 import { useRouter, usePathname } from 'next/navigation'
+
 import Dialog from '@mui/material/Dialog'
 import DialogContent from '@mui/material/DialogContent'
 import TextField from '@mui/material/TextField'
-import InputAdornment from '@mui/material/InputAdornment'
 import Typography from '@mui/material/Typography'
 import Button from '@mui/material/Button'
 import Chip from '@mui/material/Chip'
@@ -57,7 +58,8 @@ export const CommandPaletteDialog = () => {
     if (pathname.startsWith('/sales')) return 'Ventas'
     if (pathname.startsWith('/purchases')) return 'Compras'
     if (pathname.startsWith('/pos')) return 'POS'
-    return null
+    
+return null
   }, [pathname])
 
   // Listener para atajos globales: Cmd+K / Ctrl+K (estándar libre de colisión) y Cmd+Espacio
@@ -75,7 +77,8 @@ export const CommandPaletteDialog = () => {
     }
 
     window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
+    
+return () => window.removeEventListener('keydown', handleKeyDown)
   }, [open])
 
   const filteredItems = useMemo(() => {
@@ -83,6 +86,7 @@ export const CommandPaletteDialog = () => {
 
     if (query.trim()) {
       const q = query.toLowerCase()
+
       items = items.filter(
         item =>
           item.title.toLowerCase().includes(q) ||
@@ -98,7 +102,8 @@ export const CommandPaletteDialog = () => {
           if (currentContext === 'Ventas') return item.id.includes('quote') || item.id.includes('sale')
           if (currentContext === 'Compras') return item.id.includes('purchase')
           if (currentContext === 'POS') return item.category === 'POS'
-          return false
+          
+return false
         }),
         ...items.filter(item => {
           if (currentContext === 'Inventario') return !(item.category === 'Inventario' || item.id.startsWith('inventory') || item.id.includes('receipt') || item.id.includes('delivery') || item.id.includes('stock'))
@@ -106,7 +111,8 @@ export const CommandPaletteDialog = () => {
           if (currentContext === 'Ventas') return !(item.id.includes('quote') || item.id.includes('sale'))
           if (currentContext === 'Compras') return !item.id.includes('purchase')
           if (currentContext === 'POS') return item.category !== 'POS'
-          return true
+          
+return true
         })
       ]
     }
