@@ -33,6 +33,7 @@ const SEGMENT_LABELS: Record<string, string> = {
   warehouses: 'Almacenes',
   locations: 'Ubicaciones',
   categories: 'Categorías',
+  uom: 'Unidades de Medida',
   pos: 'POS',
   terminal: 'Terminal de Caja',
   shifts: 'Turnos y Arqueo',

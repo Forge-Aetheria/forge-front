@@ -63,6 +63,7 @@ import {
   getInventoryFiscalConfig,
   getProductCategories,
   getUnitsOfMeasure,
+  seedDefaultUnitsOfMeasure,
   createProductCategory,
   createProductTemplate
 } from '@/services/inventoryService'
@@ -71,17 +72,6 @@ import StockAdjustmentModal from './components/StockAdjustmentModal'
 type Props = {
   id: string
 }
-
-const DEFAULT_CATEGORIES = [
-  'Textil & Indumentaria',
-  'Herramientas & Maquinaria',
-  'Químicos & Fluidos',
-  'Papelería & Oficina',
-  'Alimentos & Bebidas',
-  'Tecnología & Electrónica',
-  'Servicios Profesionales'
-]
-
 
 const InventoryDetailView: React.FC<Props> = ({ id }) => {
   const router = useRouter()
@@ -100,12 +90,12 @@ const InventoryDetailView: React.FC<Props> = ({ id }) => {
   const [defaultCode, setDefaultCode] = useState('')
   const [barcode, setBarcode] = useState('')
   const [productType, setProductType] = useState<ProductType>('storable')
-  const [categoryOptions, setCategoryOptions] = useState<string[]>(DEFAULT_CATEGORIES)
+  const [categoryOptions, setCategoryOptions] = useState<string[]>([])
   const [uomOptions, setUomOptions] = useState<Array<{ code: string; name: string }>>([])
-  const [categoryName, setCategoryName] = useState('Herramientas & Maquinaria')
+  const [categoryName, setCategoryName] = useState('')
   const [addingQuickCat, setAddingQuickCat] = useState(false)
   const [quickCatName, setQuickCatName] = useState('')
-  const [uomCode, setUomCode] = useState('un')
+  const [uomCode, setUomCode] = useState('')
   const [minStock, setMinStock] = useState<number>(5)
   const [canBeSold, setCanBeSold] = useState(true)
   const [canBePurchased, setCanBePurchased] = useState(true)
@@ -155,7 +145,10 @@ const InventoryDetailView: React.FC<Props> = ({ id }) => {
           getUnitsOfMeasure()
         ])
 
-        setUomOptions(unitsData.map(u => ({ code: u.code, name: u.name })))
+        const uomList = unitsData.map(u => ({ code: u.code, name: u.name }))
+        const defaultUom = uomList[0]?.code || ''
+
+        setUomOptions(uomList)
 
         const fiscal = await getInventoryFiscalConfig()
 
@@ -175,7 +168,7 @@ const InventoryDetailView: React.FC<Props> = ({ id }) => {
         setDefaultCode(initialSku)
         setBarcode('')
         setProductType('storable')
-        setUomCode('un')
+        setUomCode(defaultUom)
         setMinStock(5)
         setCanBeSold(true)
         setCanBePurchased(true)
@@ -210,8 +203,8 @@ const InventoryDetailView: React.FC<Props> = ({ id }) => {
           name: '',
           defaultCode: initialSku,
           productType: 'storable',
-          uomCode: 'un',
-          categoryName: catsData[0]?.name || 'Herramientas & Maquinaria',
+          uomCode: defaultUom,
+          categoryName: catsData[0]?.name || '',
           tags: [],
           canBeSold: true,
           canBePurchased: true,
@@ -350,6 +343,22 @@ const InventoryDetailView: React.FC<Props> = ({ id }) => {
     setVariants(prev => prev.filter((_, idx) => idx !== index))
   }
 
+  const handleSeedUnits = async () => {
+    try {
+      const units = await seedDefaultUnitsOfMeasure()
+      const options = units.map(u => ({ code: u.code, name: u.name }))
+
+      setUomOptions(options)
+      if (options.length > 0) setUomCode(prev => prev || options[0].code)
+    } catch (err: unknown) {
+      setToast({
+        open: true,
+        message: err instanceof Error ? err.message : 'No se pudieron sembrar las unidades base',
+        severity: 'error'
+      })
+    }
+  }
+
   const handleSaveChanges = async () => {
     if (!name.trim()) {
       setToast({ open: true, message: 'El nombre del artículo es obligatorio', severity: 'error' })
@@ -359,6 +368,16 @@ const InventoryDetailView: React.FC<Props> = ({ id }) => {
 
     if (!defaultCode.trim()) {
       setToast({ open: true, message: 'El SKU es obligatorio', severity: 'error' })
+
+      return
+    }
+
+    if (!uomCode) {
+      setToast({
+        open: true,
+        message: 'Seleccione o cree una unidad de medida antes de guardar',
+        severity: 'error'
+      })
 
       return
     }
@@ -1173,6 +1192,9 @@ const InventoryDetailView: React.FC<Props> = ({ id }) => {
                         label='Unidad de Medida (UdM)'
                         value={uomCode}
                         onChange={e => setUomCode(e.target.value)}
+                        helperText={
+                          uomOptions.length === 0 ? 'No hay unidades de medida activas' : undefined
+                        }
                       >
                         {uomOptions.map(u => (
                           <MenuItem key={u.code} value={u.code}>
@@ -1180,6 +1202,11 @@ const InventoryDetailView: React.FC<Props> = ({ id }) => {
                           </MenuItem>
                         ))}
                       </CustomTextField>
+                      {uomOptions.length === 0 && (
+                        <Button size='small' sx={{ mt: 1 }} onClick={handleSeedUnits}>
+                          Sembrar unidades base
+                        </Button>
+                      )}
                     </Grid>
 
                     <Grid size={{ xs: 12, sm: 4 }}>

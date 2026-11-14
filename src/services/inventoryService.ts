@@ -21,7 +21,10 @@ import {
   CREATE_INVENTORY_ADJUSTMENT_MUTATION,
   APPLY_INVENTORY_ADJUSTMENT_MUTATION,
   GET_INVENTORY_ADJUSTMENTS_QUERY,
-  GET_UNITS_OF_MEASURE_QUERY
+  GET_UNITS_OF_MEASURE_QUERY,
+  CREATE_UNIT_OF_MEASURE_MUTATION,
+  DEACTIVATE_UNIT_OF_MEASURE_MUTATION,
+  SEED_UNITS_OF_MEASURE_MUTATION
 } from '@/graphql/inventory.gql'
 import type {
   GqlProductTemplate,
@@ -179,12 +182,54 @@ export const setInventoryFiscalEnabled = async (enabled: boolean): Promise<void>
   )
 }
 
-export const getUnitsOfMeasure = async (): Promise<Array<{ id: string; code: string; name: string }>> => {
-  const response = await executeGraphQL<{
-    unitsOfMeasure: Array<{ id: string; code: string; name: string; isActive: boolean }>
-  }>(GET_UNITS_OF_MEASURE_QUERY, undefined, { timeoutMs: 5000 })
+export interface UnitOfMeasure {
+  id: string
+  code: string
+  name: string
+  isActive: boolean
+}
+
+export const getUnitsOfMeasure = async (): Promise<UnitOfMeasure[]> => {
+  const response = await executeGraphQL<{ unitsOfMeasure: UnitOfMeasure[] }>(
+    GET_UNITS_OF_MEASURE_QUERY,
+    undefined,
+    { timeoutMs: 5000 }
+  )
 
   return response.unitsOfMeasure.filter(unit => unit.isActive)
+}
+
+export const createUnitOfMeasure = async (input: {
+  code: string
+  name: string
+}): Promise<UnitOfMeasure> => {
+  const response = await executeGraphQL<{ createUnitOfMeasure: UnitOfMeasure }>(
+    CREATE_UNIT_OF_MEASURE_MUTATION,
+    { input: { code: input.code.trim(), name: input.name.trim() } },
+    { timeoutMs: 5000 }
+  )
+
+  return response.createUnitOfMeasure
+}
+
+export const deactivateUnitOfMeasure = async (code: string): Promise<UnitOfMeasure> => {
+  const response = await executeGraphQL<{ deactivateUnitOfMeasure: UnitOfMeasure }>(
+    DEACTIVATE_UNIT_OF_MEASURE_MUTATION,
+    { code: code.trim() },
+    { timeoutMs: 5000 }
+  )
+
+  return response.deactivateUnitOfMeasure
+}
+
+export const seedDefaultUnitsOfMeasure = async (): Promise<UnitOfMeasure[]> => {
+  const response = await executeGraphQL<{ seedDefaultUnitsOfMeasure: UnitOfMeasure[] }>(
+    SEED_UNITS_OF_MEASURE_MUTATION,
+    undefined,
+    { timeoutMs: 5000 }
+  )
+
+  return response.seedDefaultUnitsOfMeasure
 }
 
 export const fetchBackendCategories = async (): Promise<BackendCategoryNode[]> => {

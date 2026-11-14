@@ -32,6 +32,7 @@ const COMMAND_ITEMS: CommandItem[] = [
   { id: 'inventory-kardex', title: 'Kárdex de Movimientos', subtitle: 'Trazabilidad y libro mayor de stock', href: '/inventory/kardex', category: 'Módulo', icon: 'tabler-arrows-exchange', shortcut: 'G K' },
   { id: 'inventory-warehouses', title: 'Almacenes Físicos', subtitle: 'Gestión de almacenes y sucursales', href: '/inventory/settings/warehouses', category: 'Inventario', icon: 'tabler-building-warehouse' },
   { id: 'inventory-locations', title: 'Ubicaciones de Almacén', subtitle: 'Pasillos, estanterías y zonas', href: '/inventory/settings/locations', category: 'Inventario', icon: 'tabler-map-pin' },
+  { id: 'inventory-uom', title: 'Unidades de Medida', subtitle: 'Catálogo de unidades de medida', href: '/inventory/settings/uom', category: 'Inventario', icon: 'tabler-ruler-measure' },
   { id: 'pos-terminal', title: 'Terminal POS', subtitle: 'Caja rápida, facturación y cobro', href: '/pos/terminal', category: 'POS', icon: 'tabler-device-tablet', shortcut: 'G T' },
   { id: 'pos-shifts', title: 'Turnos y Arqueo POS', subtitle: 'Aperturas, cierres y balance de caja', href: '/pos/shifts', category: 'POS', icon: 'tabler-clock-dollar' },
 
