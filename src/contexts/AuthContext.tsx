@@ -12,7 +12,9 @@ import { settingsService } from '@/services/settingsService'
 
 interface AuthContextType extends AuthState {
   permissions: string[]
+  activeModules: string[]
   hasPermission: (permission: string) => boolean
+  hasModule: (module: string) => boolean
   signIn: (input: IniciarSesionInput) => Promise<{ success: boolean; error?: string }>
   signOut: () => Promise<void>
   refreshUser: () => Promise<void>
@@ -31,13 +33,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   })
 
   const [permissions, setPermissions] = useState<string[]>([])
+  const [activeModules, setActiveModules] = useState<string[]>([])
 
-  const hasPermission = (perm: string): boolean => {
-    if (state.user?.role === 'ADMIN' || (state.user?.roles && state.user.roles.includes('ADMIN'))) {
-      return true
+  const hasPermission = (perm: string): boolean => permissions.includes(perm)
+
+  const hasModule = (module: string): boolean => activeModules.includes(module)
+
+  const hydrateAccess = async () => {
+    const [perms, license] = await Promise.allSettled([
+      settingsService.getMyPermissions(),
+      settingsService.getTenantLicense()
+    ])
+
+    if (perms.status === 'fulfilled') {
+      setPermissions(perms.value)
     }
 
-    return permissions.includes(perm)
+    if (license.status === 'fulfilled') {
+      setActiveModules(license.value.activeModules)
+    }
   }
 
   // Cargar sesión existente al montar
@@ -103,14 +117,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             })
             .catch(() => {})
 
-          settingsService
-            .getMyPermissions()
-            .then(perms => {
-              if (isMounted && perms.length > 0) {
-                setPermissions(perms)
-              }
-            })
-            .catch(() => {})
+          if (isMounted) {
+            hydrateAccess().catch(() => {})
+          }
         }
       } catch (err) {
         console.error('Error al inicializar sesión:', err)
@@ -146,6 +155,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         isAuthenticated: true
       })
 
+      await hydrateAccess().catch(() => {})
+
       return { success: true }
     }
 
@@ -158,6 +169,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setState(prev => ({ ...prev, isLoading: true }))
     await authService.signOut()
     setPermissions([])
+    setActiveModules([])
     setState({
       user: null,
       session: null,
@@ -174,28 +186,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setState(prev => ({ ...prev, user: freshUser }))
     }
 
-    try {
-      const perms = await settingsService.getMyPermissions()
-
-      if (perms.length > 0) {
-        setPermissions(perms)
-      }
-    } catch {
-      // Ignorar
-    }
+    await hydrateAccess().catch(() => {})
   }
 
   const value = useMemo(
     () => ({
       ...state,
       permissions,
+      activeModules,
       hasPermission,
+      hasModule,
       signIn,
       signOut,
       refreshUser
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [state, permissions]
+    [state, permissions, activeModules]
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

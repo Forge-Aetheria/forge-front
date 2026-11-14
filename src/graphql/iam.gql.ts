@@ -204,6 +204,17 @@ export const GET_MY_TENANT_ONBOARDING_STATUS_QUERY = `
   }
 `
 
+export const GET_TENANT_LICENSE_QUERY = `
+  query GetTenantLicense {
+    tenantLicense {
+      tenantId
+      plan
+      status
+      activeModules
+    }
+  }
+`
+
 export const GET_TENANT_ONBOARDING_QUERY = `
   query GetTenantOnboarding {
     tenantOnboarding {

@@ -10,6 +10,7 @@ import {
   DEACTIVATE_TENANT_USER_MUTATION,
   GET_ASSIGNABLE_ROLES_QUERY,
   GET_MY_PERMISSIONS_QUERY,
+  GET_TENANT_LICENSE_QUERY,
   GET_TENANT_ONBOARDING_QUERY,
   GET_TENANT_USERS_QUERY,
   INVITE_TENANT_USER_MUTATION,
@@ -282,6 +283,14 @@ export const settingsService = {
     await setTenantSetting('company.commercialPolicies', updated)
 
     return updated
+  },
+
+  async getTenantLicense(): Promise<{ plan: string; status: string; activeModules: string[] }> {
+    const response = await executeGraphQL<{
+      tenantLicense: { plan: string; status: string; activeModules: string[] }
+    }>(GET_TENANT_LICENSE_QUERY, undefined, { timeoutMs: 5000 })
+
+    return response.tenantLicense
   },
 
   async getMyPermissions(): Promise<string[]> {

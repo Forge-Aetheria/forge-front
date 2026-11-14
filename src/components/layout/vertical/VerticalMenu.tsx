@@ -15,6 +15,9 @@ import classnames from 'classnames'
 // Hook Imports
 import useVerticalNav from '@menu/hooks/useVerticalNav'
 
+// Context Imports
+import { useAuth } from '@/contexts/AuthContext'
+
 // Component Imports
 import VerticalMenuList from './VerticalMenuList'
 import TouchMenuGrid from './TouchMenuGrid'
@@ -34,11 +37,17 @@ const VerticalMenu = ({ scrollMenu }: Props) => {
 
   // Hooks
   const verticalNavOptions = useVerticalNav()
+  const { hasModule } = useAuth()
 
   // Vars
   const { isBreakpointReached, isCollapsed, isHovered } = verticalNavOptions
   const isMini = isCollapsed && !isHovered
-  const menuItems = verticalMenuData()
+
+  const menuItems = verticalMenuData().filter(item => {
+    const moduleName = (item as { module?: string }).module
+
+    return !moduleName || hasModule(moduleName)
+  })
 
   const ScrollWrapper = isBreakpointReached ? 'div' : PerfectScrollbar
 
