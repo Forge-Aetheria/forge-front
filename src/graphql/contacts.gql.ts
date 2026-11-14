@@ -180,3 +180,50 @@ export const REMOVE_PARTNER_MOBILE_PAYMENT_MUTATION = `
 
 
 
+
+export const GET_COMPANY_BANK_ACCOUNTS_QUERY = `
+  query GetCompanyBankAccounts {
+    companyBankAccounts {
+      id
+      accountNumber
+      currency
+      label
+      isDefault
+      createdAt
+      updatedAt
+      bank { id name code }
+    }
+  }
+`
+
+export const CREATE_COMPANY_BANK_ACCOUNT_MUTATION = `
+  mutation CreateCompanyBankAccount($input: CreateCompanyBankAccountInput!) {
+    createCompanyBankAccount(input: $input) {
+      id
+      accountNumber
+      currency
+      label
+      isDefault
+      createdAt
+      updatedAt
+      bank { id name code }
+    }
+  }
+`
+
+export const REMOVE_COMPANY_BANK_ACCOUNT_MUTATION = `
+  mutation RemoveCompanyBankAccount($id: ID!) {
+    removeCompanyBankAccount(id: $id) {
+      id
+    }
+  }
+`
+
+export const SET_DEFAULT_COMPANY_BANK_ACCOUNT_MUTATION = `
+  mutation SetDefaultCompanyBankAccount($id: ID!) {
+    setDefaultCompanyBankAccount(id: $id) {
+      id
+      isDefault
+    }
+  }
+`
