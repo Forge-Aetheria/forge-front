@@ -37,6 +37,7 @@ import type {
 } from '@/types/inventoryTypes'
 import {
   getUnitsOfMeasure,
+  seedDefaultUnitsOfMeasure,
   createProductTemplate,
   updateProductTemplate,
   calculateSuggestedPriceFromMargin,
@@ -54,17 +55,6 @@ interface Props {
   onSuccess: (saved: ProductTemplate) => void
 }
 
-const DEFAULT_CATEGORIES = [
-  'Textil & Indumentaria',
-  'Herramientas & Maquinaria',
-  'Químicos & Fluidos',
-  'Papelería & Oficina',
-  'Alimentos & Bebidas',
-  'Tecnología & Electrónica',
-  'Servicios Profesionales'
-]
-
-
 const ProductFormDrawer: React.FC<Props> = ({
   open,
   onClose,
@@ -80,10 +70,10 @@ const ProductFormDrawer: React.FC<Props> = ({
   const [defaultCode, setDefaultCode] = useState('')
   const [barcode, setBarcode] = useState('')
   const [productType, setProductType] = useState<ProductType>('storable')
-  const [uomCode, setUomCode] = useState('un')
-  const [categoryOptions, setCategoryOptions] = useState<string[]>(DEFAULT_CATEGORIES)
+  const [uomCode, setUomCode] = useState('')
+  const [categoryOptions, setCategoryOptions] = useState<string[]>([])
   const [uomOptions, setUomOptions] = useState<Array<{ code: string; name: string }>>([])
-  const [categoryName, setCategoryName] = useState('Herramientas & Maquinaria')
+  const [categoryName, setCategoryName] = useState('')
   const [addingQuickCat, setAddingQuickCat] = useState(false)
   const [quickCatName, setQuickCatName] = useState('')
   const [tagsInput, setTagsInput] = useState('')
@@ -129,7 +119,15 @@ const ProductFormDrawer: React.FC<Props> = ({
   useEffect(() => {
     if (open) {
       getUnitsOfMeasure()
-        .then(units => setUomOptions(units.map(u => ({ code: u.code, name: u.name }))))
+        .then(units => {
+          const options = units.map(u => ({ code: u.code, name: u.name }))
+
+          setUomOptions(options)
+
+          if (!initialProduct && options.length > 0) {
+            setUomCode(options[0].code)
+          }
+        })
         .catch(() => setUomOptions([]))
 
       getProductCategories().then(cats => {
@@ -191,8 +189,8 @@ const ProductFormDrawer: React.FC<Props> = ({
       setDefaultCode(defaultSku)
       setBarcode('')
       setProductType('storable')
-      setUomCode('un')
-      setCategoryName('Herramientas & Maquinaria')
+      setUomCode('')
+      setCategoryName('')
       setAddingQuickCat(false)
       setQuickCatName('')
       setTagsInput('Nuevo, Catálogo')
@@ -352,9 +350,27 @@ const ProductFormDrawer: React.FC<Props> = ({
     })
   }
 
+  const handleSeedUnits = async () => {
+    try {
+      const units = await seedDefaultUnitsOfMeasure()
+      const options = units.map(u => ({ code: u.code, name: u.name }))
+
+      setUomOptions(options)
+      if (options.length > 0) setUomCode(prev => prev || options[0].code)
+    } catch (err: unknown) {
+      setErrorMsg(err instanceof Error ? err.message : 'No se pudieron sembrar las unidades base')
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setErrorMsg(null)
+
+    if (!uomCode) {
+      setErrorMsg('Seleccione o cree una unidad de medida antes de guardar')
+
+      return
+    }
 
     const tags = tagsInput
       .split(',')
@@ -739,6 +755,9 @@ const ProductFormDrawer: React.FC<Props> = ({
                   label='Unidad de Medida'
                   value={uomCode}
                   onChange={e => setUomCode(e.target.value)}
+                  helperText={
+                    uomOptions.length === 0 ? 'No hay unidades de medida activas' : undefined
+                  }
                 >
                   {uomOptions.map(u => (
                     <MenuItem key={u.code} value={u.code}>
@@ -746,6 +765,11 @@ const ProductFormDrawer: React.FC<Props> = ({
                     </MenuItem>
                   ))}
                 </CustomTextField>
+                {uomOptions.length === 0 && (
+                  <Button size='small' sx={{ mt: 1 }} onClick={handleSeedUnits}>
+                    Sembrar unidades base
+                  </Button>
+                )}
               </Grid>
               <Grid size={{ xs: 12, sm: 3 }}>
                 <CustomTextField

@@ -583,6 +583,28 @@ export const SEED_UNITS_OF_MEASURE_MUTATION = `
   }
 `
 
+export const CREATE_UNIT_OF_MEASURE_MUTATION = `
+  mutation CreateUnitOfMeasure($input: CreateUnitOfMeasureInput!) {
+    createUnitOfMeasure(input: $input) {
+      id
+      code
+      name
+      isActive
+    }
+  }
+`
+
+export const DEACTIVATE_UNIT_OF_MEASURE_MUTATION = `
+  mutation DeactivateUnitOfMeasure($code: String!) {
+    deactivateUnitOfMeasure(code: $code) {
+      id
+      code
+      name
+      isActive
+    }
+  }
+`
+
 export const CREATE_PRODUCT_CATEGORY_MUTATION = `
   mutation CreateProductCategory($input: CreateProductCategoryInput!) {
     createProductCategory(input: $input) {

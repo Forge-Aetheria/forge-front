@@ -76,6 +76,11 @@ const horizontalMenuData = (): HorizontalMenuDataType[] => [
             label: 'Ubicaciones',
             href: '/inventory/settings/locations',
             icon: 'tabler-map-pin'
+          },
+          {
+            label: 'Unidades de Medida',
+            href: '/inventory/settings/uom',
+            icon: 'tabler-ruler-measure'
           }
         ]
       }
