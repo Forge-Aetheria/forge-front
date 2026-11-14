@@ -20,7 +20,7 @@ import InputAdornment from '@mui/material/InputAdornment'
 import CustomTextField from '@core/components/mui/TextField'
 import CustomAvatar from '@core/components/mui/Avatar'
 import CustomChip from '@core/components/mui/Chip'
-import { getActiveBcvRate } from '@/services/inventoryService'
+import { useBcvRate } from '@/hooks/useBcvRate'
 
 interface MetricConfig {
   id: string
@@ -123,15 +123,13 @@ export const HomeDashboardView = () => {
 
   const [customizerOpen, setCustomizerOpen] = useState(false)
 
+  const activeBcvRate = useBcvRate()
+
   useEffect(() => {
-    try {
-      const active = getActiveBcvRate()
+    if (activeBcvRate > 0) setBcvRate(activeBcvRate)
+  }, [activeBcvRate])
 
-      if (active && active > 0) setBcvRate(active)
-    } catch {
-      // Usar base
-    }
-
+  useEffect(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY)
 

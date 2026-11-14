@@ -237,6 +237,12 @@ export const GET_CATEGORIES_QUERY = `
       name
       completeName
       code
+      description
+      isActive
+      revenueAccount { id code name }
+      expenseAccount { id code name }
+      inventoryAccount { id code name }
+      landedCostAccount { id code name }
     }
   }
 `
@@ -483,6 +489,14 @@ export const GET_WAREHOUSES_QUERY = `
       isActive
       createdAt
       updatedAt
+      locations {
+        id
+        code
+        name
+        completePath
+        warehouseId
+        isActive
+      }
     }
   }
 `
@@ -546,3 +560,207 @@ export const UPDATE_STOCK_LOCATION_MUTATION = `
 
 
 
+
+export const GET_UNITS_OF_MEASURE_QUERY = `
+  query GetUnitsOfMeasure {
+    unitsOfMeasure {
+      id
+      code
+      name
+      isActive
+    }
+  }
+`
+
+export const SEED_UNITS_OF_MEASURE_MUTATION = `
+  mutation SeedUnitsOfMeasure {
+    seedDefaultUnitsOfMeasure {
+      id
+      code
+      name
+      isActive
+    }
+  }
+`
+
+export const CREATE_PRODUCT_CATEGORY_MUTATION = `
+  mutation CreateProductCategory($input: CreateProductCategoryInput!) {
+    createProductCategory(input: $input) {
+      id
+      code
+      name
+      description
+      isActive
+      revenueAccount { id code name }
+      expenseAccount { id code name }
+      inventoryAccount { id code name }
+      landedCostAccount { id code name }
+    }
+  }
+`
+
+export const UPDATE_PRODUCT_CATEGORY_MUTATION = `
+  mutation UpdateProductCategory($id: ID!, $input: UpdateProductCategoryInput!) {
+    updateProductCategory(id: $id, input: $input) {
+      id
+      code
+      name
+      description
+      isActive
+      revenueAccount { id code name }
+      expenseAccount { id code name }
+      inventoryAccount { id code name }
+      landedCostAccount { id code name }
+    }
+  }
+`
+
+export const DELETE_PRODUCT_CATEGORY_MUTATION = `
+  mutation DeleteProductCategory($id: ID!) {
+    deleteProductCategory(id: $id)
+  }
+`
+
+
+export const DELETE_WAREHOUSE_MUTATION = `
+  mutation DeleteWarehouse($id: ID!) {
+    deleteWarehouse(id: $id)
+  }
+`
+
+export const DELETE_STOCK_LOCATION_MUTATION = `
+  mutation DeleteStockLocation($id: ID!) {
+    deleteStockLocation(id: $id)
+  }
+`
+
+export const GET_WAREHOUSE_OPERATIONS_QUERY = `
+  query GetWarehouseOperations($where: WarehouseOperationWhereInput, $take: Int, $skip: Int) {
+    warehouseOperations(where: $where, take: $take, skip: $skip, orderBy: [{ createdAt: desc }]) {
+      id
+      code
+      type
+      status
+      thirdPartyName
+      sourceDocument
+      sourceWarehouseId
+      targetWarehouseId
+      scheduledAt
+      effectiveAt
+      totalItems
+      responsible
+      notes
+      createdAt
+      lines {
+        id
+        lineNumber
+        variantId
+        productName
+        sku
+        uomCode
+        demandQty
+        processedQty
+        unitCostUsd
+      }
+    }
+  }
+`
+
+export const GET_WAREHOUSE_OPERATION_QUERY = `
+  query GetWarehouseOperation($id: ID!) {
+    warehouseOperation(id: $id) {
+      id
+      code
+      type
+      status
+      thirdPartyName
+      sourceDocument
+      sourceWarehouseId
+      targetWarehouseId
+      scheduledAt
+      effectiveAt
+      totalItems
+      responsible
+      notes
+      createdAt
+      lines {
+        id
+        lineNumber
+        variantId
+        productName
+        sku
+        uomCode
+        demandQty
+        processedQty
+        unitCostUsd
+      }
+    }
+  }
+`
+
+export const CREATE_WAREHOUSE_OPERATION_MUTATION = `
+  mutation CreateWarehouseOperation($input: CreateWarehouseOperationInput!) {
+    createWarehouseOperation(input: $input) {
+      id
+      code
+      type
+      status
+      thirdPartyName
+      sourceDocument
+      sourceWarehouseId
+      targetWarehouseId
+      scheduledAt
+      effectiveAt
+      totalItems
+      responsible
+      notes
+      createdAt
+      lines {
+        id
+        lineNumber
+        variantId
+        productName
+        sku
+        uomCode
+        demandQty
+        processedQty
+        unitCostUsd
+      }
+    }
+  }
+`
+
+export const VALIDATE_WAREHOUSE_OPERATION_MUTATION = `
+  mutation ValidateWarehouseOperation($input: ValidateWarehouseOperationInput!) {
+    validateWarehouseOperation(input: $input) {
+      id
+      code
+      type
+      status
+      totalItems
+      effectiveAt
+      lines {
+        id
+        lineNumber
+        variantId
+        productName
+        sku
+        uomCode
+        demandQty
+        processedQty
+        unitCostUsd
+      }
+    }
+  }
+`
+
+export const CANCEL_WAREHOUSE_OPERATION_MUTATION = `
+  mutation CancelWarehouseOperation($input: CancelWarehouseOperationInput!) {
+    cancelWarehouseOperation(input: $input) {
+      id
+      code
+      status
+      cancellationReason
+    }
+  }
+`

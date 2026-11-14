@@ -1,5 +1,6 @@
 'use client'
 
+
 import React, { useCallback, useEffect, useState } from 'react'
 
 import Link from 'next/link'
@@ -33,6 +34,8 @@ import DialogActions from '@mui/material/DialogActions'
 import Snackbar from '@mui/material/Snackbar'
 import Alert from '@mui/material/Alert'
 
+import { useBcvRate } from '@/hooks/useBcvRate'
+
 import CustomChip from '@core/components/mui/Chip'
 
 import CustomTextField from '@core/components/mui/TextField'
@@ -57,9 +60,9 @@ import {
   calculateFinancials,
   calculateSuggestedPriceFromMargin,
   calculateMarginFromPrice,
-  getFiscalConfig,
-  getActiveBcvRate,
+  getInventoryFiscalConfig,
   getProductCategories,
+  getUnitsOfMeasure,
   createProductCategory,
   createProductTemplate
 } from '@/services/inventoryService'
@@ -79,15 +82,6 @@ const DEFAULT_CATEGORIES = [
   'Servicios Profesionales'
 ]
 
-const DEFAULT_UOMS = [
-  { code: 'un', label: 'Unidad (un)' },
-  { code: 'kg', label: 'Kilogramo (kg)' },
-  { code: 'L', label: 'Litro (L)' },
-  { code: 'm', label: 'Metro (m)' },
-  { code: 'paquete', label: 'Paquete (paquete)' },
-  { code: 'hr', label: 'Hora (hr)' },
-  { code: 'serv', label: 'Servicio (serv)' }
-]
 
 const InventoryDetailView: React.FC<Props> = ({ id }) => {
   const router = useRouter()
@@ -107,6 +101,7 @@ const InventoryDetailView: React.FC<Props> = ({ id }) => {
   const [barcode, setBarcode] = useState('')
   const [productType, setProductType] = useState<ProductType>('storable')
   const [categoryOptions, setCategoryOptions] = useState<string[]>(DEFAULT_CATEGORIES)
+  const [uomOptions, setUomOptions] = useState<Array<{ code: string; name: string }>>([])
   const [categoryName, setCategoryName] = useState('Herramientas & Maquinaria')
   const [addingQuickCat, setAddingQuickCat] = useState(false)
   const [quickCatName, setQuickCatName] = useState('')
@@ -147,19 +142,22 @@ const InventoryDetailView: React.FC<Props> = ({ id }) => {
     severity: 'success'
   })
 
-  const bcvRate = getActiveBcvRate()
+  const bcvRate = useBcvRate()
 
   const loadData = useCallback(async () => {
     try {
       setLoading(true)
 
       if (isCreate) {
-        const [allData, catsData] = await Promise.all([
+        const [allData, catsData, unitsData] = await Promise.all([
           getInventoryTemplates(),
-          getProductCategories()
+          getProductCategories(),
+          getUnitsOfMeasure()
         ])
 
-        const fiscal = getFiscalConfig()
+        setUomOptions(unitsData.map(u => ({ code: u.code, name: u.name })))
+
+        const fiscal = await getInventoryFiscalConfig()
 
         setAllTemplates(allData)
         setMovements([])
@@ -227,14 +225,17 @@ const InventoryDetailView: React.FC<Props> = ({ id }) => {
         return
       }
 
-      const [allData, itemData, movData, catsData] = await Promise.all([
+      const [allData, itemData, movData, catsData, unitsData] = await Promise.all([
         getInventoryTemplates(),
         getInventoryTemplateById(id),
         getStockMovements(id),
-        getProductCategories()
+        getProductCategories(),
+        getUnitsOfMeasure()
       ])
 
-      const fiscal = getFiscalConfig()
+      setUomOptions(unitsData.map(u => ({ code: u.code, name: u.name })))
+
+      const fiscal = await getInventoryFiscalConfig()
 
       setAllTemplates(allData)
       setTemplate(itemData)
@@ -528,7 +529,7 @@ const InventoryDetailView: React.FC<Props> = ({ id }) => {
     )
   }
 
-  const financials = calculateFinancials(standardCost, basePrice, vatRate, fiscalEnabled)
+  const financials = calculateFinancials(standardCost, basePrice, vatRate, fiscalEnabled, bcvRate)
 
   const totalPhysical = variants.reduce((acc, v) => acc + Number(v.physicalStock || 0), 0)
   const totalReserved = variants.reduce((acc, v) => acc + Number(v.reservedStock || 0), 0)
@@ -1173,9 +1174,9 @@ const InventoryDetailView: React.FC<Props> = ({ id }) => {
                         value={uomCode}
                         onChange={e => setUomCode(e.target.value)}
                       >
-                        {DEFAULT_UOMS.map(u => (
+                        {uomOptions.map(u => (
                           <MenuItem key={u.code} value={u.code}>
-                            {u.label}
+                            {u.name}
                           </MenuItem>
                         ))}
                       </CustomTextField>

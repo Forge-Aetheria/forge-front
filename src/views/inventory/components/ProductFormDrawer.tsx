@@ -1,5 +1,6 @@
 'use client'
 
+
 import React, { useState, useEffect } from 'react'
 
 import Drawer from '@mui/material/Drawer'
@@ -19,6 +20,8 @@ import TableBody from '@mui/material/TableBody'
 import TableRow from '@mui/material/TableRow'
 import TableCell from '@mui/material/TableCell'
 
+import { useBcvRate } from '@/hooks/useBcvRate'
+
 import CustomTextField from '@core/components/mui/TextField'
 
 import type {
@@ -33,11 +36,11 @@ import type {
   LandedCostSplitMethod
 } from '@/types/inventoryTypes'
 import {
+  getUnitsOfMeasure,
   createProductTemplate,
   updateProductTemplate,
   calculateSuggestedPriceFromMargin,
   calculateMarginFromPrice,
-  getActiveBcvRate,
   getProductCategories,
   createProductCategory
 } from '@/services/inventoryService'
@@ -61,14 +64,6 @@ const DEFAULT_CATEGORIES = [
   'Servicios Profesionales'
 ]
 
-const DEFAULT_UOMS = [
-  { code: 'un', label: 'Unidad (un)' },
-  { code: 'kg', label: 'Kilogramo (kg)' },
-  { code: 'L', label: 'Litro (L)' },
-  { code: 'm', label: 'Metro (m)' },
-  { code: 'paquete', label: 'Paquete / Caja' },
-  { code: 'servicio', label: 'Servicio / Hora' }
-]
 
 const ProductFormDrawer: React.FC<Props> = ({
   open,
@@ -78,7 +73,7 @@ const ProductFormDrawer: React.FC<Props> = ({
   onSuccess
 }) => {
   const isEdit = Boolean(initialProduct)
-  const bcvRate = getActiveBcvRate()
+  const bcvRate = useBcvRate()
 
   // Form States
   const [name, setName] = useState('')
@@ -87,6 +82,7 @@ const ProductFormDrawer: React.FC<Props> = ({
   const [productType, setProductType] = useState<ProductType>('storable')
   const [uomCode, setUomCode] = useState('un')
   const [categoryOptions, setCategoryOptions] = useState<string[]>(DEFAULT_CATEGORIES)
+  const [uomOptions, setUomOptions] = useState<Array<{ code: string; name: string }>>([])
   const [categoryName, setCategoryName] = useState('Herramientas & Maquinaria')
   const [addingQuickCat, setAddingQuickCat] = useState(false)
   const [quickCatName, setQuickCatName] = useState('')
@@ -132,6 +128,10 @@ const ProductFormDrawer: React.FC<Props> = ({
 
   useEffect(() => {
     if (open) {
+      getUnitsOfMeasure()
+        .then(units => setUomOptions(units.map(u => ({ code: u.code, name: u.name }))))
+        .catch(() => setUomOptions([]))
+
       getProductCategories().then(cats => {
         const names = cats.map(c => c.name)
 
@@ -740,9 +740,9 @@ const ProductFormDrawer: React.FC<Props> = ({
                   value={uomCode}
                   onChange={e => setUomCode(e.target.value)}
                 >
-                  {DEFAULT_UOMS.map(u => (
+                  {uomOptions.map(u => (
                     <MenuItem key={u.code} value={u.code}>
-                      {u.label}
+                      {u.name}
                     </MenuItem>
                   ))}
                 </CustomTextField>

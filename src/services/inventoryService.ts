@@ -19,7 +19,9 @@ import {
   UPDATE_PRODUCT_TEMPLATE_MUTATION,
   DELETE_PRODUCT_TEMPLATE_MUTATION,
   CREATE_INVENTORY_ADJUSTMENT_MUTATION,
-  APPLY_INVENTORY_ADJUSTMENT_MUTATION
+  APPLY_INVENTORY_ADJUSTMENT_MUTATION,
+  GET_INVENTORY_ADJUSTMENTS_QUERY,
+  GET_UNITS_OF_MEASURE_QUERY
 } from '@/graphql/inventory.gql'
 import type {
   GqlProductTemplate,
@@ -36,21 +38,11 @@ import {
   serializeAdjustmentInput,
   generateIdempotencyKey
 } from '@/services/adapters/inventoryAdapter'
-import {
-  getActiveBcvRate,
-  getFiscalConfig,
-  setFiscalConfigEnabled,
-  loadStoredTemplates,
-  saveStoredTemplates,
-  loadStoredMovements,
-  saveStoredMovements,
-  loadStoredAdjustments,
-  saveStoredAdjustments,
-  loadStoredOperationOrders
-} from './inventory/inventoryStorage'
+import { fetchActiveBcvRate } from '@/services/bcvService'
+import { getWarehouseOperationOrders } from '@/services/inventory/operationOrdersService'
+import { GET_TENANT_SETTING_QUERY, SET_TENANT_SETTING_MUTATION } from '@/graphql/pos.gql'
 
 // Re-export modularized services so all existing '@/services/inventoryService' imports work seamlessly
-export { getActiveBcvRate, getFiscalConfig, setFiscalConfigEnabled }
 export {
   getProductCategories,
   createProductCategory,
@@ -110,52 +102,33 @@ export const getInventoryTemplates = async (forceRefresh = false): Promise<Produ
       const res = await executeGraphQL<{ templates: { nodes: GqlProductTemplate[] } }>(
         GET_TEMPLATES_QUERY,
         { page: 1, perPage: 100 },
-        { timeoutMs: 4000 }
+        { timeoutMs: 5000 }
       )
 
-      if (res?.templates?.nodes && res.templates.nodes.length > 0) {
-        const mapped = res.templates.nodes.map(mapGqlTemplateToFrontend)
+      const mapped = (res?.templates?.nodes ?? []).map(mapGqlTemplateToFrontend)
 
-        cachedTemplates = mapped
-        saveStoredTemplates(mapped)
-        
-return mapped
-      }
-    } catch {
-      // Fallback controlado a datos persistidos si el backend no está disponible o no hay red
+      cachedTemplates = mapped
+
+      return mapped
+    } catch (err) {
+      console.error('[inventoryService] No se pudieron cargar los productos:', err)
+      throw err
     } finally {
       fetchTemplatesPromise = null
     }
-
-    const stored = loadStoredTemplates()
-
-    cachedTemplates = stored
-    
-return stored
   })()
 
   return fetchTemplatesPromise
 }
 
 export const getInventoryTemplateById = async (id: string): Promise<ProductTemplate | null> => {
-  try {
-    const res = await executeGraphQL<{ template: GqlProductTemplate }>(
-      GET_TEMPLATE_BY_ID_QUERY,
-      { id },
-      { timeoutMs: 4000 }
-    )
+  const res = await executeGraphQL<{ template: GqlProductTemplate | null }>(
+    GET_TEMPLATE_BY_ID_QUERY,
+    { id },
+    { timeoutMs: 5000 }
+  )
 
-    if (res?.template) {
-      return mapGqlTemplateToFrontend(res.template)
-    }
-  } catch {
-    // Fallback a almacenamiento local
-  }
-
-  const templates = loadStoredTemplates()
-  const item = templates.find(template => template.id === id) || null
-
-  return item
+  return res?.template ? mapGqlTemplateToFrontend(res.template) : null
 }
 
 /**
@@ -187,6 +160,32 @@ export interface BackendCategoryNode {
 }
 
 let cachedBackendCategories: BackendCategoryNode[] | null = null
+
+export const getInventoryFiscalConfig = async (): Promise<{ enabled: boolean }> => {
+  const response = await executeGraphQL<{ tenantSetting: string }>(
+    GET_TENANT_SETTING_QUERY,
+    { key: 'inventory.fiscalEnabled' },
+    { timeoutMs: 5000 }
+  )
+
+  return { enabled: response.tenantSetting === '' ? true : response.tenantSetting === 'true' }
+}
+
+export const setInventoryFiscalEnabled = async (enabled: boolean): Promise<void> => {
+  await executeGraphQL(
+    SET_TENANT_SETTING_MUTATION,
+    { input: { key: 'inventory.fiscalEnabled', value: enabled ? 'true' : 'false' } },
+    { timeoutMs: 5000 }
+  )
+}
+
+export const getUnitsOfMeasure = async (): Promise<Array<{ id: string; code: string; name: string }>> => {
+  const response = await executeGraphQL<{
+    unitsOfMeasure: Array<{ id: string; code: string; name: string; isActive: boolean }>
+  }>(GET_UNITS_OF_MEASURE_QUERY, undefined, { timeoutMs: 5000 })
+
+  return response.unitsOfMeasure.filter(unit => unit.isActive)
+}
 
 export const fetchBackendCategories = async (): Promise<BackendCategoryNode[]> => {
   if (cachedBackendCategories && cachedBackendCategories.length > 0) {
@@ -373,45 +372,7 @@ export const updateProductTemplate = async (
     throw new Error('El backend no retornó los datos actualizados del producto.')
   }
 
-  const templates = loadStoredTemplates()
-  const index = templates.findIndex(t => t.id === id)
-
-  if (index === -1) {
-    throw new Error('El producto solicitado no existe.')
-  }
-
-  // Check duplicate master SKU if changed
-  if (payload.defaultCode) {
-    const duplicate = templates.some(
-      t =>
-        t.id !== id &&
-        t.defaultCode.trim().toLowerCase() === payload.defaultCode!.trim().toLowerCase()
-    )
-
-    if (duplicate) {
-      throw new Error(`El SKU "${payload.defaultCode}" ya pertenece a otro artículo.`)
-    }
-  }
-
-  const existing = templates[index]
-
-  const updatedTemplate: ProductTemplate = {
-    ...existing,
-    ...payload,
-    id: existing.id,
-    updatedAt: new Date().toISOString(),
-    variants: (payload.variants || existing.variants).map(v => ({
-      ...v,
-      templateId: existing.id,
-      availableStock: Math.max(0, v.physicalStock - (v.reservedStock || 0))
-    }))
-  }
-
-  templates[index] = updatedTemplate
-  saveStoredTemplates(templates)
-  invalidateTemplatesCache()
-
-  return Promise.resolve(updatedTemplate)
+  throw new Error('Solo se pueden actualizar productos sincronizados con el backend (UUID).')
 }
 
 export const deleteProductTemplate = async (id: string): Promise<void> => {
@@ -429,30 +390,62 @@ export const deleteProductTemplate = async (id: string): Promise<void> => {
     return
   }
 
-  const templates = loadStoredTemplates()
-  const filtered = templates.filter(t => t.id !== id)
-
-  saveStoredTemplates(filtered)
-  invalidateTemplatesCache()
-
-  return Promise.resolve()
+  throw new Error('Solo se pueden eliminar productos sincronizados con el backend (UUID).')
 }
 
 // ==========================================
 // KARDEX & STOCK ADJUSTMENTS
 // ==========================================
 export const getStockMovements = async (productId?: string): Promise<StockMovement[]> => {
-  const movements = loadStoredMovements()
+  void productId
 
-  if (productId && productId !== 'ALL') {
-    return Promise.resolve(movements.filter(m => m.producto_id === productId))
-  }
-
-  return Promise.resolve(movements)
+  // El backend expone kardex por variante; no hay query de listado global de movimientos.
+  return []
 }
 
 export const getStockAdjustments = async (): Promise<StockAdjustmentRecord[]> => {
-  return Promise.resolve(loadStoredAdjustments())
+  const response = await executeGraphQL<{
+    inventoryAdjustments: Array<{
+      id: string
+      auditNumber: string
+      adjustmentState: string
+      reason: string
+      createdAt: string
+      lines: Array<{
+        id: string
+        variantId: string
+        theoreticalQuantity: string
+        countedQuantity: string
+        difference: string
+      }>
+    }>
+  }>(GET_INVENTORY_ADJUSTMENTS_QUERY, { take: 100 }, { timeoutMs: 5000 })
+
+  return response.inventoryAdjustments.flatMap(adjustment => {
+    const line = adjustment.lines[0]
+
+    if (!line) return []
+
+    return [{
+      id: adjustment.id,
+      correlativo: adjustment.auditNumber,
+      fecha: adjustment.createdAt,
+      producto_id: '',
+      producto_nombre: '',
+      variante_id: line.variantId,
+      variante_sku: '',
+      uom_code: 'UNI',
+      motivo: adjustment.reason as AdjustmentReason,
+      stock_sistema: Number(line.theoreticalQuantity),
+      stock_contado: Number(line.countedQuantity),
+      diferencia: Number(line.difference),
+      costo_unitario_usd: 0,
+      impacto_usd: 0,
+      observaciones: '',
+      usuario_responsable: '',
+      estado: (adjustment.adjustmentState === 'APPLIED' ? 'APPLIED' : 'DRAFT') as StockAdjustmentRecord['estado']
+    }]
+  })
 }
 
 export const applyStockAdjustment = async (input: {
@@ -463,161 +456,59 @@ export const applyStockAdjustment = async (input: {
   observaciones?: string
   usuario_responsable?: string
 }): Promise<StockAdjustmentRecord> => {
-  const templates = loadStoredTemplates()
-  const movements = loadStoredMovements()
-  const adjustments = loadStoredAdjustments()
+  void input.producto_id
+  void input.usuario_responsable
 
-  const tIdx = templates.findIndex(t => t.id === input.producto_id)
+  const defaultLoc = await resolveDefaultStockLocations()
 
-  if (tIdx === -1) {
-    throw new Error('Producto no encontrado.')
-  }
+  let reasonGql: 'PHYSICAL_COUNT' | 'LOSS' | 'DAMAGE' | 'SCRAP' | 'INITIAL_LOAD' | 'CORRECTION' = 'PHYSICAL_COUNT'
 
-  const template = templates[tIdx]
+  if (input.motivo === 'ROTURA_MERMA') reasonGql = 'DAMAGE'
+  else if (input.motivo === 'CADUCIDAD') reasonGql = 'SCRAP'
+  else if (input.motivo === 'CONSUMO_INTERNO') reasonGql = 'LOSS'
+  else if (input.motivo === 'CORRECCION_SISTEMA') reasonGql = 'CORRECTION'
 
-  if (template.productType === 'service') {
-    throw new Error('Los servicios no admiten ajustes de stock físico.')
-  }
+  const payload = serializeAdjustmentInput({
+    locationId: defaultLoc.internalLocationId,
+    reason: reasonGql,
+    lines: [{
+      variantId: input.variante_id,
+      theoreticalQuantity: input.stock_contado,
+      countedQuantity: input.stock_contado,
+      difference: 0
+    }],
+    idempotencyKey: generateIdempotencyKey()
+  })
 
-  const vIdx = template.variants.findIndex(v => v.id === input.variante_id)
-
-  if (vIdx === -1) {
-    throw new Error('Variante de producto no encontrada.')
-  }
-
-  const variant = template.variants[vIdx]
-  const stockSistema = variant.physicalStock
-  const stockContado = Math.max(0, input.stock_contado)
-  const diferencia = stockContado - stockSistema
-
-  const isVarUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(
-    input.variante_id
+  const created = await executeGraphQL<{ createInventoryAdjustment: { id: string } }>(
+    CREATE_INVENTORY_ADJUSTMENT_MUTATION,
+    { input: payload },
+    { timeoutMs: 10000 }
   )
 
-  if (isVarUuid) {
-    try {
-      const defaultLoc = await resolveDefaultStockLocations()
-      const idempotencyKey = generateIdempotencyKey()
+  await executeGraphQL(
+    APPLY_INVENTORY_ADJUSTMENT_MUTATION,
+    { id: created.createInventoryAdjustment.id, idempotencyKey: generateIdempotencyKey() },
+    { timeoutMs: 10000 }
+  )
 
-      let reasonGql: 'PHYSICAL_COUNT' | 'LOSS' | 'DAMAGE' | 'SCRAP' | 'INITIAL_LOAD' | 'CORRECTION' = 'PHYSICAL_COUNT'
+  const adjustments = await getStockAdjustments()
+  const applied = adjustments.find(adjustment => adjustment.id === created.createInventoryAdjustment.id)
 
-      if (input.motivo === 'ROTURA_MERMA') reasonGql = 'DAMAGE'
-      else if (input.motivo === 'CADUCIDAD') reasonGql = 'SCRAP'
-      else if (input.motivo === 'CONSUMO_INTERNO') reasonGql = 'LOSS'
-      else if (input.motivo === 'CORRECCION_SISTEMA') reasonGql = 'CORRECTION'
-
-      const adjPayload = serializeAdjustmentInput({
-        locationId: defaultLoc.internalLocationId,
-        reason: reasonGql,
-        lines: [
-          {
-            variantId: input.variante_id,
-            theoreticalQuantity: stockSistema,
-            countedQuantity: stockContado,
-            difference: diferencia
-          }
-        ],
-        idempotencyKey
-      })
-
-      const res = await executeGraphQL<{ createInventoryAdjustment: { id: string } }>(
-        CREATE_INVENTORY_ADJUSTMENT_MUTATION,
-        { input: adjPayload },
-        { timeoutMs: 10000 }
-      )
-
-      if (res?.createInventoryAdjustment?.id) {
-        await executeGraphQL(
-          APPLY_INVENTORY_ADJUSTMENT_MUTATION,
-          {
-            id: res.createInventoryAdjustment.id,
-            idempotencyKey: generateIdempotencyKey()
-          },
-          { timeoutMs: 10000 }
-        )
-      }
-    } catch (err: unknown) {
-      console.warn('[inventoryService] Fallback local para applyStockAdjustment:', err)
-    }
+  if (!applied) {
+    throw new Error('El ajuste fue aplicado pero no se pudo recargar desde el backend.')
   }
 
-  // Update variant stock
-  const newAvailable = Math.max(0, stockContado - variant.reservedStock)
-
-  template.variants[vIdx] = {
-    ...variant,
-    physicalStock: stockContado,
-    availableStock: newAvailable
-  }
-  template.updatedAt = new Date().toISOString()
-  templates[tIdx] = template
-  saveStoredTemplates(templates)
-  invalidateTemplatesCache()
-
-  const now = new Date().toISOString()
-  const nextNumber = (adjustments.length + 1).toString().padStart(4, '0')
-  const correlativo = `AJU-2026-${nextNumber}`
-  const unitCost = variant.costPrice || template.standardCost
-
-  const newAdjustment: StockAdjustmentRecord = {
-    id: `adj-${Date.now()}`,
-    correlativo,
-    fecha: now,
-    producto_id: template.id,
-    producto_nombre: template.name,
-    variante_id: variant.id,
-    variante_sku: variant.sku,
-    uom_code: template.uomCode,
-    motivo: input.motivo,
-    stock_sistema: stockSistema,
-    stock_contado: stockContado,
-    diferencia,
-    costo_unitario_usd: unitCost,
-    impacto_usd: diferencia * unitCost,
-    observaciones: input.observaciones,
-    usuario_responsable: input.usuario_responsable || 'Elena Rivas',
-    estado: 'APPLIED'
-  }
-
-  adjustments.unshift(newAdjustment)
-  saveStoredAdjustments(adjustments)
-
-  // Generate Kardex movement if difference != 0
-  if (diferencia !== 0) {
-    const mov: StockMovement = {
-      id: `mov-${Date.now()}`,
-      fecha: now,
-      producto_id: template.id,
-      producto_nombre: template.name,
-      variante_id: variant.id,
-      variante_sku: variant.sku,
-      uom_code: template.uomCode,
-      tipo_movimiento: diferencia > 0 ? 'ADJUSTMENT_IN' : 'ADJUSTMENT_OUT',
-      documento_referencia: correlativo,
-      cantidad_entrada: diferencia > 0 ? diferencia : 0,
-      cantidad_salida: diferencia < 0 ? Math.abs(diferencia) : 0,
-      costo_unitario_usd: unitCost,
-      saldo_resultante: stockContado,
-      motivo: input.observaciones || `Ajuste por ${input.motivo.replace('_', ' ')}`,
-      almacen: 'Almacén Central',
-      usuario_responsable: input.usuario_responsable || 'Elena Rivas'
-    }
-
-    movements.unshift(mov)
-    saveStoredMovements(movements)
-  }
-
-  return Promise.resolve(newAdjustment)
+  return applied
 }
 
 // ==========================================
 // DASHBOARD KPIS & FINANCIAL CALCULATORS
 // ==========================================
-export const calculateInventoryKPIs = (templates: ProductTemplate[]): InventoryKPIs => {
+export const calculateInventoryKPIs = (templates: ProductTemplate[], bcvRate = 0): InventoryKPIs => {
   let totalStockValue = 0
   let lowStockCount = 0
   let outOfStockCount = 0
-  const bcvRate = getActiveBcvRate()
 
   templates.forEach(template => {
     if (template.productType === 'service') return
@@ -645,10 +536,14 @@ export const calculateInventoryKPIs = (templates: ProductTemplate[]): InventoryK
 }
 
 export const getWarehouseOperationsDashboard = async (): Promise<WarehouseOperationsDashboard> => {
-  const templates = loadStoredTemplates()
-  const kpis = calculateInventoryKPIs(templates)
-  const bcvRate = getActiveBcvRate()
-  const orders = loadStoredOperationOrders()
+  const [templates, orders, bcv] = await Promise.all([
+    getInventoryTemplates(),
+    getWarehouseOperationOrders(),
+    fetchActiveBcvRate()
+  ])
+
+  const bcvRate = bcv.ok ? bcv.data.rate : 0
+  const kpis = calculateInventoryKPIs(templates, bcvRate)
 
   let valorVentaPotencialUsd = 0
 
@@ -717,9 +612,9 @@ export const calculateFinancials = (
   cost: number,
   price: number,
   vatRate?: string,
-  fiscalEnabled = false
+  fiscalEnabled = false,
+  bcvRate = 0
 ) => {
-  const bcvRate = getActiveBcvRate()
   const marginAmount = price - cost
   const marginPercentage = cost > 0 ? (marginAmount / cost) * 100 : price > 0 ? 100 : 0
 

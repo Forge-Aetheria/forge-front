@@ -26,6 +26,7 @@ import TableRow from '@mui/material/TableRow'
 import Tooltip from '@mui/material/Tooltip'
 
 import { accountingService, isInvoiceLandedCostEligible } from '@/services/accountingService'
+import { contactsService } from '@/services/contactsService'
 import { settingsService } from '@/services/settingsService'
 import type {
   Account,
@@ -45,15 +46,15 @@ interface Props {
   defaultTasaBcv?: number
 }
 
-// Contact seeds for selection
-const CONTACT_OPTIONS = [
-  { id: 'ct-01', nombre: 'Inversiones Caroní C.A.', rif: 'J-30981245-2', tipo: 'CUSTOMER', cuentaCxcId: 'acc-110201' },
-  { id: 'ct-02', nombre: 'Distribuidora Oriental S.A.S.', rif: 'J-40291823-1', tipo: 'CUSTOMER', cuentaCxcId: 'acc-110201' },
-  { id: 'ct-03', nombre: 'Corporación Metalmecánica Bolivariana', rif: 'J-31890234-5', tipo: 'CUSTOMER', cuentaCxcId: 'acc-110201' },
-  { id: 'ct-prov-01', nombre: 'Distribuidora Eléctrica del Sur C.A.', rif: 'J-40128456-0', tipo: 'SUPPLIER', cuentaCxpId: 'acc-210101' },
-  { id: 'ct-prov-02', nombre: 'Aceros y Perfiles Guayana S.A.', rif: 'J-29845112-9', tipo: 'SUPPLIER', cuentaCxpId: 'acc-210101' },
-  { id: 'ct-prov-03', nombre: 'Ferretería Industrial Roscio C.A.', rif: 'J-31456789-1', tipo: 'SUPPLIER', cuentaCxpId: 'acc-210101' }
-]
+
+type ContactOption = {
+  id: string
+  nombre: string
+  rif: string
+  tipo: InvoiceAccountingType
+  cuentaCxcId?: string
+  cuentaCxpId?: string
+}
 
 export const InvoiceDetailModal: React.FC<Props> = ({
   open,
@@ -70,7 +71,8 @@ export const InvoiceDetailModal: React.FC<Props> = ({
   const [activeTab, setActiveTab] = useState<number>(0)
   const [tipo, setTipo] = useState<InvoiceAccountingType>(invoice?.tipo || 'CUSTOMER')
   const [numeroFactura, setNumeroFactura] = useState(invoice?.numeroFactura || `INV-2026-${Math.floor(1000 + Math.random() * 9000)}`)
-  const [contactoId, setContactoId] = useState(invoice?.contactoId || CONTACT_OPTIONS[0].id)
+  const [contactoId, setContactoId] = useState(invoice?.contactoId || '')
+  const [contactOptions, setContactOptions] = useState<ContactOption[]>([])
   const [tasaBcv, setTasaBcv] = useState<number>(invoice?.tasaBcv || defaultTasaBcv)
   const [fechaEmision, setFechaEmision] = useState(invoice?.fechaEmision || new Date().toISOString().split('T')[0])
 
@@ -79,6 +81,29 @@ export const InvoiceDetailModal: React.FC<Props> = ({
   )
 
   const [costosEnDestinoActivos, setCostosEnDestinoActivos] = useState<boolean>(true)
+
+
+  useEffect(() => {
+    contactsService
+      .getTerceros()
+      .then((list: Awaited<ReturnType<typeof contactsService.getTerceros>>) => {
+        const options: ContactOption[] = []
+
+        for (const t of list) {
+          if (t.is_cliente) options.push({ id: t.id, nombre: t.nombre_razon_social, rif: t.identificacion, tipo: 'CUSTOMER', cuentaCxcId: t.cuenta_cxc_id })
+          if (t.is_proveedor) options.push({ id: t.id, nombre: t.nombre_razon_social, rif: t.identificacion, tipo: 'SUPPLIER', cuentaCxpId: t.cuenta_cxp_id })
+        }
+
+        setContactOptions(options)
+
+        if (!invoice?.contactoId) {
+          const first = options.find(o => o.tipo === tipo)
+
+          if (first) setContactoId(first.id)
+        }
+      })
+      .catch(() => setContactOptions([]))
+  }, [invoice?.contactoId, tipo])
 
   useEffect(() => {
     settingsService
@@ -122,8 +147,8 @@ export const InvoiceDetailModal: React.FC<Props> = ({
 
   // Current selected contact
   const currentContact = useMemo(() => {
-    return CONTACT_OPTIONS.find(c => c.id === contactoId) || CONTACT_OPTIONS[0]
-  }, [contactoId])
+    return contactOptions.find(c => c.id === contactoId) || null
+  }, [contactOptions, contactoId])
 
   // Account candidates for lines
   const eligibleAccounts = useMemo(() => {
@@ -193,6 +218,8 @@ export const InvoiceDetailModal: React.FC<Props> = ({
 
   // Real-time automatic entry preview
   const entryPreviewItems: JournalItem[] = useMemo(() => {
+    if (!currentContact) return []
+
     const contactoCuentaId = tipo === 'CUSTOMER'
       ? currentContact.cuentaCxcId || 'acc-110201'
       : currentContact.cuentaCxpId || 'acc-210101'
@@ -213,6 +240,10 @@ export const InvoiceDetailModal: React.FC<Props> = ({
 
   // Save handler
   const handleSave = async (postDirectly: boolean) => {
+    if (!currentContact) {
+      throw new Error('Selecciona un contacto válido desde el directorio.')
+    }
+
     const contactoCuentaId = tipo === 'CUSTOMER'
       ? currentContact.cuentaCxcId || 'acc-110201'
       : currentContact.cuentaCxpId || 'acc-210101'
@@ -358,7 +389,7 @@ export const InvoiceDetailModal: React.FC<Props> = ({
             disabled={isReadOnly}
             onChange={e => handleContactChange(e.target.value)}
           >
-            {CONTACT_OPTIONS.filter(c => c.tipo === tipo).map(c => (
+            {contactOptions.filter(c => c.tipo === tipo).map(c => (
               <MenuItem key={c.id} value={c.id}>
                 {c.nombre} ({c.rif})
               </MenuItem>

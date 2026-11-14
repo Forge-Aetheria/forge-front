@@ -14,8 +14,8 @@ import Skeleton from '@mui/material/Skeleton'
 import type { ProductTemplate } from '@/types/inventoryTypes'
 import {
   getInventoryTemplates,
-  getFiscalConfig,
-  setFiscalConfigEnabled
+  getInventoryFiscalConfig,
+  setInventoryFiscalEnabled
 } from '@/services/inventoryService'
 import InventoryTable from './InventoryTable'
 import StockAdjustmentModal from './components/StockAdjustmentModal'
@@ -39,7 +39,7 @@ const InventoryCatalogView = () => {
   const loadCatalog = async () => {
     setLoading(true)
     const data = await getInventoryTemplates()
-    const fiscalConfig = getFiscalConfig()
+    const fiscalConfig = await getInventoryFiscalConfig()
 
     setTemplates(data)
     setFiscalEnabled(fiscalConfig.enabled)
@@ -52,7 +52,7 @@ const InventoryCatalogView = () => {
 
   const handleToggleFiscal = (enabled: boolean) => {
     setFiscalEnabled(enabled)
-    setFiscalConfigEnabled(enabled)
+    void setInventoryFiscalEnabled(enabled)
   }
 
   const handleOpenEdit = (product: ProductTemplate) => {

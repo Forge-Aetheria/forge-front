@@ -1,5 +1,6 @@
 'use client'
 
+
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import Link from 'next/link'
@@ -19,11 +20,13 @@ import TablePagination from '@mui/material/TablePagination'
 import Snackbar from '@mui/material/Snackbar'
 import Alert from '@mui/material/Alert'
 
+import { useBcvRate } from '@/hooks/useBcvRate'
+
 import CustomTextField from '@core/components/mui/TextField'
 import CustomChip from '@core/components/mui/Chip'
 
 import type { ProductTemplate, StockMovement, StockMovementType } from '@/types/inventoryTypes'
-import { getInventoryTemplates, getStockMovements, getActiveBcvRate } from '@/services/inventoryService'
+import { getInventoryTemplates, getStockMovements } from '@/services/inventoryService'
 import StockAdjustmentModal from './components/StockAdjustmentModal'
 
 const movementTypeMeta: Record<
@@ -83,7 +86,7 @@ const InventoryKardexView = () => {
   const [adjustModalOpen, setAdjustModalOpen] = useState(false)
   const [toast, setToast] = useState<{ open: boolean; message: string }>({ open: false, message: '' })
 
-  const bcvRate = getActiveBcvRate()
+  const bcvRate = useBcvRate()
 
   const loadData = useCallback(async () => {
     const [movData, prodData] = await Promise.all([getStockMovements(), getInventoryTemplates()])

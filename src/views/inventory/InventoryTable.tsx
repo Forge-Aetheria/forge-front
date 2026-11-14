@@ -1,5 +1,6 @@
 'use client'
 
+
 // React Imports
 import { useState, useMemo } from 'react'
 
@@ -23,6 +24,8 @@ import Button from '@mui/material/Button'
 import Menu from '@mui/material/Menu'
 import MenuItem from '@mui/material/MenuItem'
 import Divider from '@mui/material/Divider'
+
+import { useBcvRate } from '@/hooks/useBcvRate'
 
 import CustomChip from '@core/components/mui/Chip'
 
@@ -52,6 +55,8 @@ const InventoryTable = ({
   onAdjustStock,
   initialStockStatusFilter = 'ALL'
 }: Props) => {
+  const bcvRate = useBcvRate()
+
   // States
   const [selectedTemplate, setSelectedTemplate] = useState<ProductTemplate | null>(null)
   const [drawerOpen, setDrawerOpen] = useState(false)
@@ -426,7 +431,8 @@ const InventoryTable = ({
                   template.standardCost,
                   template.basePrice,
                   template.vatRate,
-                  fiscalEnabled
+                  fiscalEnabled,
+                  bcvRate
                 )
 
                 const totalAvailable = template.variants.reduce((acc, v) => acc + v.availableStock, 0)

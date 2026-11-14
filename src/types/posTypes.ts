@@ -80,6 +80,7 @@ export interface POSTransactionSummary {
 
 export interface POSShift {
   id: string
+  terminalId?: string
   cashierName: string
   terminalName: string
   status: 'OPEN' | 'CLOSED'

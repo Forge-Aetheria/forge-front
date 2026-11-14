@@ -1,5 +1,6 @@
 'use client'
 
+
 import React from 'react'
 
 import Link from 'next/link'
@@ -7,6 +8,8 @@ import Link from 'next/link'
 import Chip from '@mui/material/Chip'
 import IconButton from '@mui/material/IconButton'
 import Tooltip from '@mui/material/Tooltip'
+
+import { useBcvRate } from '@/hooks/useBcvRate'
 
 import type { ProductTemplate } from '@/types/inventoryTypes'
 import { calculateFinancials } from '@/services/inventoryService'
@@ -25,6 +28,8 @@ const InventoryMobileList: React.FC<Props> = ({
   onQuickView,
   onAdjustStock
 }) => {
+  const bcvRate = useBcvRate()
+
   if (templates.length === 0) {
     return (
       <div className='p-8 text-center text-[#6B7280]'>
@@ -41,7 +46,8 @@ const InventoryMobileList: React.FC<Props> = ({
           template.standardCost,
           template.basePrice,
           template.vatRate,
-          fiscalEnabled
+          fiscalEnabled,
+          bcvRate
         )
 
         const totalAvailable = template.variants.reduce((acc, v) => acc + v.availableStock, 0)
