@@ -633,3 +633,134 @@ export const DELETE_STOCK_LOCATION_MUTATION = `
     deleteStockLocation(id: $id)
   }
 `
+
+export const GET_WAREHOUSE_OPERATIONS_QUERY = `
+  query GetWarehouseOperations($where: WarehouseOperationWhereInput, $take: Int, $skip: Int) {
+    warehouseOperations(where: $where, take: $take, skip: $skip, orderBy: [{ createdAt: desc }]) {
+      id
+      code
+      type
+      status
+      thirdPartyName
+      sourceDocument
+      sourceWarehouseId
+      targetWarehouseId
+      scheduledAt
+      effectiveAt
+      totalItems
+      responsible
+      notes
+      createdAt
+      lines {
+        id
+        lineNumber
+        variantId
+        productName
+        sku
+        uomCode
+        demandQty
+        processedQty
+        unitCostUsd
+      }
+    }
+  }
+`
+
+export const GET_WAREHOUSE_OPERATION_QUERY = `
+  query GetWarehouseOperation($id: ID!) {
+    warehouseOperation(id: $id) {
+      id
+      code
+      type
+      status
+      thirdPartyName
+      sourceDocument
+      sourceWarehouseId
+      targetWarehouseId
+      scheduledAt
+      effectiveAt
+      totalItems
+      responsible
+      notes
+      createdAt
+      lines {
+        id
+        lineNumber
+        variantId
+        productName
+        sku
+        uomCode
+        demandQty
+        processedQty
+        unitCostUsd
+      }
+    }
+  }
+`
+
+export const CREATE_WAREHOUSE_OPERATION_MUTATION = `
+  mutation CreateWarehouseOperation($input: CreateWarehouseOperationInput!) {
+    createWarehouseOperation(input: $input) {
+      id
+      code
+      type
+      status
+      thirdPartyName
+      sourceDocument
+      sourceWarehouseId
+      targetWarehouseId
+      scheduledAt
+      effectiveAt
+      totalItems
+      responsible
+      notes
+      createdAt
+      lines {
+        id
+        lineNumber
+        variantId
+        productName
+        sku
+        uomCode
+        demandQty
+        processedQty
+        unitCostUsd
+      }
+    }
+  }
+`
+
+export const VALIDATE_WAREHOUSE_OPERATION_MUTATION = `
+  mutation ValidateWarehouseOperation($input: ValidateWarehouseOperationInput!) {
+    validateWarehouseOperation(input: $input) {
+      id
+      code
+      type
+      status
+      totalItems
+      effectiveAt
+      lines {
+        id
+        lineNumber
+        variantId
+        productName
+        sku
+        uomCode
+        demandQty
+        processedQty
+        unitCostUsd
+      }
+    }
+  }
+`
+
+export const CANCEL_WAREHOUSE_OPERATION_MUTATION = `
+  mutation CancelWarehouseOperation($input: CancelWarehouseOperationInput!) {
+    cancelWarehouseOperation(input: $input) {
+      id
+      code
+      status
+      cancellationReason
+    }
+  }
+`
