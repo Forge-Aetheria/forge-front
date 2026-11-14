@@ -50,16 +50,6 @@ const COMMON_REASONS = [
   'Otro motivo'
 ]
 
-const DEFAULT_CONTACTS: ContactOption[] = [
-  { id: 'ct-01', nombre: 'Inversiones Caroní C.A.', rif: 'J-30981245-2', tipo: 'CUSTOMER', cuentaCxcId: 'acc-110201' },
-  { id: 'ct-02', nombre: 'Distribuidora Oriental S.A.S.', rif: 'J-40291823-1', tipo: 'CUSTOMER', cuentaCxcId: 'acc-110201' },
-  { id: 'ct-03', nombre: 'Corporación Metalmecánica Bolivariana', rif: 'J-31890234-5', tipo: 'CUSTOMER', cuentaCxcId: 'acc-110201' },
-  { id: 'ct-prov-01', nombre: 'Corpoelec / Servicios Eléctricos', rif: 'G-20003001-0', tipo: 'SUPPLIER', cuentaCxpId: 'acc-210101' },
-  { id: 'ct-prov-02', nombre: 'Distribuidora Eléctrica del Sur C.A.', rif: 'J-40128456-0', tipo: 'SUPPLIER', cuentaCxpId: 'acc-210101' },
-  { id: 'ct-prov-03', nombre: 'Inmobiliaria Los Próceres (Alquiler Galpón)', rif: 'J-31092834-4', tipo: 'SUPPLIER', cuentaCxpId: 'acc-210101' },
-  { id: 'ct-prov-04', nombre: 'Cantv / Internet y Telecomunicaciones', rif: 'G-20001099-2', tipo: 'SUPPLIER', cuentaCxpId: 'acc-210101' },
-  { id: 'ct-prov-05', nombre: 'Ferretería Industrial Roscio C.A.', rif: 'J-31456789-1', tipo: 'SUPPLIER', cuentaCxpId: 'acc-210101' }
-]
 
 export const RegisterCreditNoteModal: React.FC<Props> = ({
   open,
@@ -68,7 +58,7 @@ export const RegisterCreditNoteModal: React.FC<Props> = ({
   onSuccess
 }) => {
   const [tipo, setTipo] = useState<InvoiceAccountingType>(initialType)
-  const [contacts, setContacts] = useState<ContactOption[]>(DEFAULT_CONTACTS)
+  const [contacts, setContacts] = useState<ContactOption[]>([])
   const [selectedContact, setSelectedContact] = useState<ContactOption | null>(null)
 
   // Invoices for contact
@@ -134,10 +124,10 @@ export const RegisterCreditNoteModal: React.FC<Props> = ({
               })
             }
           })
-          setContacts([...mapped, ...DEFAULT_CONTACTS.filter(d => !mapped.some(m => m.id === d.id))])
+          setContacts(mapped)
         }
       } catch {
-        setContacts(DEFAULT_CONTACTS)
+        setContacts([])
       }
     }
 

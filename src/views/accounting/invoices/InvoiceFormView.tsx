@@ -85,17 +85,15 @@ interface Props {
   defaultTasaBcv?: number
 }
 
-// Contact seeds for selection
-const CONTACT_OPTIONS = [
-  { id: 'ct-prov-01', nombre: 'Corpoelec / Servicios Eléctricos', rif: 'G-20003001-0', tipo: 'SUPPLIER', cuentaCxpId: 'acc-210101' },
-  { id: 'ct-prov-02', nombre: 'Distribuidora Eléctrica del Sur C.A.', rif: 'J-40128456-0', tipo: 'SUPPLIER', cuentaCxpId: 'acc-210101' },
-  { id: 'ct-prov-03', nombre: 'Inmobiliaria Los Próceres (Alquiler Galpón)', rif: 'J-31092834-4', tipo: 'SUPPLIER', cuentaCxpId: 'acc-210101' },
-  { id: 'ct-prov-04', nombre: 'Cantv / Internet y Telecomunicaciones', rif: 'G-20001099-2', tipo: 'SUPPLIER', cuentaCxpId: 'acc-210101' },
-  { id: 'ct-prov-05', nombre: 'Ferretería Industrial Roscio C.A.', rif: 'J-31456789-1', tipo: 'SUPPLIER', cuentaCxpId: 'acc-210101' },
-  { id: 'ct-01', nombre: 'Inversiones Caroní C.A.', rif: 'J-30981245-2', tipo: 'CUSTOMER', cuentaCxcId: 'acc-110201' },
-  { id: 'ct-02', nombre: 'Distribuidora Oriental S.A.S.', rif: 'J-40291823-1', tipo: 'CUSTOMER', cuentaCxcId: 'acc-110201' },
-  { id: 'ct-03', nombre: 'Corporación Metalmecánica Bolivariana', rif: 'J-31890234-5', tipo: 'CUSTOMER', cuentaCxcId: 'acc-110201' }
-]
+
+type ContactOption = {
+  id: string
+  nombre: string
+  rif: string
+  tipo: InvoiceAccountingType
+  cuentaCxcId?: string
+  cuentaCxpId?: string
+}
 
 export const InvoiceFormView: React.FC<Props> = ({
   onBack,
@@ -136,7 +134,7 @@ export const InvoiceFormView: React.FC<Props> = ({
       `${tipo === 'SUPPLIER' ? 'FAC-PROV' : 'INV'}-2026-${Math.floor(1000 + Math.random() * 9000)}`
   )
 
-  const [dynamicContacts, setDynamicContacts] = useState<typeof CONTACT_OPTIONS>(CONTACT_OPTIONS)
+  const [dynamicContacts, setDynamicContacts] = useState<ContactOption[]>([])
 
   useEffect(() => {
     const fetchContacts = async () => {
@@ -146,7 +144,7 @@ export const InvoiceFormView: React.FC<Props> = ({
           accountingService.getContactAccountingConfigs()
         ])
 
-        const mapped: typeof CONTACT_OPTIONS = []
+        const mapped: ContactOption[] = []
 
         terceros.forEach(t => {
           const cfg = configs.find(c => c.contactoId === t.id || c.contactoRif === t.identificacion)
@@ -172,15 +170,7 @@ export const InvoiceFormView: React.FC<Props> = ({
           }
         })
 
-        const combined = [...mapped]
-
-        CONTACT_OPTIONS.forEach(seed => {
-          if (!combined.some(c => c.id === seed.id && c.tipo === seed.tipo)) {
-            combined.push(seed)
-          }
-        })
-
-        setDynamicContacts(combined)
+        setDynamicContacts(mapped)
       } catch (err) {
         console.error('Error fetching dynamic contacts:', err)
       }
@@ -271,9 +261,9 @@ export const InvoiceFormView: React.FC<Props> = ({
       setTerminosCondiciones(invoice.terminosCondiciones || defaultTerms)
     } else {
       setTipo(initialType)
-      const contactForType = CONTACT_OPTIONS.find(c => c.tipo === initialType) || CONTACT_OPTIONS[0]
+      const contactForType = dynamicContacts.find(c => c.tipo === initialType) || dynamicContacts[0]
 
-      setContactoId(contactForType.id)
+      if (contactForType) setContactoId(contactForType.id)
       setNumeroFactura(
         `${initialType === 'SUPPLIER' ? 'FAC-PROV' : 'INV'}-2026-${Math.floor(1000 + Math.random() * 9000)}`
       )

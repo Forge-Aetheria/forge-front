@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useMemo } from 'react'
+import React, { useEffect, useState, useMemo } from 'react'
 
 import Box from '@mui/material/Box'
 import Card from '@mui/material/Card'
@@ -27,6 +27,7 @@ import TableRow from '@mui/material/TableRow'
 import CustomChip from '@core/components/mui/Chip'
 
 import { accountingService } from '@/services/accountingService'
+import { getAccountingContactOptions, type AccountingContactOption } from '@/services/accountingContactsService'
 import type {
   Payment,
   Journal,
@@ -35,18 +36,6 @@ import type {
   CurrencyCode,
   PaymentMethod
 } from '@/types/accountingTypes'
-
-// Opciones de contacto con RIF
-const CONTACT_OPTIONS = [
-  { id: 'ct-01', nombre: 'Inversiones Caroní C.A.', rif: 'J-30981245-2', tipo: 'CUSTOMER' },
-  { id: 'ct-02', nombre: 'Distribuidora Oriental S.A.S.', rif: 'J-40291823-1', tipo: 'CUSTOMER' },
-  { id: 'ct-03', nombre: 'Corporación Metalmecánica Bolivariana', rif: 'J-31890234-5', tipo: 'CUSTOMER' },
-  { id: 'ct-prov-01', nombre: 'Corpoelec / Servicios Eléctricos', rif: 'G-20003001-0', tipo: 'SUPPLIER' },
-  { id: 'ct-prov-02', nombre: 'Distribuidora Eléctrica del Sur C.A.', rif: 'J-40128456-0', tipo: 'SUPPLIER' },
-  { id: 'ct-prov-03', nombre: 'Inmobiliaria Los Próceres (Alquiler Galpón)', rif: 'J-31092834-4', tipo: 'SUPPLIER' },
-  { id: 'ct-prov-04', nombre: 'Cantv / Internet y Telecomunicaciones', rif: 'G-20001099-2', tipo: 'SUPPLIER' },
-  { id: 'ct-prov-05', nombre: 'Ferretería Industrial Roscio C.A.', rif: 'J-31456789-1', tipo: 'SUPPLIER' }
-]
 
 interface Props {
   payment?: Payment | null
@@ -68,6 +57,12 @@ export const PaymentFormView: React.FC<Props> = ({
   onBack,
   onSuccess
 }) => {
+  const [contactOptions, setContactOptions] = useState<AccountingContactOption[]>([])
+
+  useEffect(() => {
+    getAccountingContactOptions().then(setContactOptions).catch(() => setContactOptions([]))
+  }, [])
+
   const [currentPayment, setCurrentPayment] = useState<Payment | null>(payment || null)
   const isReadOnly = Boolean(currentPayment)
 
@@ -205,7 +200,7 @@ return
         onSuccess(`Pago ${res.payment.numeroPago} conciliado y contabilizado exitosamente en asiento ${res.entry.numeroAsiento}.`, res.payment)
       } else {
         // Pago libre / anticipo de cliente o proveedor
-        const finalContact = CONTACT_OPTIONS.find(c => c.id === contactoId)
+        const finalContact = contactOptions.find(c => c.id === contactoId)
 
         const res = await accountingService.createPayment({
           contactoId: contactoId || (tipo === 'SUPPLIER' ? 'ct-prov-gen' : 'ct-cli-gen'),
@@ -402,8 +397,8 @@ return
             <Autocomplete
               size='small'
               disabled={isReadOnly}
-              options={CONTACT_OPTIONS.filter(c => c.tipo === tipo)}
-              value={CONTACT_OPTIONS.find(c => c.id === contactoId) || null}
+              options={contactOptions.filter(c => c.tipo === tipo)}
+              value={contactOptions.find(c => c.id === contactoId) || null}
               onChange={(_, newVal) => {
                 if (newVal) {
                   setContactoId(newVal.id)

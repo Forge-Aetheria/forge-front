@@ -82,614 +82,18 @@ const STORAGE_KEYS = {
 }
 
 // ---------------------------------------------------------------------------
-// 1. SEEDS INICIALES (Plan de Cuentas PUC Universal / Venezuela)
-// ---------------------------------------------------------------------------
-const DEFAULT_ACCOUNTS: Account[] = [
-  // 1. ACTIVOS CORRIENTES
-  { id: 'acc-110101', codigo: '1.1.01.01', nombre: 'Caja General Efectivo', tipo: 'ASSET_CURRENT', subtipo: 'BANCO_CAJA', tipoCuentaNombre: 'Banco y Caja', moneda: 'AMBAS', permiteConciliacion: true, saldoUsd: 1250.00, saldoVes: 67750.00, activo: true },
-  { id: 'acc-110102', codigo: '1.1.01.02', nombre: 'Banesco Banco Universal (VES)', tipo: 'ASSET_CURRENT', subtipo: 'BANCO_CAJA', tipoCuentaNombre: 'Banco y Caja', moneda: 'VES', permiteConciliacion: true, saldoUsd: 3850.00, saldoVes: 208670.00, activo: true },
-  { id: 'acc-110103', codigo: '1.1.01.03', nombre: 'Mercantil Banco Universal (VES)', tipo: 'ASSET_CURRENT', subtipo: 'BANCO_CAJA', tipoCuentaNombre: 'Banco y Caja', moneda: 'VES', permiteConciliacion: true, saldoUsd: 2100.00, saldoVes: 113820.00, activo: true },
-  { id: 'acc-110104', codigo: '1.1.01.04', nombre: 'Banesco Cuenta Custodia (USD)', tipo: 'ASSET_CURRENT', subtipo: 'BANCO_CAJA', tipoCuentaNombre: 'Banco y Caja', moneda: 'USD', permiteConciliacion: true, saldoUsd: 8400.00, saldoVes: 455280.00, activo: true },
-  { id: 'acc-110105', codigo: '1.1.01.05', nombre: 'Fondo Fijo de Caja Chica', tipo: 'ASSET_CURRENT', subtipo: 'BANCO_CAJA', tipoCuentaNombre: 'Banco y Caja', moneda: 'USD', permiteConciliacion: true, saldoUsd: 300.00, saldoVes: 16200.00, activo: true },
-  { id: 'acc-110201', codigo: '1.1.02.01', nombre: 'Cuentas por Cobrar Clientes Nacionales (CxC)', tipo: 'ASSET_CURRENT', subtipo: 'CXC', tipoCuentaNombre: 'Cuentas por Cobrar (Clientes)', moneda: 'AMBAS', permiteConciliacion: true, saldoUsd: 14200.00, saldoVes: 769640.00, activo: true },
-  { id: 'acc-110301', codigo: '1.1.03.01', nombre: 'Inventario de Mercancía para la Venta', tipo: 'ASSET_CURRENT', subtipo: 'INVENTARIO', tipoCuentaNombre: 'Inventario de Mercancía', moneda: 'USD', permiteConciliacion: false, saldoUsd: 32600.00, saldoVes: 1766920.00, activo: true },
-  { id: 'acc-110302', codigo: '1.1.03.02', nombre: 'Mercancías en Tránsito / Costos en Destino', tipo: 'ASSET_CURRENT', subtipo: 'INVENTARIO', tipoCuentaNombre: 'Inventario de Mercancía', moneda: 'USD', permiteConciliacion: false, saldoUsd: 4200.00, saldoVes: 227640.00, activo: true },
-  { id: 'acc-110401', codigo: '1.1.04.01', nombre: 'Crédito Fiscal IVA (Compras)', tipo: 'ASSET_CURRENT', subtipo: 'ACTIVO_CORRIENTE', tipoCuentaNombre: 'Activo Corriente', moneda: 'VES', permiteConciliacion: true, saldoUsd: 850.00, saldoVes: 46070.00, activo: true },
-  { id: 'acc-110402', codigo: '1.1.04.02', nombre: 'Retenciones de IVA por Compensar', tipo: 'ASSET_CURRENT', subtipo: 'ACTIVO_CORRIENTE', tipoCuentaNombre: 'Activo Corriente', moneda: 'VES', permiteConciliacion: true, saldoUsd: 420.00, saldoVes: 22764.00, activo: true },
-
-  // 1.2 ACTIVOS NO CORRIENTES
-  { id: 'acc-120101', codigo: '1.2.01.01', nombre: 'Mobiliario y Enseres de Oficina', tipo: 'ASSET_NON_CURRENT', subtipo: 'ACTIVO_FIJO', tipoCuentaNombre: 'Activo Fijo / No Corriente', moneda: 'USD', permiteConciliacion: false, saldoUsd: 5400.00, saldoVes: 292680.00, activo: true },
-  { id: 'acc-120102', codigo: '1.2.01.02', nombre: 'Equipos de Computación y Redes', tipo: 'ASSET_NON_CURRENT', subtipo: 'ACTIVO_FIJO', tipoCuentaNombre: 'Activo Fijo / No Corriente', moneda: 'USD', permiteConciliacion: false, saldoUsd: 4100.00, saldoVes: 222220.00, activo: true },
-
-  // 2. PASIVOS CORRIENTES
-  { id: 'acc-210101', codigo: '2.1.01.01', nombre: 'Cuentas por Pagar Proveedores Nacionales (CxP)', tipo: 'LIABILITY_CURRENT', subtipo: 'CXP', tipoCuentaNombre: 'Cuentas por Pagar (Proveedores)', moneda: 'AMBAS', permiteConciliacion: true, saldoUsd: 9800.00, saldoVes: 531160.00, activo: true },
-  { id: 'acc-210201', codigo: '2.1.02.01', nombre: 'Débito Fiscal IVA (Ventas)', tipo: 'LIABILITY_CURRENT', subtipo: 'PASIVO_CORRIENTE', tipoCuentaNombre: 'Pasivo Corriente', moneda: 'VES', permiteConciliacion: true, saldoUsd: 1420.00, saldoVes: 76964.00, activo: true },
-  { id: 'acc-210202', codigo: '2.1.02.02', nombre: 'IGTF por Enterar (3%)', tipo: 'LIABILITY_CURRENT', subtipo: 'PASIVO_CORRIENTE', tipoCuentaNombre: 'Pasivo Corriente', moneda: 'VES', permiteConciliacion: true, saldoUsd: 250.00, saldoVes: 13550.00, activo: true },
-  { id: 'acc-210203', codigo: '2.1.02.03', nombre: 'Retenciones de ISLR por Enterar', tipo: 'LIABILITY_CURRENT', subtipo: 'PASIVO_CORRIENTE', tipoCuentaNombre: 'Pasivo Corriente', moneda: 'VES', permiteConciliacion: true, saldoUsd: 380.00, saldoVes: 20596.00, activo: true },
-
-  // 3. PATRIMONIO
-  { id: 'acc-310101', codigo: '3.1.01.01', nombre: 'Capital Social Suscrito y Pagado', tipo: 'EQUITY', subtipo: 'PATRIMONIO', tipoCuentaNombre: 'Capital y Patrimonio', moneda: 'USD', permiteConciliacion: false, saldoUsd: 35000.00, saldoVes: 1897000.00, activo: true },
-  { id: 'acc-330101', codigo: '3.3.01.01', nombre: 'Resultados Acumulados (Ejercicios Anteriores)', tipo: 'EQUITY', subtipo: 'PATRIMONIO', tipoCuentaNombre: 'Capital y Patrimonio', moneda: 'USD', permiteConciliacion: false, saldoUsd: 18395.00, saldoVes: 993330.00, activo: true },
-
-  // 4. INGRESOS
-  { id: 'acc-410101', codigo: '4.1.01.01', nombre: 'Ingresos por Venta de Mercancías', tipo: 'INCOME', subtipo: 'INGRESO_VENTAS', tipoCuentaNombre: 'Ingresos por Venta', moneda: 'AMBAS', permiteConciliacion: false, saldoUsd: 28400.00, saldoVes: 1539280.00, activo: true },
-  { id: 'acc-410102', codigo: '4.1.01.02', nombre: 'Ingresos por Fletes y Servicios Logísticos', tipo: 'INCOME', subtipo: 'INGRESO_VENTAS', tipoCuentaNombre: 'Ingresos por Servicios', moneda: 'AMBAS', permiteConciliacion: false, saldoUsd: 1800.00, saldoVes: 97560.00, activo: true },
-  { id: 'acc-420101', codigo: '4.1.02.01', nombre: 'Ganancia por Diferencial Cambiario', tipo: 'INCOME_FINANCIAL', subtipo: 'INGRESO_FINANCIERO', tipoCuentaNombre: 'Ingresos Financieros', moneda: 'VES', permiteConciliacion: false, saldoUsd: 450.00, saldoVes: 24390.00, activo: true },
-
-  // 5. COSTO DE VENTAS
-  { id: 'acc-510101', codigo: '5.1.01.01', nombre: 'Costo de Ventas de Mercancía', tipo: 'COST_OF_GOODS', subtipo: 'COSTO_VENTAS', tipoCuentaNombre: 'Costo de Ventas', moneda: 'USD', permiteConciliacion: false, saldoUsd: 16200.00, saldoVes: 878040.00, activo: true },
-
-  // 6. GASTOS
-  { id: 'acc-610101', codigo: '6.1.01.01', nombre: 'Sueldos y Salarios del Personal', tipo: 'EXPENSE_OPERATING', subtipo: 'GASTO_OPERATIVO', tipoCuentaNombre: 'Gastos Operativos', moneda: 'AMBAS', permiteConciliacion: false, saldoUsd: 4200.00, saldoVes: 227640.00, activo: true },
-  { id: 'acc-610102', codigo: '6.1.01.02', nombre: 'Alquiler de Local Comercial y Almacén', tipo: 'EXPENSE_OPERATING', subtipo: 'GASTO_OPERATIVO', tipoCuentaNombre: 'Gastos Operativos', moneda: 'USD', permiteConciliacion: false, saldoUsd: 1200.00, saldoVes: 65040.00, activo: true },
-  { id: 'acc-610103', codigo: '6.1.01.03', nombre: 'Servicios Públicos (Luz, Agua, Internet)', tipo: 'EXPENSE_OPERATING', subtipo: 'GASTO_OPERATIVO', tipoCuentaNombre: 'Gastos Operativos', moneda: 'VES', permiteConciliacion: false, saldoUsd: 380.00, saldoVes: 20596.00, activo: true },
-  { id: 'acc-610201', codigo: '6.1.02.01', nombre: 'Comisiones y Tarifas Bancarias', tipo: 'EXPENSE_FINANCIAL', subtipo: 'GASTO_FINANCIERO', tipoCuentaNombre: 'Gastos Financieros', moneda: 'VES', permiteConciliacion: false, saldoUsd: 185.00, saldoVes: 10027.00, activo: true },
-  { id: 'acc-610202', codigo: '6.1.02.02', nombre: 'Pérdida por Diferencial Cambiario', tipo: 'EXPENSE_FINANCIAL', subtipo: 'GASTO_FINANCIERO', tipoCuentaNombre: 'Gastos Financieros', moneda: 'VES', permiteConciliacion: false, saldoUsd: 260.00, saldoVes: 14092.00, activo: true }
-]
-
-// ---------------------------------------------------------------------------
-// 2. DIARIOS CONTABLES INICIALES
-// ---------------------------------------------------------------------------
-const DEFAULT_JOURNALS: Journal[] = [
-  {
-    id: 'jou-sales',
-    nombre: 'Diario de Ventas',
-    codigo: 'FAC-CLI',
-    tipo: 'VENTAS',
-    moneda: 'AMBAS',
-    cuentaPorDefectoId: 'acc-410101',
-    cuentaPorDefectoNombre: 'Ingresos por Venta de Mercancías',
-    saldoActualUsd: 30200.00,
-    saldoActualVes: 1636840.00,
-    colorIdentificador: '#10B981',
-    icono: 'tabler-file-invoice'
-  },
-  {
-    id: 'jou-purchases',
-    nombre: 'Diario de Compras',
-    codigo: 'FAC-PROV',
-    tipo: 'COMPRAS',
-    moneda: 'AMBAS',
-    cuentaPorDefectoId: 'acc-510101',
-    cuentaPorDefectoNombre: 'Costo de Ventas de Mercancía',
-    saldoActualUsd: 16200.00,
-    saldoActualVes: 878040.00,
-    colorIdentificador: '#EF4444',
-    icono: 'tabler-receipt'
-  },
-  {
-    id: 'jou-banesco-ves',
-    nombre: 'Banesco Banco Universal (VES)',
-    codigo: 'BN-VES',
-    tipo: 'BANCO',
-    moneda: 'VES',
-    cuentaPorDefectoId: 'acc-110102',
-    cuentaPorDefectoNombre: 'Banesco Banco Universal (VES)',
-    saldoActualUsd: 3850.00,
-    saldoActualVes: 208670.00,
-    colorIdentificador: '#0284C7',
-    icono: 'tabler-building-bank'
-  },
-  {
-    id: 'jou-banesco-usd',
-    nombre: 'Banesco Cuenta Custodia (USD)',
-    codigo: 'BN-USD',
-    tipo: 'BANCO',
-    moneda: 'USD',
-    cuentaPorDefectoId: 'acc-110104',
-    cuentaPorDefectoNombre: 'Banesco Cuenta Custodia (USD)',
-    saldoActualUsd: 8400.00,
-    saldoActualVes: 455280.00,
-    colorIdentificador: '#6C5CE7',
-    icono: 'tabler-building-bank'
-  },
-  {
-    id: 'jou-caja',
-    nombre: 'Caja General y Chica',
-    codigo: 'CAJA-GEN',
-    tipo: 'CAJA',
-    moneda: 'AMBAS',
-    cuentaPorDefectoId: 'acc-110101',
-    cuentaPorDefectoNombre: 'Caja General Efectivo',
-    saldoActualUsd: 1550.00,
-    saldoActualVes: 83950.00,
-    colorIdentificador: '#F59E0B',
-    icono: 'tabler-cash'
-  },
-  {
-    id: 'jou-varios',
-    nombre: 'Operaciones Varias',
-    codigo: 'OPE-VAR',
-    tipo: 'VARIOS',
-    moneda: 'AMBAS',
-    cuentaPorDefectoId: 'acc-330101',
-    cuentaPorDefectoNombre: 'Resultados Acumulados',
-    saldoActualUsd: 0.00,
-    saldoActualVes: 0.00,
-    colorIdentificador: '#8B5CF6',
-    icono: 'tabler-adjustments-alt'
-  }
-]
-
-// ---------------------------------------------------------------------------
-// 3. FACTURAS CONTABLES DE EJEMPLO
-// ---------------------------------------------------------------------------
-const DEFAULT_INVOICES: AccountingInvoice[] = [
-  {
-    id: 'inv-cli-001',
-    numeroFactura: 'FAC-2026-00145',
-    tipo: 'CUSTOMER',
-    tipoDocumento: 'FACTURA',
-    moneda: 'USD',
-    contactoId: 'ct-01',
-    contactoNombre: 'Inversiones Caroní C.A.',
-    contactoRif: 'J-30981245-2',
-    contactoCuentaContableId: 'acc-110201',
-    contactoCuentaContableNombre: 'Cuentas por Cobrar Clientes Nacionales',
-    fechaEmision: '2026-10-18',
-    fechaVencimiento: '2026-11-02',
-    tasaBcv: 54.20,
-    estado: 'POSTED',
-    diarioId: 'jou-sales',
-    lineas: [
-      {
-        id: 'lin-01',
-        productoOConcepto: 'Caja de Bombillos LED 12W (Pack x50)',
-        cuentaContableId: 'acc-410101',
-        cuentaContableNombre: 'Ingresos por Venta de Mercancías',
-        cantidad: 5,
-        precioUnitarioUsd: 120.00,
-        tasaImpuestoPct: 16,
-        subtotalUsd: 600.00,
-        ivaUsd: 96.00,
-        totalUsd: 696.00
-      }
-    ],
-    totalNetoUsd: 600.00,
-    totalIvaUsd: 96.00,
-    totalUsd: 696.00,
-    totalVes: 37723.20,
-    saldoPendienteUsd: 696.00,
-    saldoPendienteVes: 37723.20,
-    asientoAsociadoId: 'as-001',
-    pagosAsociados: []
-  },
-  {
-    id: 'inv-prov-001',
-    numeroFactura: 'PROV-2026-0089',
-    tipo: 'SUPPLIER',
-    tipoDocumento: 'FACTURA',
-    moneda: 'USD',
-    contactoId: 'ct-prov-01',
-    contactoNombre: 'Distribuidora Eléctrica del Sur C.A.',
-    contactoRif: 'J-40128456-0',
-    contactoCuentaContableId: 'acc-210101',
-    contactoCuentaContableNombre: 'Cuentas por Pagar Proveedores Nacionales',
-    fechaEmision: '2026-10-10',
-    fechaVencimiento: '2026-10-25',
-    tasaBcv: 53.80,
-    estado: 'POSTED',
-    diarioId: 'jou-purchases',
-    lineas: [
-      {
-        id: 'lin-02',
-        productoOConcepto: 'Lote Cableado Thw Calibre 12 (100m)',
-        cuentaContableId: 'acc-510101',
-        cuentaContableNombre: 'Costo de Ventas de Mercancía',
-        cantidad: 10,
-        precioUnitarioUsd: 85.00,
-        tasaImpuestoPct: 16,
-        subtotalUsd: 850.00,
-        ivaUsd: 136.00,
-        totalUsd: 986.00
-      }
-    ],
-    totalNetoUsd: 850.00,
-    totalIvaUsd: 136.00,
-    totalUsd: 986.00,
-    totalVes: 53046.80,
-    saldoPendienteUsd: 686.00,
-    saldoPendienteVes: 36906.80,
-    asientoAsociadoId: 'as-002',
-    pagosAsociados: [
-      {
-        id: 'assoc-001',
-        pagoId: 'pag-001',
-        numeroPago: 'PAG-2026-0089',
-        fecha: '2026-10-14',
-        diarioId: 'jou-bank-ves',
-        diarioNombre: 'Banesco Banco Universal (VES)',
-        metodoPago: 'TRANSFERENCIA',
-        moneda: 'USD',
-        monto: 300.00,
-        montoUsd: 300.00,
-        montoVes: 16140.00,
-        referenciaBancaria: 'REF-0098124',
-        creadoEn: '14/10/2026, 10:30'
-      }
-    ]
-  },
-  {
-    id: 'inv-prov-002',
-    numeroFactura: 'PROV-2026-0094',
-    tipo: 'SUPPLIER',
-    tipoDocumento: 'FACTURA',
-    moneda: 'USD',
-    contactoId: 'ct-prov-02',
-    contactoNombre: 'Aceros y Perfiles Guayana S.A.',
-    contactoRif: 'J-29845112-9',
-    contactoCuentaContableId: 'acc-210101',
-    contactoCuentaContableNombre: 'Cuentas por Pagar Proveedores Nacionales',
-    fechaEmision: '2026-10-12',
-    fechaVencimiento: '2026-10-27',
-    tasaBcv: 53.90,
-    estado: 'POSTED',
-    diarioId: 'jou-purchases',
-    lineas: [
-      {
-        id: 'lin-03',
-        productoOConcepto: 'Tubos Estructurales 2x1 calibre 18 (x6m)',
-        cuentaContableId: 'acc-510101',
-        cuentaContableNombre: 'Costo de Ventas de Mercancía',
-        cantidad: 40,
-        precioUnitarioUsd: 22.00,
-        tasaImpuestoPct: 16,
-        subtotalUsd: 880.00,
-        ivaUsd: 140.80,
-        totalUsd: 1020.80
-      }
-    ],
-    totalNetoUsd: 880.00,
-    totalIvaUsd: 140.80,
-    totalUsd: 1020.80,
-    totalVes: 55021.12,
-    saldoPendienteUsd: 1020.80,
-    saldoPendienteVes: 55021.12,
-    asientoAsociadoId: 'as-003',
-    pagosAsociados: []
-  },
-  {
-    id: 'inv-prov-003',
-    numeroFactura: 'PROV-2026-0105',
-    tipo: 'SUPPLIER',
-    tipoDocumento: 'FACTURA',
-    moneda: 'USD',
-    contactoId: 'ct-prov-03',
-    contactoNombre: 'Ferretería Industrial Roscio C.A.',
-    contactoRif: 'J-31456789-1',
-    contactoCuentaContableId: 'acc-210101',
-    contactoCuentaContableNombre: 'Cuentas por Pagar Proveedores Nacionales',
-    fechaEmision: '2026-10-15',
-    fechaVencimiento: '2026-10-30',
-    tasaBcv: 54.10,
-    estado: 'POSTED',
-    diarioId: 'jou-purchases',
-    lineas: [
-      {
-        id: 'lin-04',
-        productoOConcepto: 'Tornillería hexagonal y remaches de acero (Cajas)',
-        cuentaContableId: 'acc-510101',
-        cuentaContableNombre: 'Costo de Ventas de Mercancía',
-        cantidad: 15,
-        precioUnitarioUsd: 30.00,
-        tasaImpuestoPct: 16,
-        subtotalUsd: 450.00,
-        ivaUsd: 72.00,
-        totalUsd: 522.00
-      }
-    ],
-    totalNetoUsd: 450.00,
-    totalIvaUsd: 72.00,
-    totalUsd: 522.00,
-    totalVes: 28240.20,
-    saldoPendienteUsd: 522.00,
-    saldoPendienteVes: 28240.20,
-    asientoAsociadoId: 'as-004',
-    pagosAsociados: []
-  },
-  {
-    id: 'inv-prov-004',
-    numeroFactura: 'PROV-2026-0120',
-    tipo: 'SUPPLIER',
-    tipoDocumento: 'FACTURA',
-    moneda: 'USD',
-    contactoId: 'ct-prov-04',
-    contactoNombre: 'Transportes & Logística Aduanal Express C.A.',
-    contactoRif: 'J-40112233-4',
-    contactoCuentaContableId: 'acc-210101',
-    contactoCuentaContableNombre: 'Cuentas por Pagar Proveedores Nacionales',
-    fechaEmision: '2026-10-16',
-    fechaVencimiento: '2026-10-31',
-    tasaBcv: 54.20,
-    estado: 'POSTED',
-    diarioId: 'jou-purchases',
-    lineas: [
-      {
-        id: 'lin-05',
-        productoOConcepto: 'Flete Marítimo Internacional y Gastos de Desaduanamiento La Guaira',
-        cuentaContableId: 'acc-110302',
-        cuentaContableNombre: 'Mercancías en Tránsito / Costos en Destino',
-        cantidad: 1,
-        precioUnitarioUsd: 1200.00,
-        tasaImpuestoPct: 16,
-        subtotalUsd: 1200.00,
-        ivaUsd: 192.00,
-        totalUsd: 1392.00,
-        isLandedCost: true
-      }
-    ],
-    totalNetoUsd: 1200.00,
-    totalIvaUsd: 192.00,
-    totalUsd: 1392.00,
-    totalVes: 75446.40,
-    saldoPendienteUsd: 1392.00,
-    saldoPendienteVes: 75446.40,
-    asientoAsociadoId: 'as-005',
-    pagosAsociados: []
-  }
-]
-
-// ---------------------------------------------------------------------------
-// 4. ASIENTOS CONTABLES INICIALES (Diario General)
-// ---------------------------------------------------------------------------
-const DEFAULT_ENTRIES: JournalEntry[] = [
-  {
-    id: 'as-001',
-    numeroAsiento: 'AS-2026-00045',
-    fecha: '2026-10-18',
-    diarioId: 'jou-sales',
-    diarioNombre: 'Diario de Ventas',
-    origen: 'FACTURA',
-    documentoReferencia: 'FAC-2026-00145',
-    estado: 'POSTED',
-    tasaBcv: 54.20,
-    totalDebeUsd: 696.00,
-    totalHaberUsd: 696.00,
-    totalDebeVes: 37723.20,
-    totalHaberVes: 37723.20,
-    creadoPor: 'John Doe (Administrador)',
-    creadoEn: '18/10/2026 10:30 AM',
-    lineas: [
-      {
-        id: 'as-l-01',
-        cuentaId: 'acc-110201',
-        cuentaCodigo: '1.1.02.01',
-        cuentaNombre: 'Cuentas por Cobrar Clientes Nacionales',
-        contactoId: 'ct-01',
-        contactoNombre: 'Inversiones Caroní C.A.',
-        etiqueta: 'Factura FAC-2026-00145',
-        debeUsd: 696.00,
-        haberUsd: 0.00,
-        debeVes: 37723.20,
-        haberVes: 0.00
-      },
-      {
-        id: 'as-l-02',
-        cuentaId: 'acc-410101',
-        cuentaCodigo: '4.1.01.01',
-        cuentaNombre: 'Ingresos por Venta de Mercancías',
-        contactoId: 'ct-01',
-        contactoNombre: 'Inversiones Caroní C.A.',
-        etiqueta: 'Venta de Bombillos LED 12W',
-        debeUsd: 0.00,
-        haberUsd: 600.00,
-        debeVes: 0.00,
-        haberVes: 32520.00
-      },
-      {
-        id: 'as-l-03',
-        cuentaId: 'acc-210201',
-        cuentaCodigo: '2.1.02.01',
-        cuentaNombre: 'Débito Fiscal IVA (16%)',
-        contactoId: 'ct-01',
-        contactoNombre: 'Inversiones Caroní C.A.',
-        etiqueta: 'IVA 16% Factura FAC-2026-00145',
-        debeUsd: 0.00,
-        haberUsd: 96.00,
-        debeVes: 0.00,
-        haberVes: 5203.20
-      }
-    ]
-  },
-  {
-    id: 'as-002',
-    numeroAsiento: 'AS-2026-00046',
-    fecha: '2026-10-10',
-    diarioId: 'jou-purchases',
-    diarioNombre: 'Diario de Compras',
-    origen: 'FACTURA',
-    documentoReferencia: 'PROV-2026-0089',
-    estado: 'POSTED',
-    tasaBcv: 53.80,
-    totalDebeUsd: 986.00,
-    totalHaberUsd: 986.00,
-    totalDebeVes: 53046.80,
-    totalHaberVes: 53046.80,
-    creadoPor: 'Mariana Salazar (Compras)',
-    creadoEn: '10/10/2026 02:15 PM',
-    lineas: [
-      {
-        id: 'as-l-04',
-        cuentaId: 'acc-510101',
-        cuentaCodigo: '5.1.01.01',
-        cuentaNombre: 'Costo de Ventas de Mercancía',
-        contactoId: 'ct-prov-01',
-        contactoNombre: 'Distribuidora Eléctrica del Sur C.A.',
-        etiqueta: 'Compra Cableado Thw Calibre 12',
-        debeUsd: 850.00,
-        haberUsd: 0.00,
-        debeVes: 45730.00,
-        haberVes: 0.00
-      },
-      {
-        id: 'as-l-05',
-        cuentaId: 'acc-110401',
-        cuentaCodigo: '1.1.04.01',
-        cuentaNombre: 'Crédito Fiscal IVA (Compras)',
-        contactoId: 'ct-prov-01',
-        contactoNombre: 'Distribuidora Eléctrica del Sur C.A.',
-        etiqueta: 'IVA Crédito Fiscal PROV-2026-0089',
-        debeUsd: 136.00,
-        haberUsd: 0.00,
-        debeVes: 7316.80,
-        haberVes: 0.00
-      },
-      {
-        id: 'as-l-06',
-        cuentaId: 'acc-210101',
-        cuentaCodigo: '2.1.01.01',
-        cuentaNombre: 'Cuentas por Pagar Proveedores Nacionales',
-        contactoId: 'ct-prov-01',
-        contactoNombre: 'Distribuidora Eléctrica del Sur C.A.',
-        etiqueta: 'Factura Proveedor PROV-2026-0089',
-        debeUsd: 0.00,
-        haberUsd: 986.00,
-        debeVes: 0.00,
-        haberVes: 53046.80
-      }
-    ]
-  },
-  {
-    id: 'as-003',
-    numeroAsiento: 'AS-2026-00047',
-    fecha: '2026-10-19',
-    diarioId: 'jou-sales',
-    diarioNombre: 'Diario de Ventas',
-    origen: 'FACTURA',
-    documentoReferencia: 'FAC-2026-00146',
-    estado: 'DRAFT',
-    tasaBcv: 54.00,
-    totalDebeUsd: 348.00,
-    totalHaberUsd: 348.00,
-    totalDebeVes: 18792.00,
-    totalHaberVes: 18792.00,
-    creadoPor: 'Carlos Mendoza (Ventas)',
-    creadoEn: '19/10/2026 03:20 PM',
-    lineas: [
-      {
-        id: 'as-l-07',
-        cuentaId: 'acc-110201',
-        cuentaCodigo: '1.1.02.01',
-        cuentaNombre: 'Cuentas por Cobrar Clientes Nacionales (CxC)',
-        contactoId: 'ct-01',
-        contactoNombre: 'Inversiones Caroní C.A.',
-        etiqueta: 'Factura Borrador FAC-2026-00146',
-        debeUsd: 348.00,
-        haberUsd: 0.00,
-        debeVes: 18792.00,
-        haberVes: 0.00
-      },
-      {
-        id: 'as-l-08',
-        cuentaId: 'acc-410101',
-        cuentaCodigo: '4.1.01.01',
-        cuentaNombre: 'Ingresos por Venta de Mercancías',
-        contactoId: 'ct-01',
-        contactoNombre: 'Inversiones Caroní C.A.',
-        etiqueta: 'Venta de Material Eléctrico Variado',
-        debeUsd: 0.00,
-        haberUsd: 300.00,
-        debeVes: 0.00,
-        haberVes: 16200.00
-      },
-      {
-        id: 'as-l-09',
-        cuentaId: 'acc-210201',
-        cuentaCodigo: '2.1.02.01',
-        cuentaNombre: 'Débito Fiscal IVA (Ventas)',
-        contactoId: 'ct-01',
-        contactoNombre: 'Inversiones Caroní C.A.',
-        etiqueta: 'IVA 16% Factura Borrador FAC-2026-00146',
-        debeUsd: 0.00,
-        haberUsd: 48.00,
-        debeVes: 0.00,
-        haberVes: 2592.00
-      }
-    ]
-  },
-  {
-    id: 'as-004',
-    numeroAsiento: 'AS-2026-00048',
-    fecha: '2026-10-19',
-    diarioId: 'jou-purchases',
-    diarioNombre: 'Diario de Compras',
-    origen: 'FACTURA',
-    documentoReferencia: 'PROV-2026-0095',
-    estado: 'DRAFT',
-    tasaBcv: 54.00,
-    totalDebeUsd: 174.00,
-    totalHaberUsd: 174.00,
-    totalDebeVes: 9396.00,
-    totalHaberVes: 9396.00,
-    creadoPor: 'Mariana Salazar (Compras)',
-    creadoEn: '19/10/2026 04:15 PM',
-    lineas: [
-      {
-        id: 'as-l-10',
-        cuentaId: 'acc-610103',
-        cuentaCodigo: '6.1.01.03',
-        cuentaNombre: 'Servicios Públicos (Luz, Agua, Internet)',
-        contactoId: 'ct-prov-01',
-        contactoNombre: 'Distribuidora Eléctrica del Sur C.A.',
-        etiqueta: 'Factura Borrador de Servicios Eléctricos',
-        debeUsd: 150.00,
-        haberUsd: 0.00,
-        debeVes: 8100.00,
-        haberVes: 0.00
-      },
-      {
-        id: 'as-l-11',
-        cuentaId: 'acc-110401',
-        cuentaCodigo: '1.1.04.01',
-        cuentaNombre: 'Crédito Fiscal IVA (Compras)',
-        contactoId: 'ct-prov-01',
-        contactoNombre: 'Distribuidora Eléctrica del Sur C.A.',
-        etiqueta: 'Crédito Fiscal IVA 16% Servicios',
-        debeUsd: 24.00,
-        haberUsd: 0.00,
-        debeVes: 1296.00,
-        haberVes: 0.00
-      },
-      {
-        id: 'as-l-12',
-        cuentaId: 'acc-210101',
-        cuentaCodigo: '2.1.01.01',
-        cuentaNombre: 'Cuentas por Pagar Proveedores Nacionales (CxP)',
-        contactoId: 'ct-prov-01',
-        contactoNombre: 'Distribuidora Eléctrica del Sur C.A.',
-        etiqueta: 'Factura Borrador PROV-2026-0095',
-        debeUsd: 0.00,
-        haberUsd: 174.00,
-        debeVes: 0.00,
-        haberVes: 9396.00
-      }
-    ]
-  }
-]
-
-// ---------------------------------------------------------------------------
 // 5. HELPER STORAGE FUNCTIONS
 // ---------------------------------------------------------------------------
-const getStored = <T>(key: string, defaultVal: T): T => {
-  if (typeof window === 'undefined') return defaultVal
+const getStored = <T>(key: string): T => {
+  void key
 
-  try {
-    const raw = localStorage.getItem(key)
-
-    return raw ? JSON.parse(raw) : defaultVal
-  } catch {
-    return defaultVal
-  }
+  return [] as T
 }
 
 const setStored = <T>(key: string, val: T): void => {
-  if (typeof window === 'undefined') return
-
-  try {
-    localStorage.setItem(key, JSON.stringify(val))
-  } catch (err) {
-    console.error(`Error guardando en localStorage key ${key}:`, err)
-  }
+  // La contabilidad ya no persiste datos de negocio en localStorage.
+  void key
+  void val
 }
 
 // ---------------------------------------------------------------------------
@@ -706,24 +110,14 @@ export const accountingService = {
       )
 
       if (res?.accounts && Array.isArray(res.accounts)) {
-        const mapped = res.accounts.map(mapGqlAccountToFrontend)
-
-        if (mapped.length > 0) {
-          const backendIds = new Set(mapped.map(a => a.id))
-          const stored = getStored<Account[]>(STORAGE_KEYS.ACCOUNTS, DEFAULT_ACCOUNTS)
-          const localOnly = stored.filter(a => !backendIds.has(a.id) && a.id.startsWith('acc-'))
-          const combined = [...mapped, ...localOnly].sort((a, b) => a.codigo.localeCompare(b.codigo))
-
-          setStored(STORAGE_KEYS.ACCOUNTS, combined)
-
-          return combined
-        }
+        return res.accounts.map(mapGqlAccountToFrontend).sort((a, b) => a.codigo.localeCompare(b.codigo))
       }
-    } catch (err) {
-      console.warn('[accountingService] Error al consultar accounts de backend:', err)
-    }
 
-    return getStored<Account[]>(STORAGE_KEYS.ACCOUNTS, DEFAULT_ACCOUNTS)
+      throw new Error('Respuesta inválida del backend al consultar cuentas contables.')
+    } catch (err) {
+      console.error('[accountingService] Error al consultar accounts de backend:', err)
+      throw err
+    }
   },
 
   createAccount: async (input: Omit<Account, 'id' | 'saldoUsd' | 'saldoVes'>): Promise<Account> => {
@@ -760,7 +154,7 @@ export const accountingService = {
 
       if (res?.createAccount) {
         const created = mapGqlAccountToFrontend(res.createAccount)
-        const accounts = getStored<Account[]>(STORAGE_KEYS.ACCOUNTS, DEFAULT_ACCOUNTS)
+        const accounts = getStored<Account[]>(STORAGE_KEYS.ACCOUNTS)
         const updated = [...accounts, created].sort((a, b) => a.codigo.localeCompare(b.codigo))
 
         setStored(STORAGE_KEYS.ACCOUNTS, updated)
@@ -768,10 +162,11 @@ export const accountingService = {
         return created
       }
     } catch (err: unknown) {
-      console.warn('[accountingService] Fallback a local para createAccount:', err)
+      console.error('[accountingService] Fallback a local para createAccount:', err)
+      throw err
     }
 
-    const accounts = getStored<Account[]>(STORAGE_KEYS.ACCOUNTS, DEFAULT_ACCOUNTS)
+    const accounts = getStored<Account[]>(STORAGE_KEYS.ACCOUNTS)
 
     const newAcc: Account = {
       ...input,
@@ -814,7 +209,7 @@ export const accountingService = {
 
         if (res?.updateAccount) {
           const updated = mapGqlAccountToFrontend(res.updateAccount)
-          const accounts = getStored<Account[]>(STORAGE_KEYS.ACCOUNTS, DEFAULT_ACCOUNTS)
+          const accounts = getStored<Account[]>(STORAGE_KEYS.ACCOUNTS)
           const next = accounts.map(a => (a.id === id ? { ...a, ...updated } : a))
 
           setStored(STORAGE_KEYS.ACCOUNTS, next)
@@ -822,11 +217,12 @@ export const accountingService = {
           return updated
         }
       } catch (err: unknown) {
-        console.warn('[accountingService] Fallback local para updateAccount:', err)
+        console.error('[accountingService] Fallback local para updateAccount:', err)
+      throw err
       }
     }
 
-    const accounts = getStored<Account[]>(STORAGE_KEYS.ACCOUNTS, DEFAULT_ACCOUNTS)
+    const accounts = getStored<Account[]>(STORAGE_KEYS.ACCOUNTS)
     const updated = accounts.map(a => (a.id === id ? { ...a, ...input } : a))
 
     setStored(STORAGE_KEYS.ACCOUNTS, updated)
@@ -841,11 +237,12 @@ export const accountingService = {
       try {
         await executeGraphQL(DEACTIVATE_ACCOUNT_MUTATION, { id }, { timeoutMs: 8000 })
       } catch (err) {
-        console.warn('[accountingService] Error al desactivar cuenta en backend:', err)
+        console.error('[accountingService] Error al desactivar cuenta en backend:', err)
+      throw err
       }
     }
 
-    const accounts = getStored<Account[]>(STORAGE_KEYS.ACCOUNTS, DEFAULT_ACCOUNTS)
+    const accounts = getStored<Account[]>(STORAGE_KEYS.ACCOUNTS)
     const next = accounts.map(a => (a.id === id ? { ...a, activo: false } : a))
 
     setStored(STORAGE_KEYS.ACCOUNTS, next)
@@ -867,12 +264,11 @@ export const accountingService = {
         return seeded
       }
     } catch (err) {
-      console.warn('[accountingService] Error al semillar cuentas de backend:', err)
+      console.error('[accountingService] Error al semillar cuentas de backend:', err)
+      throw err
     }
 
-    setStored(STORAGE_KEYS.ACCOUNTS, DEFAULT_ACCOUNTS)
-
-    return DEFAULT_ACCOUNTS
+    throw new Error('No fue posible sembrar el plan de cuentas en el backend.')
   },
 
   // Diarios Contables (con backend GraphQL BE-ACC-01)
@@ -885,24 +281,14 @@ export const accountingService = {
       )
 
       if (res?.journals && Array.isArray(res.journals)) {
-        const mapped = res.journals.map(mapGqlJournalToFrontend)
-
-        if (mapped.length > 0) {
-          const backendIds = new Set(mapped.map(j => j.id))
-          const stored = getStored<Journal[]>(STORAGE_KEYS.JOURNALS, DEFAULT_JOURNALS)
-          const localOnly = stored.filter(j => !backendIds.has(j.id) && j.id.startsWith('jou-'))
-          const combined = [...mapped, ...localOnly]
-
-          setStored(STORAGE_KEYS.JOURNALS, combined)
-
-          return combined
-        }
+        return res.journals.map(mapGqlJournalToFrontend)
       }
-    } catch (err) {
-      console.warn('[accountingService] Error al consultar diarios de backend:', err)
-    }
 
-    return getStored<Journal[]>(STORAGE_KEYS.JOURNALS, DEFAULT_JOURNALS)
+      throw new Error('Respuesta inválida del backend al consultar diarios contables.')
+    } catch (err) {
+      console.error('[accountingService] Error al consultar diarios de backend:', err)
+      throw err
+    }
   },
 
   getJournalById: async (id: string): Promise<Journal | null> => {
@@ -947,7 +333,7 @@ export const accountingService = {
 
       if (res?.createJournal) {
         const created = mapGqlJournalToFrontend(res.createJournal)
-        const journals = getStored<Journal[]>(STORAGE_KEYS.JOURNALS, DEFAULT_JOURNALS)
+        const journals = getStored<Journal[]>(STORAGE_KEYS.JOURNALS)
         const updated = [...journals, created]
 
         setStored(STORAGE_KEYS.JOURNALS, updated)
@@ -955,10 +341,11 @@ export const accountingService = {
         return created
       }
     } catch (err) {
-      console.warn('[accountingService] Fallback local para createJournal:', err)
+      console.error('[accountingService] Fallback local para createJournal:', err)
+      throw err
     }
 
-    const journals = getStored<Journal[]>(STORAGE_KEYS.JOURNALS, DEFAULT_JOURNALS)
+    const journals = getStored<Journal[]>(STORAGE_KEYS.JOURNALS)
 
     const newJournal: Journal = {
       id: `jou-${Date.now()}`,
@@ -992,7 +379,7 @@ export const accountingService = {
   },
 
   updateJournal: async (id: string, partial: Partial<Journal>): Promise<Journal> => {
-    const journals = getStored<Journal[]>(STORAGE_KEYS.JOURNALS, DEFAULT_JOURNALS)
+    const journals = getStored<Journal[]>(STORAGE_KEYS.JOURNALS)
     const updated = journals.map(j => (j.id === id ? { ...j, ...partial } : j))
 
     setStored(STORAGE_KEYS.JOURNALS, updated)
@@ -1004,7 +391,7 @@ return found
   },
 
   deleteJournal: async (id: string): Promise<void> => {
-    const journals = getStored<Journal[]>(STORAGE_KEYS.JOURNALS, DEFAULT_JOURNALS)
+    const journals = getStored<Journal[]>(STORAGE_KEYS.JOURNALS)
     const updated = journals.filter(j => j.id !== id)
 
     setStored(STORAGE_KEYS.JOURNALS, updated)
@@ -1020,24 +407,14 @@ return found
       )
 
       if (res?.accountingInvoices && Array.isArray(res.accountingInvoices)) {
-        const mapped = res.accountingInvoices.map(mapGqlInvoiceToFrontend)
-
-        if (mapped.length > 0) {
-          const backendIds = new Set(mapped.map(i => i.id))
-          const stored = getStored<AccountingInvoice[]>(STORAGE_KEYS.INVOICES, DEFAULT_INVOICES)
-          const localOnly = stored.filter(i => !backendIds.has(i.id) && i.id.startsWith('inv-'))
-          const combined = [...mapped, ...localOnly]
-
-          setStored(STORAGE_KEYS.INVOICES, combined)
-
-          return combined
-        }
+        return res.accountingInvoices.map(mapGqlInvoiceToFrontend)
       }
-    } catch (err) {
-      console.warn('[accountingService] Error al consultar accountingInvoices de backend:', err)
-    }
 
-    return getStored<AccountingInvoice[]>(STORAGE_KEYS.INVOICES, DEFAULT_INVOICES)
+      throw new Error('Respuesta inválida del backend al consultar facturas contables.')
+    } catch (err) {
+      console.error('[accountingService] Error al consultar accountingInvoices de backend:', err)
+      throw err
+    }
   },
 
   getInvoiceById: async (id: string): Promise<AccountingInvoice | null> => {
@@ -1053,7 +430,7 @@ return found
 
         if (res?.accountingInvoice) {
           const mapped = mapGqlInvoiceToFrontend(res.accountingInvoice)
-          const invoices = getStored<AccountingInvoice[]>(STORAGE_KEYS.INVOICES, DEFAULT_INVOICES)
+          const invoices = getStored<AccountingInvoice[]>(STORAGE_KEYS.INVOICES)
           const idx = invoices.findIndex(i => i.id === id)
 
           if (idx !== -1) invoices[idx] = mapped
@@ -1064,11 +441,12 @@ return found
           return mapped
         }
       } catch (err) {
-        console.warn('[accountingService] Error al consultar accountingInvoice por id:', err)
+        console.error('[accountingService] Error al consultar accountingInvoice por id:', err)
+      throw err
       }
     }
 
-    const invoices = getStored<AccountingInvoice[]>(STORAGE_KEYS.INVOICES, DEFAULT_INVOICES)
+    const invoices = getStored<AccountingInvoice[]>(STORAGE_KEYS.INVOICES)
 
     return invoices.find(i => i.id === id) || null
   },
@@ -1152,11 +530,12 @@ return found
           }
         }
       } catch (err: unknown) {
-        console.warn('[accountingService] Fallback local para createInvoice:', err)
+        console.error('[accountingService] Fallback local para createInvoice:', err)
+      throw err
       }
     }
 
-    const invoices = getStored<AccountingInvoice[]>(STORAGE_KEYS.INVOICES, DEFAULT_INVOICES)
+    const invoices = getStored<AccountingInvoice[]>(STORAGE_KEYS.INVOICES)
     const updated = [invoice, ...invoices]
 
     setStored(STORAGE_KEYS.INVOICES, updated)
@@ -1187,7 +566,7 @@ return found
   },
 
   updateInvoice: async (id: string, partial: Partial<AccountingInvoice>): Promise<AccountingInvoice> => {
-    const invoices = getStored<AccountingInvoice[]>(STORAGE_KEYS.INVOICES, DEFAULT_INVOICES)
+    const invoices = getStored<AccountingInvoice[]>(STORAGE_KEYS.INVOICES)
     const updated = invoices.map(i => (i.id === id ? { ...i, ...partial } : i))
 
     setStored(STORAGE_KEYS.INVOICES, updated)
@@ -1199,7 +578,7 @@ return found
   },
 
   resetInvoiceToDraft: async (id: string): Promise<AccountingInvoice> => {
-    const invoices = getStored<AccountingInvoice[]>(STORAGE_KEYS.INVOICES, DEFAULT_INVOICES)
+    const invoices = getStored<AccountingInvoice[]>(STORAGE_KEYS.INVOICES)
     const invoice = invoices.find(i => i.id === id)
 
     if (!invoice) throw new Error('Factura no encontrada')
@@ -1212,7 +591,7 @@ return found
 
     // Si tiene asiento contable asociado, marcarlo como anulado
     if (invoice.asientoAsociadoId) {
-      const entries = getStored<JournalEntry[]>(STORAGE_KEYS.ENTRIES, DEFAULT_ENTRIES)
+      const entries = getStored<JournalEntry[]>(STORAGE_KEYS.ENTRIES)
 
       const updatedEntries = entries.map(e =>
         e.id === invoice.asientoAsociadoId ? { ...e, estado: 'CANCELED' as const } : e
@@ -1237,7 +616,7 @@ return found
     const isUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(id)
 
     if (isUuid) {
-      const invoices = getStored<AccountingInvoice[]>(STORAGE_KEYS.INVOICES, DEFAULT_INVOICES)
+      const invoices = getStored<AccountingInvoice[]>(STORAGE_KEYS.INVOICES)
       const invoice = invoices.find(i => i.id === id)
 
       try {
@@ -1250,11 +629,12 @@ return found
 
         if (updated) return updated
       } catch (err: unknown) {
-        console.warn('[accountingService] Fallback local para cancelInvoice:', err)
+        console.error('[accountingService] Fallback local para cancelInvoice:', err)
+      throw err
       }
     }
 
-    const invoices = getStored<AccountingInvoice[]>(STORAGE_KEYS.INVOICES, DEFAULT_INVOICES)
+    const invoices = getStored<AccountingInvoice[]>(STORAGE_KEYS.INVOICES)
     const invoice = invoices.find(i => i.id === id)
 
     if (!invoice) throw new Error('Factura no encontrada')
@@ -1271,7 +651,7 @@ return found
 
     // Si tiene asiento contable asociado, marcarlo como anulado
     if (invoice.asientoAsociadoId) {
-      const entries = getStored<JournalEntry[]>(STORAGE_KEYS.ENTRIES, DEFAULT_ENTRIES)
+      const entries = getStored<JournalEntry[]>(STORAGE_KEYS.ENTRIES)
 
       const updatedEntries = entries.map(e =>
         e.id === invoice.asientoAsociadoId ? { ...e, estado: 'CANCELED' as const } : e
@@ -1305,7 +685,7 @@ return found
     montoPersonalizadoUsd?: number
     fecha?: string
   }): Promise<{ creditNote: AccountingInvoice; updatedInvoice: AccountingInvoice; entry: JournalEntry }> => {
-    const invoices = getStored<AccountingInvoice[]>(STORAGE_KEYS.INVOICES, DEFAULT_INVOICES)
+    const invoices = getStored<AccountingInvoice[]>(STORAGE_KEYS.INVOICES)
     const invoice = invoices.find(i => i.id === input.facturaId)
 
     if (!invoice) throw new Error('Factura de origen no encontrada')
@@ -1555,7 +935,7 @@ return found
   },
 
   getCreditNotes: async (tipo?: InvoiceAccountingType): Promise<AccountingInvoice[]> => {
-    const invoices = getStored<AccountingInvoice[]>(STORAGE_KEYS.INVOICES, DEFAULT_INVOICES)
+    const invoices = getStored<AccountingInvoice[]>(STORAGE_KEYS.INVOICES)
     let creditNotes = invoices.filter(i => i.tipoDocumento === 'NOTA_CREDITO')
 
     if (tipo) {
@@ -1592,7 +972,7 @@ return found
       })
     }
 
-    const invoices = getStored<AccountingInvoice[]>(STORAGE_KEYS.INVOICES, DEFAULT_INVOICES)
+    const invoices = getStored<AccountingInvoice[]>(STORAGE_KEYS.INVOICES)
     const tasaBcv = input.tasaBcv || 54.00
     const fechaNc = input.fecha || new Date().toISOString().split('T')[0]
     const correlativo = String(invoices.filter(i => i.tipoDocumento === 'NOTA_CREDITO').length + 1).padStart(4, '0')
@@ -1792,24 +1172,15 @@ return found
       if (res?.payments && Array.isArray(res.payments)) {
         const journals = await accountingService.getJournals()
         const journalMap = Object.fromEntries(journals.map(j => [j.id, j.nombre]))
-        const mapped = res.payments.map(p => mapGqlPaymentToFrontend(p, journalMap))
 
-        if (mapped.length > 0) {
-          const backendIds = new Set(mapped.map(p => p.id))
-          const stored = getStored<Payment[]>(STORAGE_KEYS.PAYMENTS, [])
-          const localOnly = stored.filter(p => !backendIds.has(p.id) && p.id.startsWith('pag-'))
-          const combined = [...mapped, ...localOnly]
-
-          setStored(STORAGE_KEYS.PAYMENTS, combined)
-
-          return combined
-        }
+        return res.payments.map(p => mapGqlPaymentToFrontend(p, journalMap))
       }
-    } catch (err) {
-      console.warn('[accountingService] Error al consultar payments de backend:', err)
-    }
 
-    return getStored<Payment[]>(STORAGE_KEYS.PAYMENTS, [])
+      throw new Error('Respuesta inválida del backend al consultar pagos.')
+    } catch (err) {
+      console.error('[accountingService] Error al consultar payments de backend:', err)
+      throw err
+    }
   },
 
   // Registrar Pago Directo desde la Factura (Estilo Odoo)
@@ -1825,12 +1196,12 @@ return found
     cuentaBancariaInfo?: string
     fecha?: string
   }): Promise<{ invoice: AccountingInvoice; payment: Payment; entry: JournalEntry }> => {
-    const invoices = getStored<AccountingInvoice[]>(STORAGE_KEYS.INVOICES, DEFAULT_INVOICES)
+    const invoices = getStored<AccountingInvoice[]>(STORAGE_KEYS.INVOICES)
     const invoice = invoices.find(i => i.id === input.invoiceId)
 
     if (!invoice) throw new Error('Factura no encontrada')
 
-    const journals = getStored<Journal[]>(STORAGE_KEYS.JOURNALS, DEFAULT_JOURNALS)
+    const journals = getStored<Journal[]>(STORAGE_KEYS.JOURNALS)
     const journal = journals.find(j => j.id === input.diarioId)
     const fechaPago = input.fecha || new Date().toISOString().split('T')[0]
 
@@ -1888,7 +1259,8 @@ return found
           { timeoutMs: 10000 }
         )
       } catch (err) {
-        console.warn('[accountingService] Error al registrar pago en backend:', err)
+        console.error('[accountingService] Error al registrar pago en backend:', err)
+      throw err
       }
     }
 
@@ -2007,10 +1379,6 @@ return found
 
     newPayment.asientoContableId = entry.id
 
-    const payments = getStored<Payment[]>(STORAGE_KEYS.PAYMENTS, [])
-
-    setStored(STORAGE_KEYS.PAYMENTS, [newPayment, ...payments])
-
     const nuevoSaldoPendienteUsd = Math.max(0, Number((invoice.saldoPendienteUsd - montoUsd).toFixed(2)))
     const nuevoSaldoPendienteVes = Math.max(0, Number((nuevoSaldoPendienteUsd * input.tasaBcvPago).toFixed(2)))
     const nuevoEstado = nuevoSaldoPendienteUsd <= 0.01 ? 'PAID' : 'POSTED'
@@ -2063,28 +1431,16 @@ return found
         const journalMap = Object.fromEntries(journals.map(j => [j.id, j.nombre]))
         const mapped = res.journalEntries.map(e => mapGqlEntryToFrontend(e, journalMap))
 
-        if (mapped.length > 0) {
-          const backendIds = new Set(mapped.map(e => e.id))
-          const stored = getStored<JournalEntry[]>(STORAGE_KEYS.ENTRIES, DEFAULT_ENTRIES)
-          const localOnly = stored.filter(e => !backendIds.has(e.id) && e.id.startsWith('as-'))
-          const combined = [...mapped, ...localOnly]
-
-          setStored(STORAGE_KEYS.ENTRIES, combined)
-
-          return targetMoves === 'POSTED' ? combined.filter(e => e.estado === 'POSTED') : combined.filter(e => e.estado !== 'CANCELED')
-        }
+        return targetMoves === 'POSTED'
+          ? mapped.filter(e => e.estado === 'POSTED')
+          : mapped.filter(e => e.estado !== 'CANCELED')
       }
+
+      throw new Error('Respuesta inválida del backend al consultar asientos contables.')
     } catch (err) {
-      console.warn('[accountingService] Error al consultar journalEntries de backend:', err)
+      console.error('[accountingService] Error al consultar journalEntries de backend:', err)
+      throw err
     }
-
-    const list = getStored<JournalEntry[]>(STORAGE_KEYS.ENTRIES, DEFAULT_ENTRIES)
-
-    if (targetMoves === 'POSTED') {
-      return list.filter(e => e.estado === 'POSTED')
-    }
-
-    return list.filter(e => e.estado !== 'CANCELED')
   },
 
   createJournalEntry: async (input: {
@@ -2158,12 +1514,13 @@ return found
           if (created) return created
         }
       } catch (err: unknown) {
-        console.warn('[accountingService] Fallback local para createJournalEntry:', err)
+        console.error('[accountingService] Fallback local para createJournalEntry:', err)
+      throw err
       }
     }
 
-    const entries = getStored<JournalEntry[]>(STORAGE_KEYS.ENTRIES, DEFAULT_ENTRIES)
-    const journals = getStored<Journal[]>(STORAGE_KEYS.JOURNALS, DEFAULT_JOURNALS)
+    const entries = getStored<JournalEntry[]>(STORAGE_KEYS.ENTRIES)
+    const journals = getStored<Journal[]>(STORAGE_KEYS.JOURNALS)
     const journal = journals.find(j => j.id === input.diarioId)
 
     const totalDebeUsd = input.lineas.reduce((acc, l) => acc + (l.debeUsd || 0), 0)
@@ -2222,7 +1579,7 @@ return found
       }
     }
 
-    const entries = getStored<JournalEntry[]>(STORAGE_KEYS.ENTRIES, DEFAULT_ENTRIES)
+    const entries = getStored<JournalEntry[]>(STORAGE_KEYS.ENTRIES)
     const updated = entries.map(e => (e.id === id ? { ...e, estado: 'POSTED' as EntryStatus } : e))
 
     setStored(STORAGE_KEYS.ENTRIES, updated)
@@ -2252,7 +1609,7 @@ return found
       }
     }
 
-    const entries = getStored<JournalEntry[]>(STORAGE_KEYS.ENTRIES, DEFAULT_ENTRIES)
+    const entries = getStored<JournalEntry[]>(STORAGE_KEYS.ENTRIES)
     const updated = entries.map(e => (e.id === id ? { ...e, estado: 'CANCELED' as EntryStatus } : e))
 
     setStored(STORAGE_KEYS.ENTRIES, updated)
@@ -2287,7 +1644,7 @@ return found
       }
     }
 
-    const entries = getStored<JournalEntry[]>(STORAGE_KEYS.ENTRIES, DEFAULT_ENTRIES)
+    const entries = getStored<JournalEntry[]>(STORAGE_KEYS.ENTRIES)
     const target = entries.find(e => e.id === id)
 
     if (!target) throw new Error('Asiento no encontrado')
@@ -2307,12 +1664,12 @@ return found
       lineas: Omit<JournalItem, 'id'>[]
     }
   ): Promise<JournalEntry> => {
-    const entries = getStored<JournalEntry[]>(STORAGE_KEYS.ENTRIES, DEFAULT_ENTRIES)
+    const entries = getStored<JournalEntry[]>(STORAGE_KEYS.ENTRIES)
     const existing = entries.find(e => e.id === id)
 
     if (!existing) throw new Error('Asiento contable no encontrado')
 
-    const journals = getStored<Journal[]>(STORAGE_KEYS.JOURNALS, DEFAULT_JOURNALS)
+    const journals = getStored<Journal[]>(STORAGE_KEYS.JOURNALS)
     const journal = journals.find(j => j.id === input.diarioId)
 
     const totalDebeUsd = Number(input.lineas.reduce((acc, l) => acc + (Number(l.debeUsd) || 0), 0).toFixed(2))
@@ -2354,7 +1711,7 @@ return found
   },
 
   resetJournalEntryToDraft: async (id: string): Promise<JournalEntry> => {
-    const entries = getStored<JournalEntry[]>(STORAGE_KEYS.ENTRIES, DEFAULT_ENTRIES)
+    const entries = getStored<JournalEntry[]>(STORAGE_KEYS.ENTRIES)
     const existing = entries.find(e => e.id === id)
 
     if (!existing) throw new Error('Asiento contable no encontrado')
@@ -2494,8 +1851,8 @@ return found
     cuentaBancariaId?: string
     cuentaBancariaInfo?: string
   }): Promise<{ payment: Payment; entry: JournalEntry }> => {
-    const journals = getStored<Journal[]>(STORAGE_KEYS.JOURNALS, DEFAULT_JOURNALS)
-    const invoices = getStored<AccountingInvoice[]>(STORAGE_KEYS.INVOICES, DEFAULT_INVOICES)
+    const journals = getStored<Journal[]>(STORAGE_KEYS.JOURNALS)
+    const invoices = getStored<AccountingInvoice[]>(STORAGE_KEYS.INVOICES)
     const journal = journals.find(j => j.id === input.diarioId)
     const targetInvoice = input.facturaId ? invoices.find(i => i.id === input.facturaId) : undefined
 
@@ -2586,16 +1943,12 @@ return found
 
     newPayment.asientoContableId = entry.id
 
-    const payments = getStored<Payment[]>(STORAGE_KEYS.PAYMENTS, [])
-
-    setStored(STORAGE_KEYS.PAYMENTS, [newPayment, ...payments])
-
     return { payment: newPayment, entry }
   },
 
   // Pagos a Proveedores por Lote
   getSupplierBatchItems: async (): Promise<SupplierBatchItem[]> => {
-    const invoices = getStored<AccountingInvoice[]>(STORAGE_KEYS.INVOICES, DEFAULT_INVOICES)
+    const invoices = getStored<AccountingInvoice[]>(STORAGE_KEYS.INVOICES)
     const supplierInvoices = invoices.filter(i => i.tipo === 'SUPPLIER' && i.saldoPendienteUsd > 0)
 
     const bankSeeds = [
@@ -2630,8 +1983,8 @@ return found
     diarioBancoId: string,
     tasaBcv: number
   ): Promise<{ loteId: string; totalUsd: number; totalVes: number }> => {
-    const journals = getStored<Journal[]>(STORAGE_KEYS.JOURNALS, DEFAULT_JOURNALS)
-    const invoices = getStored<AccountingInvoice[]>(STORAGE_KEYS.INVOICES, DEFAULT_INVOICES)
+    const journals = getStored<Journal[]>(STORAGE_KEYS.JOURNALS)
+    const invoices = getStored<AccountingInvoice[]>(STORAGE_KEYS.INVOICES)
     const bankJournal = journals.find(j => j.id === diarioBancoId)
 
     const totalUsd = items.reduce((acc, it) => acc + it.montoAPagarUsd, 0)
@@ -2694,8 +2047,8 @@ return found
 
   // Registro de Gasto Directo sin factura
   createDirectExpense: async (form: DirectExpenseForm): Promise<JournalEntry> => {
-    const journals = getStored<Journal[]>(STORAGE_KEYS.JOURNALS, DEFAULT_JOURNALS)
-    const accounts = getStored<Account[]>(STORAGE_KEYS.ACCOUNTS, DEFAULT_ACCOUNTS)
+    const journals = getStored<Journal[]>(STORAGE_KEYS.JOURNALS)
+    const accounts = getStored<Account[]>(STORAGE_KEYS.ACCOUNTS)
     const bankJournal = journals.find(j => j.id === form.diarioSalidaId)
 
     const subtotalUsd = form.lineas.reduce((acc, l) => acc + (form.moneda === 'USD' ? l.monto : l.monto / form.tasaBcv), 0)
@@ -2767,8 +2120,8 @@ return found
 
   // Indicadores KPI del Dashboard
   getDashboardKpis: async (): Promise<AccountingSummaryKpis> => {
-    const journals = getStored<Journal[]>(STORAGE_KEYS.JOURNALS, DEFAULT_JOURNALS)
-    const invoices = getStored<AccountingInvoice[]>(STORAGE_KEYS.INVOICES, DEFAULT_INVOICES)
+    const journals = getStored<Journal[]>(STORAGE_KEYS.JOURNALS)
+    const invoices = getStored<AccountingInvoice[]>(STORAGE_KEYS.INVOICES)
 
     const bankJournals = journals.filter(j => j.tipo.startsWith('BANCO') || j.tipo === 'CAJA')
     const totalLiquidezUsd = bankJournals.reduce((acc, j) => acc + j.saldoActualUsd, 0)
@@ -2800,13 +2153,13 @@ return found
 
   // Helper para reportes: computa saldos de cuentas filtrando por movimientos confirmados (POSTED) o todos (ALL con borradores)
   getAccountsWithTargetMoves: (targetMoves: 'POSTED' | 'ALL' = 'POSTED', tasaBcv: number = 54.0): Account[] => {
-    const baseAccounts = getStored<Account[]>(STORAGE_KEYS.ACCOUNTS, DEFAULT_ACCOUNTS)
+    const baseAccounts = getStored<Account[]>(STORAGE_KEYS.ACCOUNTS)
 
     if (targetMoves === 'POSTED') {
       return baseAccounts
     }
 
-    const entries = getStored<JournalEntry[]>(STORAGE_KEYS.ENTRIES, DEFAULT_ENTRIES)
+    const entries = getStored<JournalEntry[]>(STORAGE_KEYS.ENTRIES)
     const draftEntries = entries.filter(e => e.estado === 'DRAFT')
 
     if (draftEntries.length === 0) {
@@ -2872,7 +2225,8 @@ return found
         return res.balanceSheet
       }
     } catch (err) {
-      console.warn('[accountingService] Error al consultar balanceSheet en vivo:', err)
+      console.error('[accountingService] Error al consultar balanceSheet en vivo:', err)
+      throw err
     }
 
     return null
@@ -2898,7 +2252,8 @@ return found
         return res.profitAndLoss
       }
     } catch (err) {
-      console.warn('[accountingService] Error al consultar profitAndLoss en vivo:', err)
+      console.error('[accountingService] Error al consultar profitAndLoss en vivo:', err)
+      throw err
     }
 
     return null
@@ -2922,7 +2277,8 @@ return found
         return res.trialBalance
       }
     } catch (err) {
-      console.warn('[accountingService] Error al consultar trialBalance en vivo:', err)
+      console.error('[accountingService] Error al consultar trialBalance en vivo:', err)
+      throw err
     }
 
     return null
@@ -2954,7 +2310,8 @@ return found
         return res.generalLedger
       }
     } catch (err) {
-      console.warn('[accountingService] Error al consultar generalLedger en vivo:', err)
+      console.error('[accountingService] Error al consultar generalLedger en vivo:', err)
+      throw err
     }
 
     return null
@@ -3177,26 +2534,15 @@ return found
 
   // Mapeo Contable de Contactos
   getContactAccountingConfigs: async (): Promise<ContactAccountingConfig[]> => {
-    const defaultMappings: ContactAccountingConfig[] = [
-      { contactoId: 'ct-01', contactoNombre: 'Inversiones Caroní C.A.', contactoRif: 'J-30981245-2', cuentaCxcId: 'acc-110201', cuentaCxcNombre: 'Cuentas por Cobrar Clientes Nacionales' },
-      { contactoId: 'ct-prov-01', contactoNombre: 'Distribuidora Eléctrica del Sur C.A.', contactoRif: 'J-40128456-0', cuentaCxpId: 'acc-210101', cuentaCxpNombre: 'Cuentas por Pagar Proveedores Nacionales' },
-      { contactoId: 'ct-prov-02', contactoNombre: 'Aceros y Perfiles Guayana S.A.', contactoRif: 'J-29845112-9', cuentaCxpId: 'acc-210101', cuentaCxpNombre: 'Cuentas por Pagar Proveedores Nacionales' },
-      { contactoId: 'ct-prov-03', contactoNombre: 'Ferretería Industrial Roscio C.A.', contactoRif: 'J-31456789-1', cuentaCxpId: 'acc-210101', cuentaCxpNombre: 'Cuentas por Pagar Proveedores Nacionales' }
-    ]
-
-    return getStored<ContactAccountingConfig[]>(STORAGE_KEYS.CONTACT_MAPPINGS, defaultMappings)
+    return []
   },
 
   updateContactAccountingConfig: async (config: ContactAccountingConfig): Promise<ContactAccountingConfig> => {
-    const list = await accountingService.getContactAccountingConfigs()
+    void config
 
-    const updated = list.some(c => c.contactoId === config.contactoId)
-      ? list.map(c => (c.contactoId === config.contactoId ? config : c))
-      : [...list, config]
-
-    setStored(STORAGE_KEYS.CONTACT_MAPPINGS, updated)
-
-    return config
+    throw new Error(
+      'La configuración contable de contactos no está expuesta por el backend; no se persiste localmente.'
+    )
   }
 }
 
