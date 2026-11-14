@@ -19,7 +19,8 @@ import {
   UPDATE_PRODUCT_TEMPLATE_MUTATION,
   DELETE_PRODUCT_TEMPLATE_MUTATION,
   CREATE_INVENTORY_ADJUSTMENT_MUTATION,
-  APPLY_INVENTORY_ADJUSTMENT_MUTATION
+  APPLY_INVENTORY_ADJUSTMENT_MUTATION,
+  GET_UNITS_OF_MEASURE_QUERY
 } from '@/graphql/inventory.gql'
 import type {
   GqlProductTemplate,
@@ -187,6 +188,14 @@ export interface BackendCategoryNode {
 }
 
 let cachedBackendCategories: BackendCategoryNode[] | null = null
+
+export const getUnitsOfMeasure = async (): Promise<Array<{ id: string; code: string; name: string }>> => {
+  const response = await executeGraphQL<{
+    unitsOfMeasure: Array<{ id: string; code: string; name: string; isActive: boolean }>
+  }>(GET_UNITS_OF_MEASURE_QUERY, undefined, { timeoutMs: 5000 })
+
+  return response.unitsOfMeasure.filter(unit => unit.isActive)
+}
 
 export const fetchBackendCategories = async (): Promise<BackendCategoryNode[]> => {
   if (cachedBackendCategories && cachedBackendCategories.length > 0) {

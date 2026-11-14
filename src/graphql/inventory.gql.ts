@@ -237,6 +237,12 @@ export const GET_CATEGORIES_QUERY = `
       name
       completeName
       code
+      description
+      isActive
+      revenueAccount { id code name }
+      expenseAccount { id code name }
+      inventoryAccount { id code name }
+      landedCostAccount { id code name }
     }
   }
 `
@@ -546,3 +552,63 @@ export const UPDATE_STOCK_LOCATION_MUTATION = `
 
 
 
+
+export const GET_UNITS_OF_MEASURE_QUERY = `
+  query GetUnitsOfMeasure {
+    unitsOfMeasure {
+      id
+      code
+      name
+      isActive
+    }
+  }
+`
+
+export const SEED_UNITS_OF_MEASURE_MUTATION = `
+  mutation SeedUnitsOfMeasure {
+    seedDefaultUnitsOfMeasure {
+      id
+      code
+      name
+      isActive
+    }
+  }
+`
+
+export const CREATE_PRODUCT_CATEGORY_MUTATION = `
+  mutation CreateProductCategory($input: CreateProductCategoryInput!) {
+    createProductCategory(input: $input) {
+      id
+      code
+      name
+      description
+      isActive
+      revenueAccount { id code name }
+      expenseAccount { id code name }
+      inventoryAccount { id code name }
+      landedCostAccount { id code name }
+    }
+  }
+`
+
+export const UPDATE_PRODUCT_CATEGORY_MUTATION = `
+  mutation UpdateProductCategory($id: ID!, $input: UpdateProductCategoryInput!) {
+    updateProductCategory(id: $id, input: $input) {
+      id
+      code
+      name
+      description
+      isActive
+      revenueAccount { id code name }
+      expenseAccount { id code name }
+      inventoryAccount { id code name }
+      landedCostAccount { id code name }
+    }
+  }
+`
+
+export const DELETE_PRODUCT_CATEGORY_MUTATION = `
+  mutation DeleteProductCategory($id: ID!) {
+    deleteProductCategory(id: $id)
+  }
+`

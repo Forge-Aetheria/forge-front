@@ -60,6 +60,7 @@ import {
   getFiscalConfig,
   getActiveBcvRate,
   getProductCategories,
+  getUnitsOfMeasure,
   createProductCategory,
   createProductTemplate
 } from '@/services/inventoryService'
@@ -107,6 +108,7 @@ const InventoryDetailView: React.FC<Props> = ({ id }) => {
   const [barcode, setBarcode] = useState('')
   const [productType, setProductType] = useState<ProductType>('storable')
   const [categoryOptions, setCategoryOptions] = useState<string[]>(DEFAULT_CATEGORIES)
+  const [uomOptions, setUomOptions] = useState<Array<{ code: string; name: string }>>([])
   const [categoryName, setCategoryName] = useState('Herramientas & Maquinaria')
   const [addingQuickCat, setAddingQuickCat] = useState(false)
   const [quickCatName, setQuickCatName] = useState('')
@@ -154,10 +156,13 @@ const InventoryDetailView: React.FC<Props> = ({ id }) => {
       setLoading(true)
 
       if (isCreate) {
-        const [allData, catsData] = await Promise.all([
+        const [allData, catsData, unitsData] = await Promise.all([
           getInventoryTemplates(),
-          getProductCategories()
+          getProductCategories(),
+          getUnitsOfMeasure()
         ])
+
+        setUomOptions(unitsData.map(u => ({ code: u.code, name: u.name })))
 
         const fiscal = getFiscalConfig()
 
@@ -227,12 +232,15 @@ const InventoryDetailView: React.FC<Props> = ({ id }) => {
         return
       }
 
-      const [allData, itemData, movData, catsData] = await Promise.all([
+      const [allData, itemData, movData, catsData, unitsData] = await Promise.all([
         getInventoryTemplates(),
         getInventoryTemplateById(id),
         getStockMovements(id),
-        getProductCategories()
+        getProductCategories(),
+        getUnitsOfMeasure()
       ])
+
+      setUomOptions(unitsData.map(u => ({ code: u.code, name: u.name })))
 
       const fiscal = getFiscalConfig()
 
@@ -1173,9 +1181,9 @@ const InventoryDetailView: React.FC<Props> = ({ id }) => {
                         value={uomCode}
                         onChange={e => setUomCode(e.target.value)}
                       >
-                        {DEFAULT_UOMS.map(u => (
+                        {uomOptions.map(u => (
                           <MenuItem key={u.code} value={u.code}>
-                            {u.label}
+                            {u.name}
                           </MenuItem>
                         ))}
                       </CustomTextField>
