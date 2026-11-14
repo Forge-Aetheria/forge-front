@@ -489,6 +489,14 @@ export const GET_WAREHOUSES_QUERY = `
       isActive
       createdAt
       updatedAt
+      locations {
+        id
+        code
+        name
+        completePath
+        warehouseId
+        isActive
+      }
     }
   }
 `
@@ -610,5 +618,18 @@ export const UPDATE_PRODUCT_CATEGORY_MUTATION = `
 export const DELETE_PRODUCT_CATEGORY_MUTATION = `
   mutation DeleteProductCategory($id: ID!) {
     deleteProductCategory(id: $id)
+  }
+`
+
+
+export const DELETE_WAREHOUSE_MUTATION = `
+  mutation DeleteWarehouse($id: ID!) {
+    deleteWarehouse(id: $id)
+  }
+`
+
+export const DELETE_STOCK_LOCATION_MUTATION = `
+  mutation DeleteStockLocation($id: ID!) {
+    deleteStockLocation(id: $id)
   }
 `

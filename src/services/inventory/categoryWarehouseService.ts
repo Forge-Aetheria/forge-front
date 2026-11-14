@@ -1,29 +1,108 @@
-import type {
-  ProductCategory,
-  Warehouse,
-  WarehouseLocation
-} from '@/types/inventoryTypes'
+import type { ProductCategory, Warehouse, WarehouseLocation } from '@/types/inventoryTypes'
 import { executeGraphQL } from '@/libs/graphqlClient'
 import {
-  GET_WAREHOUSES_QUERY,
+  CREATE_PRODUCT_CATEGORY_MUTATION,
+  CREATE_STOCK_LOCATION_MUTATION,
   CREATE_WAREHOUSE_MUTATION,
-  UPDATE_WAREHOUSE_MUTATION,
-  CREATE_STOCK_LOCATION_MUTATION
+  DELETE_PRODUCT_CATEGORY_MUTATION,
+  DELETE_STOCK_LOCATION_MUTATION,
+  DELETE_WAREHOUSE_MUTATION,
+  GET_CATEGORIES_QUERY,
+  GET_WAREHOUSES_QUERY,
+  UPDATE_PRODUCT_CATEGORY_MUTATION,
+  UPDATE_WAREHOUSE_MUTATION
 } from '@/graphql/inventory.gql'
-import {
-  loadStoredCategories,
-  saveStoredCategories,
-  loadStoredTemplates,
-  saveStoredTemplates,
-  loadStoredWarehouses,
-  saveStoredWarehouses
-} from './inventoryStorage'
 
-// ==========================================
-// CATEGORIES CRUD
-// ==========================================
+interface GqlAccountRef {
+  id: string
+  code: string
+  name: string
+}
+
+interface GqlCategory {
+  id: string
+  name: string
+  code?: string | null
+  completeName?: string
+  description?: string | null
+  isActive: boolean
+  revenueAccount?: GqlAccountRef | null
+  expenseAccount?: GqlAccountRef | null
+  inventoryAccount?: GqlAccountRef | null
+  landedCostAccount?: GqlAccountRef | null
+}
+
+interface GqlLocation {
+  id: string
+  code: string
+  name: string
+  completePath?: string | null
+  warehouseId: string
+  isActive: boolean
+}
+
+interface GqlWarehouse {
+  id: string
+  code: string
+  name: string
+  address?: string | null
+  manager?: string | null
+  isDefault: boolean
+  isActive: boolean
+  createdAt?: string
+  locations?: GqlLocation[]
+}
+
+const mapCategory = (category: GqlCategory): ProductCategory => ({
+  id: category.id,
+  name: category.name,
+  code: category.code || '',
+  description: category.description || '',
+  isActive: category.isActive,
+  cuentaIngresosId: category.revenueAccount?.id,
+  cuentaIngresosCodigo: category.revenueAccount?.code,
+  cuentaIngresosNombre: category.revenueAccount?.name,
+  cuentaGastosId: category.expenseAccount?.id,
+  cuentaGastosCodigo: category.expenseAccount?.code,
+  cuentaGastosNombre: category.expenseAccount?.name,
+  cuentaValoracionInventarioId: category.inventoryAccount?.id,
+  cuentaValoracionInventarioCodigo: category.inventoryAccount?.code,
+  cuentaValoracionInventarioNombre: category.inventoryAccount?.name,
+  cuentaCostosDestinoId: category.landedCostAccount?.id,
+  cuentaCostosDestinoCodigo: category.landedCostAccount?.code,
+  cuentaCostosDestinoNombre: category.landedCostAccount?.name
+})
+
+const mapLocation = (location: GqlLocation): WarehouseLocation => ({
+  id: location.id,
+  warehouseId: location.warehouseId,
+  code: location.code,
+  name: location.name,
+  type: 'INTERNAL',
+  notes: location.completePath || '',
+  isActive: location.isActive
+})
+
+const mapWarehouse = (warehouse: GqlWarehouse): Warehouse => ({
+  id: warehouse.id,
+  code: warehouse.code,
+  name: warehouse.name,
+  address: warehouse.address || '',
+  manager: warehouse.manager || '',
+  isDefault: warehouse.isDefault,
+  isActive: warehouse.isActive,
+  createdAt: warehouse.createdAt || new Date().toISOString(),
+  locations: (warehouse.locations || []).map(mapLocation)
+})
+
 export const getProductCategories = async (): Promise<ProductCategory[]> => {
-  return Promise.resolve(loadStoredCategories())
+  const response = await executeGraphQL<{ categories: GqlCategory[] }>(
+    GET_CATEGORIES_QUERY,
+    { take: 100 },
+    { timeoutMs: 5000 }
+  )
+
+  return response.categories.map(mapCategory)
 }
 
 export const createProductCategory = async (input: {
@@ -31,168 +110,66 @@ export const createProductCategory = async (input: {
   code?: string
   description?: string
   cuentaIngresosId?: string
-  cuentaIngresosCodigo?: string
-  cuentaIngresosNombre?: string
   cuentaGastosId?: string
-  cuentaGastosCodigo?: string
-  cuentaGastosNombre?: string
   cuentaValoracionInventarioId?: string
-  cuentaValoracionInventarioCodigo?: string
-  cuentaValoracionInventarioNombre?: string
   cuentaCostosDestinoId?: string
-  cuentaCostosDestinoCodigo?: string
-  cuentaCostosDestinoNombre?: string
 }): Promise<ProductCategory> => {
-  const categories = loadStoredCategories()
-  const trimmedName = input.name.trim()
+  const response = await executeGraphQL<{ createProductCategory: GqlCategory }>(
+    CREATE_PRODUCT_CATEGORY_MUTATION,
+    {
+      input: {
+        name: input.name.trim(),
+        code: input.code?.trim().toUpperCase() || undefined,
+        description: input.description?.trim() || undefined,
+        revenueAccountId: input.cuentaIngresosId || undefined,
+        expenseAccountId: input.cuentaGastosId || undefined,
+        inventoryAccountId: input.cuentaValoracionInventarioId || undefined,
+        landedCostAccountId: input.cuentaCostosDestinoId || undefined
+      }
+    },
+    { timeoutMs: 8000 }
+  )
 
-  if (!trimmedName) {
-    throw new Error('El nombre de la categoría es obligatorio.')
-  }
-
-  const duplicate = categories.some(c => c.name.toLowerCase() === trimmedName.toLowerCase())
-
-  if (duplicate) {
-    throw new Error(`La categoría "${trimmedName}" ya existe.`)
-  }
-
-  const autoCode =
-    (input.code || trimmedName.slice(0, 3))
-      .toUpperCase()
-      .replace(/[^A-Z0-9]/g, '') || 'CAT'
-
-  const newCat: ProductCategory = {
-    id: `cat-${Date.now()}`,
-    code: autoCode,
-    name: trimmedName,
-    description: input.description?.trim() || '',
-    isActive: true,
-    createdAt: new Date().toISOString(),
-    cuentaIngresosId: input.cuentaIngresosId,
-    cuentaIngresosCodigo: input.cuentaIngresosCodigo,
-    cuentaIngresosNombre: input.cuentaIngresosNombre,
-    cuentaGastosId: input.cuentaGastosId,
-    cuentaGastosCodigo: input.cuentaGastosCodigo,
-    cuentaGastosNombre: input.cuentaGastosNombre,
-    cuentaValoracionInventarioId: input.cuentaValoracionInventarioId,
-    cuentaValoracionInventarioCodigo: input.cuentaValoracionInventarioCodigo,
-    cuentaValoracionInventarioNombre: input.cuentaValoracionInventarioNombre,
-    cuentaCostosDestinoId: input.cuentaCostosDestinoId,
-    cuentaCostosDestinoCodigo: input.cuentaCostosDestinoCodigo,
-    cuentaCostosDestinoNombre: input.cuentaCostosDestinoNombre
-  }
-
-  const updated = [...categories, newCat]
-
-  saveStoredCategories(updated)
-
-  return Promise.resolve(newCat)
+  return mapCategory(response.createProductCategory)
 }
 
 export const updateProductCategory = async (
   id: string,
   changes: Partial<ProductCategory>
 ): Promise<ProductCategory> => {
-  const categories = loadStoredCategories()
-  const idx = categories.findIndex(c => c.id === id)
-
-  if (idx === -1) {
-    throw new Error('Categoría no encontrada.')
-  }
-
-  const oldName = categories[idx].name
-
-  const updatedCat: ProductCategory = {
-    ...categories[idx],
-    ...changes,
-    name: changes.name ? changes.name.trim() : categories[idx].name,
-    code: changes.code ? changes.code.trim().toUpperCase() : categories[idx].code
-  }
-
-  categories[idx] = updatedCat
-  saveStoredCategories(categories)
-
-  // Sync products that were using the old category name
-  if (changes.name && changes.name.trim() !== oldName) {
-    const templates = loadStoredTemplates()
-    let modified = false
-
-    const synced = templates.map(t => {
-      if (t.categoryName === oldName) {
-        modified = true
-
-        return { ...t, categoryName: updatedCat.name }
+  const response = await executeGraphQL<{ updateProductCategory: GqlCategory }>(
+    UPDATE_PRODUCT_CATEGORY_MUTATION,
+    {
+      id,
+      input: {
+        name: changes.name?.trim() || undefined,
+        code: changes.code?.trim().toUpperCase() || undefined,
+        description: changes.description?.trim() || undefined,
+        isActive: changes.isActive,
+        revenueAccountId: changes.cuentaIngresosId,
+        expenseAccountId: changes.cuentaGastosId,
+        inventoryAccountId: changes.cuentaValoracionInventarioId,
+        landedCostAccountId: changes.cuentaCostosDestinoId
       }
+    },
+    { timeoutMs: 8000 }
+  )
 
-      return t
-    })
-
-    if (modified) {
-      saveStoredTemplates(synced)
-    }
-  }
-
-  return Promise.resolve(updatedCat)
+  return mapCategory(response.updateProductCategory)
 }
 
 export const deleteProductCategory = async (id: string): Promise<void> => {
-  const categories = loadStoredCategories()
-  const filtered = categories.filter(c => c.id !== id)
-
-  saveStoredCategories(filtered)
-
-  return Promise.resolve()
+  await executeGraphQL(DELETE_PRODUCT_CATEGORY_MUTATION, { id }, { timeoutMs: 8000 })
 }
 
-// ==========================================
-// WAREHOUSES & LOCATIONS CRUD (Padre-Hijo con backend GraphQL BE-INV-03)
-// ==========================================
 export const getWarehouses = async (): Promise<Warehouse[]> => {
-  try {
-    const res = await executeGraphQL<{ warehouses: any[] }>(
-      GET_WAREHOUSES_QUERY,
-      { take: 50 },
-      { timeoutMs: 5000 }
-    )
+  const response = await executeGraphQL<{ warehouses: GqlWarehouse[] }>(
+    GET_WAREHOUSES_QUERY,
+    { take: 50 },
+    { timeoutMs: 5000 }
+  )
 
-    if (res?.warehouses && Array.isArray(res.warehouses) && res.warehouses.length > 0) {
-      const stored = loadStoredWarehouses()
-
-      const backendMapped: Warehouse[] = res.warehouses.map(w => {
-        const localMatched = stored.find(s => s.id === w.id || s.code === w.code)
-
-        return {
-          id: w.id,
-          code: w.code,
-          name: w.name,
-          address: w.address || '',
-          manager: w.manager || 'Administrador ERP',
-          isDefault: Boolean(w.isDefault),
-          isActive: w.isActive !== false,
-          createdAt: w.createdAt || new Date().toISOString(),
-          locations: localMatched?.locations || [
-            {
-              id: `loc-${w.id}-1`,
-              warehouseId: w.id,
-              code: `${w.code}-GEN`,
-              name: 'Ubicación General',
-              type: 'INTERNAL',
-              notes: 'Ubicación principal de almacén',
-              isActive: true
-            }
-          ]
-        }
-      })
-
-      saveStoredWarehouses(backendMapped)
-
-      return backendMapped
-    }
-  } catch (err) {
-    console.warn('[categoryWarehouseService] Fallback local para getWarehouses:', err)
-  }
-
-  return Promise.resolve(loadStoredWarehouses())
+  return response.warehouses.map(mapWarehouse)
 }
 
 export const createWarehouse = async (input: {
@@ -202,223 +179,71 @@ export const createWarehouse = async (input: {
   manager?: string
   isDefault?: boolean
 }): Promise<Warehouse> => {
-  const warehouses = loadStoredWarehouses()
-  const cleanCode = input.code.trim().toUpperCase()
-  const cleanName = input.name.trim()
-
-  if (!cleanCode || !cleanName) {
-    throw new Error('El código y el nombre del almacén son obligatorios.')
-  }
-
-  if (warehouses.some(w => w.code.toLowerCase() === cleanCode.toLowerCase())) {
-    throw new Error(`El código de almacén "${cleanCode}" ya está en uso.`)
-  }
-
-  let backendId: string | undefined
-
-  try {
-    const res = await executeGraphQL<{ createWarehouse: { id: string } }>(
-      CREATE_WAREHOUSE_MUTATION,
-      {
-        input: {
-          code: cleanCode,
-          name: cleanName,
-          address: input.address?.trim() || undefined,
-          manager: input.manager?.trim() || undefined,
-          isDefault: Boolean(input.isDefault)
-        }
-      },
-      { timeoutMs: 8000 }
-    )
-
-    if (res?.createWarehouse?.id) {
-      backendId = res.createWarehouse.id
-    }
-  } catch (err: unknown) {
-    console.warn('[categoryWarehouseService] Fallback local para createWarehouse:', err)
-  }
-
-  const isDefault = Boolean(input.isDefault) || warehouses.length === 0
-
-  const updatedList = isDefault
-    ? warehouses.map(w => ({ ...w, isDefault: false }))
-    : [...warehouses]
-
-  const newWhId = backendId || `wh-${Date.now()}`
-
-  const newWarehouse: Warehouse = {
-    id: newWhId,
-    code: cleanCode,
-    name: cleanName,
-    address: input.address?.trim() || '',
-    manager: input.manager?.trim() || 'Administrador ERP',
-    isDefault,
-    isActive: true,
-    createdAt: new Date().toISOString(),
-    locations: [
-      {
-        id: `loc-${Date.now()}-1`,
-        warehouseId: newWhId,
-        code: `${cleanCode}-GEN-01`,
-        name: 'Ubicación Principal / Recepción General',
-        type: 'INTERNAL',
-        notes: 'Ubicación creada automáticamente con el almacén',
-        isActive: true
+  const response = await executeGraphQL<{ createWarehouse: GqlWarehouse }>(
+    CREATE_WAREHOUSE_MUTATION,
+    {
+      input: {
+        code: input.code.trim().toUpperCase(),
+        name: input.name.trim(),
+        address: input.address?.trim() || undefined,
+        manager: input.manager?.trim() || undefined,
+        isDefault: Boolean(input.isDefault)
       }
-    ]
-  }
+    },
+    { timeoutMs: 8000 }
+  )
 
-  updatedList.push(newWarehouse)
-  saveStoredWarehouses(updatedList)
-
-  return Promise.resolve(newWarehouse)
+  return mapWarehouse(response.createWarehouse)
 }
 
 export const updateWarehouse = async (
   id: string,
   changes: Partial<Omit<Warehouse, 'id' | 'locations'>>
 ): Promise<Warehouse> => {
-  const isUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(id)
+  const response = await executeGraphQL<{ updateWarehouse: GqlWarehouse }>(
+    UPDATE_WAREHOUSE_MUTATION,
+    {
+      id,
+      input: {
+        code: changes.code?.trim().toUpperCase(),
+        name: changes.name?.trim(),
+        address: changes.address?.trim(),
+        manager: changes.manager?.trim(),
+        isDefault: changes.isDefault,
+        isActive: changes.isActive
+      }
+    },
+    { timeoutMs: 8000 }
+  )
 
-  if (isUuid) {
-    try {
-      await executeGraphQL(
-        UPDATE_WAREHOUSE_MUTATION,
-        {
-          id,
-          input: {
-            code: changes.code?.trim().toUpperCase(),
-            name: changes.name?.trim(),
-            address: changes.address?.trim(),
-            manager: changes.manager?.trim(),
-            isDefault: changes.isDefault,
-            isActive: changes.isActive
-          }
-        },
-        { timeoutMs: 8000 }
-      )
-    } catch (err) {
-      console.warn('[categoryWarehouseService] Error al actualizar warehouse en backend:', err)
-    }
-  }
-
-  let warehouses = loadStoredWarehouses()
-  const idx = warehouses.findIndex(w => w.id === id)
-
-  if (idx === -1) {
-    throw new Error('Almacén no encontrado.')
-  }
-
-  if (changes.isDefault) {
-    warehouses = warehouses.map(w => ({ ...w, isDefault: w.id === id }))
-  }
-
-  const updated: Warehouse = {
-    ...warehouses[idx],
-    ...changes,
-    code: changes.code ? changes.code.trim().toUpperCase() : warehouses[idx].code,
-    name: changes.name ? changes.name.trim() : warehouses[idx].name
-  }
-
-  warehouses[idx] = updated
-  saveStoredWarehouses(warehouses)
-
-  return Promise.resolve(updated)
+  return mapWarehouse(response.updateWarehouse)
 }
 
 export const deleteWarehouse = async (id: string): Promise<void> => {
-  const warehouses = loadStoredWarehouses()
-  const filtered = warehouses.filter(w => w.id !== id)
-
-  saveStoredWarehouses(filtered)
-
-  return Promise.resolve()
+  await executeGraphQL(DELETE_WAREHOUSE_MUTATION, { id }, { timeoutMs: 8000 })
 }
 
 export const addWarehouseLocation = async (
   warehouseId: string,
-  input: {
-    code: string
-    name: string
-    type?: 'INTERNAL' | 'TRANSIT' | 'SCRAP'
-    notes?: string
-  }
+  input: { code: string; name: string; type?: 'INTERNAL' | 'TRANSIT' | 'SCRAP'; notes?: string }
 ): Promise<WarehouseLocation> => {
-  const isWhUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(warehouseId)
-  let backendLocId: string | undefined
-
-  if (isWhUuid) {
-    try {
-      const res = await executeGraphQL<{ createStockLocation: { id: string } }>(
-        CREATE_STOCK_LOCATION_MUTATION,
-        {
-          input: {
-            warehouseId,
-            name: input.name.trim(),
-            code: input.code.trim().toUpperCase(),
-            locationType: input.type === 'TRANSIT' ? 'TRANSIT' : input.type === 'SCRAP' ? 'INVENTORY_LOSS' : 'INTERNAL',
-            notes: input.notes?.trim() || undefined
-          }
-        },
-        { timeoutMs: 8000 }
-      )
-
-      if (res?.createStockLocation?.id) {
-        backendLocId = res.createStockLocation.id
+  const response = await executeGraphQL<{ createStockLocation: GqlLocation }>(
+    CREATE_STOCK_LOCATION_MUTATION,
+    {
+      input: {
+        warehouseId,
+        name: input.name.trim(),
+        code: input.code.trim().toUpperCase(),
+        locationType: input.type === 'TRANSIT' ? 'TRANSIT' : input.type === 'SCRAP' ? 'INVENTORY_LOSS' : 'INTERNAL',
+        notes: input.notes?.trim() || undefined
       }
-    } catch (err) {
-      console.warn('[categoryWarehouseService] Error al crear ubicación en backend:', err)
-    }
-  }
+    },
+    { timeoutMs: 8000 }
+  )
 
-  const warehouses = loadStoredWarehouses()
-  const idx = warehouses.findIndex(w => w.id === warehouseId)
-
-  if (idx === -1) {
-    throw new Error('Almacén no encontrado.')
-  }
-
-  const cleanCode = input.code.trim().toUpperCase()
-  const cleanName = input.name.trim()
-
-  if (!cleanCode || !cleanName) {
-    throw new Error('El código y el nombre de la ubicación son obligatorios.')
-  }
-
-  const wh = warehouses[idx]
-
-  if (wh.locations.some(l => l.code.toLowerCase() === cleanCode.toLowerCase())) {
-    throw new Error(`La ubicación "${cleanCode}" ya existe dentro de ${wh.name}.`)
-  }
-
-  const newLoc: WarehouseLocation = {
-    id: backendLocId || `loc-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`,
-    warehouseId,
-    code: cleanCode,
-    name: cleanName,
-    type: input.type || 'INTERNAL',
-    notes: input.notes?.trim() || '',
-    isActive: true
-  }
-
-  wh.locations = [...wh.locations, newLoc]
-  warehouses[idx] = wh
-  saveStoredWarehouses(warehouses)
-
-  return Promise.resolve(newLoc)
+  return mapLocation(response.createStockLocation)
 }
 
-export const deleteWarehouseLocation = async (
-  warehouseId: string,
-  locationId: string
-): Promise<void> => {
-  const warehouses = loadStoredWarehouses()
-  const idx = warehouses.findIndex(w => w.id === warehouseId)
-
-  if (idx === -1) return Promise.resolve()
-
-  warehouses[idx].locations = warehouses[idx].locations.filter(l => l.id !== locationId)
-  saveStoredWarehouses(warehouses)
-
-  return Promise.resolve()
+export const deleteWarehouseLocation = async (_warehouseId: string, locationId: string): Promise<void> => {
+  await executeGraphQL(DELETE_STOCK_LOCATION_MUTATION, { id: locationId }, { timeoutMs: 8000 })
 }
