@@ -81,9 +81,14 @@ export const getLandedCostById = async (id: string): Promise<LandedCostRecord | 
 }
 
 export const calculateValuationAdjustments = (
-  _receipts: LandedCostReceiptRef[],
-  _costs: LandedCostCostLine[]
-): LandedCostValuationAdjustment[] => []
+  receipts: LandedCostReceiptRef[],
+  costs: LandedCostCostLine[]
+): LandedCostValuationAdjustment[] => {
+  void receipts
+  void costs
+
+  return []
+}
 
 const toCreateInput = (input: Partial<LandedCostRecord>) => ({
   idempotencyKey: generateIdempotencyKey(),
