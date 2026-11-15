@@ -84,6 +84,8 @@ return { success: true };
       
 return { success: true };
     } catch (err: any) {
+      await fetchTerceros();
+
       return { success: false, message: err?.message || 'No se pudieron eliminar los contactos' };
     } finally {
       setIsSubmitting(false);

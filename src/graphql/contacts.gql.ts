@@ -98,6 +98,15 @@ export const CREATE_PARTNER_MUTATION = `
   }
 `
 
+export const REMOVE_PARTNER_MUTATION = `
+  mutation RemovePartner($id: ID!) {
+    removePartner(id: $id) {
+      id
+      deletedAt
+    }
+  }
+`
+
 export const UPDATE_PARTNER_MUTATION = `
   mutation UpdatePartner($id: ID!, $input: UpdatePartnerInput!) {
     updatePartner(id: $id, input: $input) {
