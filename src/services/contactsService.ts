@@ -1,12 +1,14 @@
 import type { TerceroEntity, TerceroFormData, ContactsFilterState, ContactPerson } from '@/types/contactsTypes';
-import { initialMockTerceros } from '@/data/contacts/mockContactsData';
 import { executeGraphQL } from '@/libs/graphqlClient';
 import {
   GET_PARTNERS_QUERY,
   GET_PARTNER_QUERY,
   CREATE_PARTNER_MUTATION,
-  UPDATE_PARTNER_MUTATION
+  UPDATE_PARTNER_MUTATION,
+  REMOVE_PARTNER_MUTATION
 } from '@/graphql/contacts.gql';
+
+const PARTNER_UUID_PATTERN = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
 
 export interface BackendPartner {
   id: string;
@@ -119,42 +121,31 @@ export function mapBackendPartnerToTercero(partner: BackendPartner): TerceroEnti
 }
 
 class ContactsService {
-  private terceros: TerceroEntity[] = [...initialMockTerceros];
+  private terceros: TerceroEntity[] = [];
   private lastFetchTimestamp = 0;
 
   public async getTerceros(filters?: Partial<ContactsFilterState>, forceRefresh = false): Promise<TerceroEntity[]> {
     const now = Date.now();
 
-
     // Cache de 15 segundos para evitar saturación de queries
     if (forceRefresh || now - this.lastFetchTimestamp > 15000) {
-      try {
-        const res = await executeGraphQL<{ partners: BackendPartner[] }>(
-          GET_PARTNERS_QUERY,
-          {
-            where: {
-              deletedAt: { equals: null }
-            },
-            take: 100
+      const res = await executeGraphQL<{ partners: BackendPartner[] }>(
+        GET_PARTNERS_QUERY,
+        {
+          where: {
+            deletedAt: { equals: null }
           },
-          { timeoutMs: 5000 }
-        );
+          take: 100
+        },
+        { timeoutMs: 5000 }
+      );
 
-        if (res?.partners && Array.isArray(res.partners)) {
-          const mappedPartners = res.partners.map(mapBackendPartnerToTercero);
-
-          if (mappedPartners.length > 0) {
-            const backendIds = new Set(mappedPartners.map(p => p.id));
-            const localOnly = this.terceros.filter(t => !backendIds.has(t.id) && t.id.startsWith('ter-'));
-
-            this.terceros = [...mappedPartners, ...localOnly];
-          }
-
-          this.lastFetchTimestamp = now;
-        }
-      } catch (err) {
-        console.warn('[contactsService] Backend partners no disponible, usando caché local:', err);
+      if (!res?.partners || !Array.isArray(res.partners)) {
+        throw new Error('El backend no devolvió un listado de terceros válido.');
       }
+
+      this.terceros = res.partners.map(mapBackendPartnerToTercero);
+      this.lastFetchTimestamp = now;
     }
 
     let result = this.terceros.filter(t => t.status === 'ACTIVO');
@@ -227,30 +218,25 @@ class ContactsService {
 
   public async getTerceroById(id: string): Promise<TerceroEntity | null> {
     const realId = id.split('__ref__')[0];
-    const cached = this.terceros.find(t => t.id === realId && t.status === 'ACTIVO');
 
-    if (cached) return cached;
+    const res = await executeGraphQL<{ partner: BackendPartner | null }>(
+      GET_PARTNER_QUERY,
+      { id: realId },
+      { timeoutMs: 4000 }
+    );
 
-    // Intentar buscar en backend por UUID
-    try {
-      const res = await executeGraphQL<{ partner: BackendPartner }>(
-        GET_PARTNER_QUERY,
-        { id: realId },
-        { timeoutMs: 4000 }
-      );
+    if (!res?.partner) return null;
 
-      if (res?.partner) {
-        const mapped = mapBackendPartnerToTercero(res.partner);
+    const mapped = mapBackendPartnerToTercero(res.partner);
+    const index = this.terceros.findIndex(t => t.id === realId);
 
-        this.terceros.unshift(mapped);
-        
-return mapped;
-      }
-    } catch {
-      // Ignorar error y retornar null
+    if (index !== -1) {
+      this.terceros[index] = mapped;
+    } else {
+      this.terceros.unshift(mapped);
     }
 
-    return null;
+    return mapped;
   }
 
   public async createTercero(data: TerceroFormData): Promise<TerceroEntity> {
@@ -303,82 +289,99 @@ return mapped;
       { timeoutMs: 10000 }
     );
 
-    if (res?.createPartner) {
-      const mapped = mapBackendPartnerToTercero(res.createPartner);
-
-      this.terceros.unshift(mapped);
-      
-return mapped;
+    if (!res?.createPartner) {
+      throw new Error('El backend no devolvió los datos del tercero creado.');
     }
 
-    throw new Error('El backend no devolvió los datos del tercero creado.');
+    const mapped = mapBackendPartnerToTercero(res.createPartner);
+
+    this.terceros.unshift(mapped);
+    this.lastFetchTimestamp = 0;
+
+    return mapped;
   }
 
   public async updateTercero(id: string, data: Partial<TerceroFormData>): Promise<TerceroEntity> {
     const realId = id.split('__ref__')[0];
-    const isUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(realId);
 
-    if (isUuid) {
-      const input: Record<string, unknown> = {};
-
-      if (data.nombre_razon_social) input.legalName = data.nombre_razon_social.trim();
-      if (data.direccion) input.fiscalAddress = data.direccion.trim();
-      if (data.telefono_principal) input.phone = data.telefono_principal.trim();
-      if (data.email_principal) input.email = data.email_principal.trim();
-
-      const res = await executeGraphQL<{ updatePartner: BackendPartner }>(
-        UPDATE_PARTNER_MUTATION,
-        { id: realId, input },
-        { timeoutMs: 10000 }
-      );
-
-      if (res?.updatePartner) {
-        const mapped = mapBackendPartnerToTercero(res.updatePartner);
-        const index = this.terceros.findIndex(t => t.id === realId);
-
-        if (index !== -1) {
-          this.terceros[index] = mapped;
-        } else {
-          this.terceros.unshift(mapped);
-        }
-
-        
-return mapped;
-      }
+    if (!PARTNER_UUID_PATTERN.test(realId)) {
+      throw new Error('El tercero no existe en el backend. Recargue el directorio e intente nuevamente.');
     }
 
-    // Si es un ID local
+    const input: Record<string, unknown> = {};
+
+    if (data.nombre_razon_social) input.legalName = data.nombre_razon_social.trim();
+    if (data.direccion) input.fiscalAddress = data.direccion.trim();
+    if (data.telefono_principal) input.phone = data.telefono_principal.trim();
+    if (data.email_principal) input.email = data.email_principal.trim();
+
+    const res = await executeGraphQL<{ updatePartner: BackendPartner }>(
+      UPDATE_PARTNER_MUTATION,
+      { id: realId, input },
+      { timeoutMs: 10000 }
+    );
+
+    if (!res?.updatePartner) {
+      throw new Error('El backend no devolvió los datos del tercero actualizado.');
+    }
+
+    const mapped = mapBackendPartnerToTercero(res.updatePartner);
     const index = this.terceros.findIndex(t => t.id === realId);
 
-    if (index === -1) throw new Error('Entidad no encontrada');
-    this.terceros[index] = {
-      ...this.terceros[index],
-      ...data,
-      updated_at: new Date().toISOString()
-    };
-    
-return this.terceros[index];
+    if (index !== -1) {
+      this.terceros[index] = mapped;
+    } else {
+      this.terceros.unshift(mapped);
+    }
+
+    this.lastFetchTimestamp = 0;
+
+    return mapped;
   }
 
   public async deactivateTercero(id: string): Promise<void> {
     const realId = id.split('__ref__')[0];
-    const index = this.terceros.findIndex(t => t.id === realId);
 
-    if (index !== -1) {
-      this.terceros[index].status = 'INACTIVO';
-      this.terceros[index].updated_at = new Date().toISOString();
-    }
+    await executeGraphQL(
+      REMOVE_PARTNER_MUTATION,
+      { id: realId },
+      { timeoutMs: 10000 }
+    );
+
+    this.terceros = this.terceros.filter(t => t.id !== realId);
+    this.lastFetchTimestamp = 0;
   }
 
   public async deactivateMultipleTerceros(ids: string[]): Promise<void> {
-    const idSet = new Set(ids.map(id => id.split('__ref__')[0]));
+    const uniqueIds = [...new Set(ids.map(id => id.split('__ref__')[0]))];
 
-    this.terceros.forEach(t => {
-      if (idSet.has(t.id)) {
-        t.status = 'INACTIVO';
-        t.updated_at = new Date().toISOString();
+    if (uniqueIds.length === 0) return;
+
+    const results = await Promise.allSettled(
+      uniqueIds.map(id =>
+        executeGraphQL(REMOVE_PARTNER_MUTATION, { id }, { timeoutMs: 10000 })
+      )
+    );
+
+    const removedIds = new Set<string>();
+    let failed = 0;
+
+    results.forEach((result, index) => {
+      if (result.status === 'fulfilled') {
+        removedIds.add(uniqueIds[index]);
+      } else {
+        failed += 1;
       }
     });
+
+    if (removedIds.size > 0) {
+      this.terceros = this.terceros.filter(t => !removedIds.has(t.id));
+      this.lastFetchTimestamp = 0;
+    }
+
+    if (failed > 0) {
+      throw new Error(`No se pudieron eliminar ${failed} contacto(s). Refresque la lista e intente nuevamente.`);
+    }
   }
 }
 
