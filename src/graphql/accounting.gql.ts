@@ -629,6 +629,18 @@ export const GET_GENERAL_LEDGER_QUERY = `
   }
 `
 
+export const UPSERT_EXCHANGE_RATE_MUTATION = `
+  mutation UpsertExchangeRate($input: ExchangeRateInput!) {
+    upsertExchangeRate(input: $input) {
+      id
+      rate
+      source
+      effectiveDate
+      updatedAt
+    }
+  }
+`
+
 export const GET_ACCOUNTING_DASHBOARD_QUERY = `
   query GetAccountingDashboard($asOf: DateTime) {
     accountingDashboard(asOf: $asOf) {

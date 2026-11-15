@@ -17,6 +17,7 @@ import Navbar from '@components/layout/vertical/Navbar'
 import VerticalFooter from '@components/layout/vertical/Footer'
 import HorizontalFooter from '@components/layout/horizontal/Footer'
 import ScrollToTop from '@core/components/scroll-to-top'
+import BcvRateAlert from '@components/layout/shared/BcvRateAlert'
 import { AuthGuard } from '@/components/auth/AuthGuard'
 import { OnboardingGuard } from '@/components/auth/OnboardingGuard'
 
@@ -33,6 +34,13 @@ const Layout = async (props: ChildrenType) => {
   const mode = await getMode()
   const systemMode = await getSystemMode()
 
+  const content = (
+    <>
+      <BcvRateAlert />
+      {children}
+    </>
+  )
+
   return (
     <Providers direction={direction}>
       <AuthGuard>
@@ -41,12 +49,12 @@ const Layout = async (props: ChildrenType) => {
             systemMode={systemMode}
             verticalLayout={
               <VerticalLayout navigation={<Navigation mode={mode} />} navbar={<Navbar />} footer={<VerticalFooter />}>
-                {children}
+                {content}
               </VerticalLayout>
             }
             horizontalLayout={
               <HorizontalLayout header={<Header />} footer={<HorizontalFooter />}>
-                {children}
+                {content}
               </HorizontalLayout>
             }
           />

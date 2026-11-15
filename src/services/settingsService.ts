@@ -1,5 +1,6 @@
+import { UPSERT_EXCHANGE_RATE_MUTATION } from '@/graphql/accounting.gql'
 import { executeGraphQL } from '@/libs/graphqlClient'
-import { fetchActiveBcvRate } from '@/services/bcvService'
+import { fetchActiveBcvRate, invalidateActiveBcvRateCache } from '@/services/bcvService'
 import {
   CHANGE_MY_PASSWORD_MUTATION,
   ME_QUERY,
@@ -25,6 +26,7 @@ import {
 } from '@/services/adapters/iamAdapter'
 import type { AuthenticatedUser, ChangeMyPasswordResult } from '@/types/authTypes'
 import type {
+  BcvRateAuditEntry,
   BcvRateConfig,
   ChangePasswordInput,
   CommercialPoliciesSettings,
@@ -109,6 +111,33 @@ const setTenantSetting = async (key: string, value: unknown): Promise<void> => {
     { input: { key, value: JSON.stringify(value) } },
     { timeoutMs: 5000 }
   )
+}
+
+const createAuditEntryId = (): string => {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID()
+  }
+
+  return `bcv-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
+}
+
+const normalizeBcvHistory = (entries: BcvRateAuditEntry[]): BcvRateAuditEntry[] => {
+  const seen = new Set<string>()
+
+  return entries.map((entry, index) => {
+    const baseId = entry.id || `bcv-history-${index}`
+    let id = baseId
+    let suffix = index
+
+    while (seen.has(id)) {
+      suffix += 1
+      id = `${baseId}-${suffix}`
+    }
+
+    seen.add(id)
+
+    return id === entry.id ? entry : { ...entry, id }
+  })
 }
 
 const parseSetting = <T>(value: string, fallback: T): T => {
@@ -219,7 +248,7 @@ export const settingsService = {
       ultimaSincronizacion: rate.ok ? rate.data.capturedAt : '',
       modoActualizacion: config.modoActualizacion || 'AUTOMATICO_7AM',
       fuenteOficial: rate.ok ? rate.data.source : 'BCV',
-      historial: config.historial || []
+      historial: normalizeBcvHistory(config.historial || [])
     }
   },
 
@@ -235,13 +264,54 @@ export const settingsService = {
   async updateBcvRate(
     rate: number,
     mode: 'AUTOMATICO_7AM' | 'MANUAL' = 'MANUAL',
-    _reason?: string,
-    _responsible?: string
+    reason?: string,
+    responsible?: string
   ): Promise<BcvRateConfig> {
-    void _reason
-    void _responsible
+    if (!Number.isFinite(rate) || rate <= 0) {
+      throw new Error('La tasa debe ser mayor a cero.')
+    }
 
-    return this.updateBcvSettings({ tasaActiva: rate, modoActualizacion: mode })
+    const saved = await executeGraphQL<{
+      upsertExchangeRate: {
+        id: string
+        rate: string
+        source: string
+        effectiveDate: string
+        updatedAt: string
+      }
+    }>(
+      UPSERT_EXCHANGE_RATE_MUTATION,
+      {
+        input: {
+          effectiveDate: new Date().toISOString(),
+          rate: rate.toFixed(4),
+          source: 'BCV'
+        }
+      },
+      { timeoutMs: 5000 }
+    )
+
+    const savedRate = Number(saved.upsertExchangeRate.rate)
+
+    invalidateActiveBcvRateCache()
+
+    const current = await this.getBcvSettings()
+
+    const entry: BcvRateAuditEntry = {
+      id: createAuditEntryId(),
+      fechaHora: new Date().toLocaleString('es-VE'),
+      tasaVes: savedRate,
+      origen: mode,
+      responsableNombre: responsible || 'Administrador',
+      motivo: reason
+    }
+
+    return this.updateBcvSettings({
+      tasaActiva: savedRate,
+      ultimaSincronizacion: saved.upsertExchangeRate.updatedAt,
+      modoActualizacion: mode,
+      historial: [entry, ...(current.historial || [])].slice(0, 50)
+    })
   },
 
   async toggleBcvAutoMode(

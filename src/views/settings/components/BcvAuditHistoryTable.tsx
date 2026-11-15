@@ -33,11 +33,11 @@ export const BcvAuditHistoryTable: React.FC<Props> = ({ entries }) => {
           </tr>
         </thead>
         <tbody className='divide-y divide-[#E6E4F0] bg-[#FFFFFF]'>
-          {entries.map(entry => {
+          {entries.map((entry, index) => {
             const isAuto = entry.origen === 'AUTOMATICO_7AM'
 
             return (
-              <tr key={entry.id} className='hover:bg-[#FAFAFD] transition-colors'>
+              <tr key={`${entry.id}-${index}`} className='hover:bg-[#FAFAFD] transition-colors'>
                 <td className='py-3 px-4 font-mono font-medium text-[#1E1B2E]'>
                   {entry.fechaHora}
                 </td>
