@@ -80,19 +80,25 @@ class PurchasesService {
   public async getActiveBcvRate(): Promise<BcvRate> {
     const result = await fetchActiveBcvRate()
 
-    if (!result.ok) {
-      throw new Error(result.error.message)
+    if (result.ok) {
+      this.bcvRate = {
+        id: result.data.rateId,
+        tasa: result.data.rate,
+        fecha_valor: result.data.valueDate,
+        fuente: 'BCV_OFICIAL',
+        sincronizado_at: result.data.capturedAt
+      }
+
+      return { ...this.bcvRate }
     }
 
-    this.bcvRate = {
-      id: result.data.rateId,
-      tasa: result.data.rate,
-      fecha_valor: result.data.valueDate,
+    return {
+      id: '',
+      tasa: 0,
+      fecha_valor: '',
       fuente: 'BCV_OFICIAL',
-      sincronizado_at: result.data.capturedAt
+      sincronizado_at: ''
     }
-
-    return { ...this.bcvRate }
   }
 
   public async updateActiveBcvRate(_nuevaTasa: number): Promise<BcvRate> {

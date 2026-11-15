@@ -13,13 +13,13 @@ import type {
 import { createWarehouseOperationOrder } from '@/services/inventory/operationOrdersService';
 import { contactsService } from '@/services/contactsService';
 import { executeGraphQL } from '@/libs/graphqlClient';
+import { fetchActiveBcvRate } from '@/services/bcvService';
 import {
   GET_SALES_QUOTES_QUERY,
   GET_SALES_QUOTE_QUERY,
   CREATE_SALES_QUOTE_MUTATION,
   APPROVE_SALES_QUOTE_MUTATION,
   CANCEL_SALES_QUOTE_MUTATION,
-  GET_ACTIVE_BCV_RATE_QUERY,
   GET_VARIANTS_QUERY
 } from '@/graphql/sales.gql';
 import { CREATE_STOCK_MOVE_MUTATION } from '@/graphql/inventory.gql';
@@ -135,30 +135,29 @@ class SalesQuotesService {
     this.featureFlags = { ...this.featureFlags, ...flags };
   }
 
-  // Tasa BCV Oficial
+  // Tasa BCV Oficial (con respaldo en la tasa configurada)
   public async getActiveBcvRate(): Promise<BcvRate> {
-    try {
-      const res = await executeGraphQL<{
-        activeBcvRate: { rate: string; rateId: string; source: string; valueDate: string; capturedAt: string };
-      }>(GET_ACTIVE_BCV_RATE_QUERY, undefined, { timeoutMs: 3000 });
+    const result = await fetchActiveBcvRate();
 
-      if (!res?.activeBcvRate) {
-        throw new Error('No hay una tasa BCV activa configurada.');
-      }
-
+    if (result.ok) {
       this.bcvRate = {
-        id: res.activeBcvRate.rateId,
-        tasa: Number(res.activeBcvRate.rate),
-        fecha_valor: res.activeBcvRate.valueDate,
+        id: result.data.rateId,
+        tasa: result.data.rate,
+        fecha_valor: result.data.valueDate,
         fuente: 'BCV_OFICIAL',
-        sincronizado_at: res.activeBcvRate.capturedAt
+        sincronizado_at: result.data.capturedAt
       };
-    } catch (err) {
-      console.error('[salesQuotesService] No se pudo obtener la tasa BCV:', err);
-      throw err;
+
+      return { ...this.bcvRate };
     }
 
-    return { ...this.bcvRate };
+    return {
+      id: '',
+      tasa: 0,
+      fecha_valor: '',
+      fuente: 'BCV_OFICIAL',
+      sincronizado_at: ''
+    };
   }
 
   public async updateBcvRate(_nuevaTasa: number): Promise<BcvRate> {
