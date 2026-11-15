@@ -36,7 +36,7 @@ export interface GqlStockLocation {
   id: string
   name: string
   completePath: string
-  usage?: string
+  locationType?: string
   warehouseId?: string | null
   isFrozen?: boolean | null
 }
@@ -131,16 +131,4 @@ export interface GqlStockMove {
     completePath: string
   }
   valuations: GqlStockValuationLayer[]
-}
-
-export interface GqlPageInfo {
-  totalCount: number
-  page: number
-  perPage: number
-  hasNextPage: boolean
-}
-
-export interface GqlKardexPage {
-  nodes: GqlStockMove[]
-  pageInfo: GqlPageInfo
 }

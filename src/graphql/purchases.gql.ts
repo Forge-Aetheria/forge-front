@@ -5,7 +5,7 @@ export const GET_PURCHASE_QUOTES_QUERY = `
     purchaseQuotes(where: $where, orderBy: $orderBy, take: $take, skip: $skip) {
       id
       code
-      state
+      status
       supplierId
       supplierReference
       paymentCondition
@@ -17,41 +17,23 @@ export const GET_PURCHASE_QUOTES_QUERY = `
       appliesVat
       appliesIgtf
       notes
-      subtotalAmount
-      vatAmount
+      subtotal
+      vatCredit
       igtfAmount
-      totalAmount
-      supplier {
-        id
-        legalName
-        tradeName
-        docType
-        docNumber
-        checkDigit
-        email
-        phone
-      }
+      totalUsd
       lines {
         id
-        variantId
+        productId
         name
+        sku
         uom
         quantity
         unitCost
         discountPercent
-        netAmount
+        netSubtotal
         vatRate
         vatAmount
-        totalAmount
-        variant {
-          id
-          sku
-          template {
-            id
-            name
-            uomCode
-          }
-        }
+        lineTotal
       }
       createdAt
       updatedAt
@@ -64,7 +46,7 @@ export const GET_PURCHASE_QUOTE_QUERY = `
     purchaseQuote(id: $id) {
       id
       code
-      state
+      status
       supplierId
       supplierReference
       paymentCondition
@@ -76,10 +58,10 @@ export const GET_PURCHASE_QUOTE_QUERY = `
       appliesVat
       appliesIgtf
       notes
-      subtotalAmount
-      vatAmount
+      subtotal
+      vatCredit
       igtfAmount
-      totalAmount
+      totalUsd
       rate {
         rateId
         rate
@@ -87,38 +69,19 @@ export const GET_PURCHASE_QUOTE_QUERY = `
         source
         capturedAt
       }
-      supplier {
-        id
-        legalName
-        tradeName
-        docType
-        docNumber
-        checkDigit
-        email
-        phone
-        fiscalAddress
-      }
       lines {
         id
-        variantId
+        productId
         name
+        sku
         uom
         quantity
         unitCost
         discountPercent
-        netAmount
+        netSubtotal
         vatRate
         vatAmount
-        totalAmount
-        variant {
-          id
-          sku
-          template {
-            id
-            name
-            uomCode
-          }
-        }
+        lineTotal
       }
       createdAt
       updatedAt
@@ -131,10 +94,10 @@ export const CREATE_PURCHASE_QUOTE_MUTATION = `
     createPurchaseQuote(input: $input) {
       id
       code
-      state
+      status
       supplierId
       baseCurrency
-      totalAmount
+      totalUsd
       createdAt
     }
   }
@@ -145,7 +108,7 @@ export const REGISTER_PURCHASE_QUOTE_MUTATION = `
     registerPurchaseQuote(input: $input) {
       id
       code
-      state
+      status
       updatedAt
     }
   }
@@ -156,9 +119,9 @@ export const APPROVE_PURCHASE_QUOTE_MUTATION = `
     approvePurchaseQuote(input: $input) {
       id
       code
-      state
+      status
       exchangeRate
-      totalAmount
+      totalUsd
       updatedAt
     }
   }
@@ -169,9 +132,9 @@ export const CONVERT_PURCHASE_QUOTE_TO_ORDER_MUTATION = `
     convertQuoteToPurchaseOrder(input: $input) {
       id
       code
-      state
+      status
       quoteId
-      totalAmount
+      totalUsd
       createdAt
     }
   }
@@ -182,7 +145,7 @@ export const CANCEL_PURCHASE_QUOTE_MUTATION = `
     cancelPurchaseQuote(input: $input) {
       id
       code
-      state
+      status
       updatedAt
     }
   }
@@ -194,7 +157,7 @@ export const RECALCULATE_PURCHASE_QUOTE_BCV_MUTATION = `
       id
       code
       exchangeRate
-      totalAmount
+      totalUsd
       updatedAt
     }
   }
@@ -205,16 +168,10 @@ export const GET_PURCHASE_ORDERS_QUERY = `
     purchaseOrders(where: $where, orderBy: $orderBy, take: $take, skip: $skip) {
       id
       code
-      state
+      status
       quoteId
       supplierId
-      totalAmount
-      supplier {
-        id
-        legalName
-        tradeName
-        docNumber
-      }
+      totalUsd
       createdAt
       updatedAt
     }
@@ -226,10 +183,19 @@ export const GET_PURCHASE_ORDER_QUERY = `
     purchaseOrder(id: $id) {
       id
       code
-      state
+      status
       quoteId
       supplierId
-      totalAmount
+      totalUsd
+      lines {
+        id
+        lineNumber
+        productId
+        orderedQty
+        receivedQty
+        unitCost
+        isPhysicalStock
+      }
       createdAt
       updatedAt
     }
@@ -245,7 +211,8 @@ export const CREATE_PURCHASE_RECEPTION_MUTATION = `
       receivedAt
       lines {
         id
-        variantId
+        productId
+        orderLineId
         quantityReceived
       }
     }
@@ -261,7 +228,8 @@ export const GET_PURCHASE_RECEPTIONS_QUERY = `
       receivedAt
       lines {
         id
-        variantId
+        productId
+        orderLineId
         quantityReceived
       }
     }
@@ -271,13 +239,12 @@ export const GET_PURCHASE_RECEPTIONS_QUERY = `
 export const GET_PURCHASE_KPIS_QUERY = `
   query GetPurchaseKpis($filter: PurchaseKpiFilter) {
     purchaseKpis(filter: $filter) {
-      totalQuotes
-      totalOrders
-      activeRfqs
-      pendingApproval
-      pendingReception
-      spendUsd
-      spendVes
+      approvedCount
+      purchaseOrderCount
+      rfqSentCount
+      committedTotalUsd
+      committedTotalVes
+      scope
     }
   }
 `

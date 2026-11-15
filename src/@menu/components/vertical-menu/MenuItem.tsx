@@ -76,8 +76,7 @@ const MenuItem: ForwardRefRenderFunction<HTMLLIElement, MenuItemProps> = (props,
   const pathname = usePathname()
   const { menuItemStyles, renderExpandedMenuItemIcon, textTruncate } = useVerticalMenu()
 
-  const { isCollapsed, isHovered, isPopoutWhenCollapsed, toggleVerticalNav, isToggled, isBreakpointReached } =
-    useVerticalNav()
+  const { isCollapsed, isHovered, isPopoutWhenCollapsed, isBreakpointReached } = useVerticalNav()
 
   // Get the styles for the specified element.
   const getMenuItemStyles = (element: MenuItemElement): CSSObject | undefined => {
@@ -94,13 +93,6 @@ const MenuItem: ForwardRefRenderFunction<HTMLLIElement, MenuItemProps> = (props,
         // Otherwise, return the style function itself.
         return typeof styleFunction === 'function' ? styleFunction(params) : styleFunction
       }
-    }
-  }
-
-  // Handle the click event.
-  const handleClick = () => {
-    if (isToggled) {
-      toggleVerticalNav()
     }
   }
 
@@ -152,10 +144,6 @@ const MenuItem: ForwardRefRenderFunction<HTMLLIElement, MenuItemProps> = (props,
         component={component}
         tabIndex={disabled ? -1 : 0}
         {...rest}
-        onClick={e => {
-          handleClick()
-          rest.onClick && rest.onClick(e)
-        }}
       >
         {/* Menu Item Icon */}
         {renderMenuIcon({

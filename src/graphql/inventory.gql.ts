@@ -1,58 +1,50 @@
 // Definiciones GraphQL para el Módulo de Inventario (Templates, Variantes, Kardex y StockQuants)
 
 export const GET_TEMPLATES_QUERY = `
-  query GetTemplates($filter: TemplateFilter, $page: Int, $perPage: Int) {
-    templates(filter: $filter, page: $page, perPage: $perPage) {
-      nodes {
+  query GetTemplates($where: ProductTemplateWhereInput, $take: Int, $skip: Int) {
+    templates(where: $where, take: $take, skip: $skip) {
+      id
+      name
+      uomCode
+      productType
+      basePrice
+      vatAliquot
+      withholdingIslr
+      category {
         id
         name
-        uomCode
-        productType
-        basePrice
-        vatAliquot
-        withholdingIslr
-        category {
+        completeName
+      }
+      attributes {
+        id
+        attribute {
           id
           name
-          completeName
-        }
-        attributes {
-          id
-          attribute {
-            id
-            name
-            displayType
-          }
-        }
-        variants {
-          id
-          sku
-          barcode
-          priceExtra
-          standardCost
-          isActive
-          values {
-            attributeValue {
-              id
-              name
-              htmlColor
-              attribute {
-                name
-              }
-            }
-          }
-          quants {
-            id
-            quantity
-            reservedQuantity
-          }
+          displayType
         }
       }
-      pageInfo {
-        totalCount
-        page
-        perPage
-        hasNextPage
+      variants {
+        id
+        sku
+        barcode
+        priceExtra
+        standardCost
+        isActive
+        values {
+          attributeValue {
+            id
+            name
+            htmlColor
+            attribute {
+              name
+            }
+          }
+        }
+        quants {
+          id
+          quantity
+          reservedQuantity
+        }
       }
     }
   }
@@ -114,36 +106,28 @@ export const GET_TEMPLATE_BY_ID_QUERY = `
 `
 
 export const GET_KARDEX_QUERY = `
-  query GetKardex($variantId: ID!, $state: MoveState, $page: Int, $perPage: Int) {
-    kardex(variantId: $variantId, state: $state, page: $page, perPage: $perPage) {
-      nodes {
+  query GetKardex($variantId: ID!, $state: MoveState, $take: Int, $skip: Int) {
+    kardex(variantId: $variantId, state: $state, take: $take, skip: $skip) {
+      id
+      moveType
+      state
+      quantity
+      referenceDoc
+      createdAt
+      locationSrc {
         id
-        moveType
-        state
-        quantity
-        referenceDoc
-        createdAt
-        locationSrc {
-          id
-          completePath
-        }
-        locationDst {
-          id
-          completePath
-        }
-        valuations {
-          id
-          bcvRate
-          unitCostUsd
-          unitCostVes
-          quantity
-        }
+        completePath
       }
-      pageInfo {
-        totalCount
-        page
-        perPage
-        hasNextPage
+      locationDst {
+        id
+        completePath
+      }
+      valuations {
+        id
+        bcvRate
+        unitCostUsd
+        unitCostVes
+        quantity
       }
     }
   }
@@ -189,7 +173,7 @@ export const GET_STOCK_LOCATIONS_QUERY = `
       id
       name
       completePath
-      usage
+      locationType
       warehouseId
       isFrozen
     }
@@ -283,7 +267,6 @@ export const CREATE_PRODUCT_TEMPLATE_MUTATION = `
         standardCost
         isActive
         values {
-          id
           attributeValue {
             id
             name
@@ -352,7 +335,7 @@ export const GET_INVENTORY_ADJUSTMENTS_QUERY = `
   query GetInventoryAdjustments($where: InventoryAuditWhereInput, $take: Int, $skip: Int) {
     inventoryAdjustments(where: $where, take: $take, skip: $skip) {
       id
-      auditNumber
+      code
       adjustmentState
       locationId
       reason
@@ -361,8 +344,8 @@ export const GET_INVENTORY_ADJUSTMENTS_QUERY = `
       lines {
         id
         variantId
-        theoreticalQuantity
-        countedQuantity
+        theoreticalQty
+        countedQty
         difference
       }
     }
@@ -373,7 +356,7 @@ export const CREATE_INVENTORY_ADJUSTMENT_MUTATION = `
   mutation CreateInventoryAdjustment($input: CreateInventoryAdjustmentInput!) {
     createInventoryAdjustment(input: $input) {
       id
-      auditNumber
+      code
       adjustmentState
       createdAt
     }
@@ -384,7 +367,7 @@ export const APPLY_INVENTORY_ADJUSTMENT_MUTATION = `
   mutation ApplyInventoryAdjustment($id: ID!, $idempotencyKey: String!) {
     applyInventoryAdjustment(id: $id, idempotencyKey: $idempotencyKey) {
       id
-      auditNumber
+      code
       adjustmentState
     }
   }
@@ -395,7 +378,7 @@ export const GET_LANDED_COSTS_QUERY = `
     landedCosts(where: $where, take: $take, skip: $skip) {
       id
       code
-      state
+      status
       date
       reference
       notes
@@ -417,7 +400,7 @@ export const GET_LANDED_COST_QUERY = `
     landedCost(id: $id) {
       id
       code
-      state
+      status
       date
       reference
       notes
@@ -439,7 +422,7 @@ export const CREATE_LANDED_COST_MUTATION = `
     createLandedCost(input: $input) {
       id
       code
-      state
+      status
       totalAmountUsd
       createdAt
     }
@@ -451,7 +434,7 @@ export const UPDATE_LANDED_COST_MUTATION = `
     updateLandedCost(id: $id, input: $input) {
       id
       code
-      state
+      status
       updatedAt
     }
   }
@@ -462,7 +445,7 @@ export const VALIDATE_LANDED_COST_MUTATION = `
     validateLandedCost(id: $id, idempotencyKey: $idempotencyKey) {
       id
       code
-      state
+      status
       updatedAt
     }
   }
@@ -472,7 +455,7 @@ export const CANCEL_LANDED_COST_MUTATION = `
   mutation CancelLandedCost($id: ID!, $reason: String!) {
     cancelLandedCost(id: $id, reason: $reason) {
       id
-      state
+      status
     }
   }
 `
@@ -487,8 +470,6 @@ export const GET_WAREHOUSES_QUERY = `
       manager
       isDefault
       isActive
-      createdAt
-      updatedAt
       locations {
         id
         code

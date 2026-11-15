@@ -82,10 +82,7 @@ export const SIGN_OUT_MUTATION = `
 export const SIGN_UP_MUTATION = `
   mutation SignUp($input: RegistrarCuentaInput!) {
     signUp(input: $input) {
-      tenantId
-      userId
       requiresEmailVerification
-      isExistingAccount
     }
   }
 `

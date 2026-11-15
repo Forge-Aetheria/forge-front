@@ -26,7 +26,7 @@ interface GqlLandedCostLine {
 interface GqlLandedCost {
   id: string
   code: string
-  state: string
+  status: string
   date: string
   reference?: string | null
   notes?: string | null
@@ -49,7 +49,7 @@ const mapRecord = (record: GqlLandedCost): LandedCostRecord => ({
   id: record.id,
   codigo: record.code,
   fecha: record.date,
-  estado: record.state as LandedCostStatus,
+  estado: record.status as LandedCostStatus,
   referencia: record.reference || undefined,
   notas: record.notes || undefined,
   recepciones: [],
@@ -132,10 +132,6 @@ export const updateLandedCost = async (
         date: partial.fecha ? new Date(partial.fecha).toISOString() : undefined,
         reference: partial.referencia?.trim() || undefined,
         notes: partial.notas?.trim() || undefined,
-        receipts: partial.recepciones?.map(receipt => ({
-          receiptType: 'WAREHOUSE_OPERATION',
-          receiptId: receipt.orden_id
-        })),
         costs: partial.costos?.map(cost => ({
           description: cost.descripcion || cost.producto_nombre || 'Gasto de importación',
           splitMethod: cost.metodo_reparto || 'BY_COST',

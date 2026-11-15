@@ -282,10 +282,7 @@ return null
     try {
       const res = await executeGraphQL<{
         signUp: {
-          tenantId: string
-          userId: string
           requiresEmailVerification: boolean
-          isExistingAccount: boolean
         }
       }>(
         SIGN_UP_MUTATION,
@@ -305,8 +302,7 @@ return null
       if (res?.signUp) {
         return {
           success: true,
-          requiresEmailVerification: res.signUp.requiresEmailVerification,
-          isExistingAccount: res.signUp.isExistingAccount
+          requiresEmailVerification: res.signUp.requiresEmailVerification
         }
       }
 

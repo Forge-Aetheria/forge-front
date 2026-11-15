@@ -72,6 +72,17 @@ import {
   type GqlGeneralLedger
 } from '@/services/adapters/accountingAdapter'
 
+const mapPaymentMethodToBackend = (
+  method: string
+): 'CASH' | 'TRANSFER' | 'MOBILE_PAYMENT' | 'ZELLE' | 'CHECK' | 'OTHER' => {
+  if (method === 'EFECTIVO') return 'CASH'
+  if (method === 'PAGO_MOVIL') return 'MOBILE_PAYMENT'
+  if (method === 'ZELLE') return 'ZELLE'
+  if (method === 'TRANSFERENCIA') return 'TRANSFER'
+
+  return 'OTHER'
+}
+
 const STORAGE_KEYS = {
   ACCOUNTS: 'foundly_accounting_accounts',
   JOURNALS: 'foundly_accounting_journals',
@@ -196,7 +207,6 @@ export const accountingService = {
         const res = await executeGraphQL<{ updateAccount: GqlAccount }>(
           UPDATE_ACCOUNT_MUTATION,
           {
-            id,
             input: {
               id,
               name: input.nombre?.trim() || undefined,
@@ -235,7 +245,7 @@ export const accountingService = {
 
     if (isUuid) {
       try {
-        await executeGraphQL(DEACTIVATE_ACCOUNT_MUTATION, { id }, { timeoutMs: 8000 })
+        await executeGraphQL(DEACTIVATE_ACCOUNT_MUTATION, { accountId: id }, { timeoutMs: 8000 })
       } catch (err) {
         console.error('[accountingService] Error al desactivar cuenta en backend:', err)
       throw err
@@ -250,18 +260,12 @@ export const accountingService = {
 
   seedDefaultChartOfAccounts: async (): Promise<Account[]> => {
     try {
-      const res = await executeGraphQL<{ seedDefaultChartOfAccounts: GqlAccount[] }>(
-        SEED_DEFAULT_CHART_MUTATION,
-        undefined,
-        { timeoutMs: 12000 }
-      )
+      const res = await executeGraphQL<{
+        seedDefaultChartOfAccounts: { accountsCreated: number; journalsCreated: number; alreadySeeded: boolean }
+      }>(SEED_DEFAULT_CHART_MUTATION, undefined, { timeoutMs: 12000 })
 
-      if (res?.seedDefaultChartOfAccounts && Array.isArray(res.seedDefaultChartOfAccounts)) {
-        const seeded = res.seedDefaultChartOfAccounts.map(mapGqlAccountToFrontend)
-
-        setStored(STORAGE_KEYS.ACCOUNTS, seeded)
-
-        return seeded
+      if (res?.seedDefaultChartOfAccounts) {
+        return accountingService.getAccounts()
       }
     } catch (err) {
       console.error('[accountingService] Error al semillar cuentas de backend:', err)
@@ -474,10 +478,9 @@ return found
             CREATE_CUSTOMER_INVOICE_MUTATION,
             {
               input: {
-                partnerId: invoice.contactoId,
+                customerId: invoice.contactoId,
                 issueDate: new Date(invoice.fechaEmision).toISOString(),
                 dueDate: new Date(invoice.fechaVencimiento).toISOString(),
-                currency: invoice.moneda === 'USD' ? 'USD' : 'VES',
                 exchangeRate: rateStr,
                 idempotencyKey,
                 lines: gqlLines
@@ -503,12 +506,10 @@ return found
             CREATE_SUPPLIER_INVOICE_MUTATION,
             {
               input: {
-                partnerId: invoice.contactoId,
+                supplierId: invoice.contactoId,
                 issueDate: new Date(invoice.fechaEmision).toISOString(),
                 dueDate: new Date(invoice.fechaVencimiento).toISOString(),
-                currency: invoice.moneda === 'USD' ? 'USD' : 'VES',
                 exchangeRate: rateStr,
-                supplierInvoiceNumber: invoice.numeroFactura,
                 idempotencyKey,
                 lines: gqlLines
               }
@@ -1241,8 +1242,9 @@ return found
           {
             input: {
               journalId: input.diarioId,
-              partnerId: invoice.contactoId,
-              paymentDate: new Date(fechaPago).toISOString(),
+              contactId: invoice.contactoId,
+              invoiceType: invoice.tipo,
+              method: mapPaymentMethodToBackend(input.metodoPago),
               amount: formatDecimalString(input.monto),
               currency: input.moneda === 'USD' ? 'USD' : 'VES',
               exchangeRate: rateStr,
@@ -1251,7 +1253,8 @@ return found
               allocations: [
                 {
                   invoiceId: invoice.id,
-                  amountAllocated: formatDecimalString(montoUsd)
+                  appliedAmount: formatDecimalString(montoUsd),
+                  appliedCurrency: 'USD'
                 }
               ]
             }
@@ -1421,7 +1424,7 @@ return found
         GET_JOURNAL_ENTRIES_QUERY,
         {
           take: 100,
-          where: targetMoves === 'POSTED' ? { state: { equals: 'POSTED' } } : undefined
+          where: targetMoves === 'POSTED' ? { status: { equals: 'POSTED' } } : undefined
         },
         { timeoutMs: 5000 }
       )
@@ -1481,7 +1484,7 @@ return found
           label: l.etiqueta?.trim() || undefined
         }))
 
-        const res = await executeGraphQL<{ createJournalEntry: { id: string; number: number; state: string } }>(
+        const res = await executeGraphQL<{ createJournalEntry: { id: string; entryNumber: number; status: string } }>(
           CREATE_JOURNAL_ENTRY_MUTATION,
           {
             input: {
@@ -1503,7 +1506,7 @@ return found
           if (input.estado === 'POSTED') {
             await executeGraphQL(
               POST_JOURNAL_ENTRY_MUTATION,
-              { id: entryId, idempotencyKey: generateIdempotencyKey() },
+              { entryId, idempotencyKey: generateIdempotencyKey() },
               { timeoutMs: 10000 }
             )
           }
@@ -1564,7 +1567,7 @@ return found
       try {
         await executeGraphQL(
           POST_JOURNAL_ENTRY_MUTATION,
-          { id, idempotencyKey: generateIdempotencyKey() },
+          { entryId: id, idempotencyKey: generateIdempotencyKey() },
           { timeoutMs: 10000 }
         )
 
@@ -1594,7 +1597,13 @@ return found
       try {
         await executeGraphQL(
           CANCEL_JOURNAL_ENTRY_MUTATION,
-          { id, reason },
+          {
+            input: {
+              entryId: id,
+              reason,
+              idempotencyKey: generateIdempotencyKey()
+            }
+          },
           { timeoutMs: 10000 }
         )
 
@@ -1628,6 +1637,7 @@ return found
             input: {
               entryId: id,
               idempotencyKey: generateIdempotencyKey(),
+              exchangeRate: formatDecimalString(1, '1.0000'),
               reason
             }
           },

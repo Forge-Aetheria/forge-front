@@ -55,7 +55,7 @@ export const mapVatRateToFrontend = (rate?: string | null): '16' | '8' | '0' | '
 export interface GqlPurchaseQuote {
   id: string
   code: string
-  state: PurchaseStatus
+  status: PurchaseStatus
   supplierId: string
   supplierReference?: string | null
   paymentCondition: string
@@ -67,10 +67,10 @@ export interface GqlPurchaseQuote {
   appliesVat: boolean
   appliesIgtf: boolean
   notes?: string | null
-  subtotalAmount: string | number
-  vatAmount: string | number
+  subtotal: string | number
+  vatCredit: string | number
   igtfAmount: string | number
-  totalAmount: string | number
+  totalUsd: string | number
   rate?: {
     rateId: string
     rate: string | number
@@ -78,38 +78,19 @@ export interface GqlPurchaseQuote {
     source: string
     capturedAt: string
   } | null
-  supplier?: {
-    id: string
-    legalName: string
-    tradeName?: string | null
-    docType: string
-    docNumber: string
-    checkDigit?: string | null
-    email: string
-    phone: string
-    fiscalAddress?: string | null
-  } | null
   lines?: Array<{
     id: string
-    variantId: string
+    productId: string
     name?: string | null
+    sku?: string | null
     uom?: string | null
     quantity: string | number
     unitCost: string | number
     discountPercent: string | number
-    netAmount?: string | number | null
+    netSubtotal?: string | number | null
     vatRate?: string | null
     vatAmount?: string | number | null
-    totalAmount?: string | number | null
-    variant?: {
-      id: string
-      sku: string
-      template?: {
-        id: string
-        name: string
-        uomCode: string
-      } | null
-    } | null
+    lineTotal?: string | number | null
   }> | null
   createdAt: string
   updatedAt: string
@@ -123,7 +104,7 @@ export const serializeCreatePurchaseQuoteInput = (
   const finalCreditDays = isCredit ? Number(payload.dias_credito || 0) : 0
 
   const lines = payload.items.map(item => ({
-    variantId: item.producto_id,
+    productId: item.producto_id,
     name: undefined,
     uom: 'un',
     quantity: formatDecimalString(item.cantidad),
@@ -153,7 +134,7 @@ export const serializeCreatePurchaseQuoteInput = (
 export const serializeReceptionInput = (params: {
   orderId: string
   warehouseId: string
-  lines: Array<{ variantId: string; quantityReceived: number | string }>
+  lines: Array<{ orderLineId: string; quantityReceived: number | string }>
   idempotencyKey?: string
 }) => {
   return {
@@ -161,7 +142,7 @@ export const serializeReceptionInput = (params: {
     warehouseId: params.warehouseId,
     idempotencyKey: params.idempotencyKey || generateIdempotencyKey(),
     lines: params.lines.map(l => ({
-      variantId: l.variantId,
+      orderLineId: l.orderLineId,
       quantityReceived: formatDecimalString(l.quantityReceived)
     }))
   }
@@ -169,7 +150,8 @@ export const serializeReceptionInput = (params: {
 
 export const mapGqlPurchaseQuoteToFrontend = (
   gql: GqlPurchaseQuote,
-  fallbackRate: number
+  fallbackRate: number,
+  supplier?: SupplierLookup
 ): PurchaseQuote => {
   const rateVal = gql.exchangeRate ? Number(gql.exchangeRate) : fallbackRate
 
@@ -184,19 +166,14 @@ export const mapGqlPurchaseQuoteToFrontend = (
   const condicionPago: PaymentConditionType =
     gql.paymentCondition === 'CREDIT' ? 'CREDITO' : 'CONTADO'
 
-  const supplierRif = gql.supplier
-    ? `${gql.supplier.docType}-${gql.supplier.docNumber}${gql.supplier.checkDigit ? `-${gql.supplier.checkDigit}` : ''}`
-    : 'J-00000000-0'
-
-  const proveedor: SupplierLookup = {
-    id: gql.supplier?.id || gql.supplierId,
-    identificacion: supplierRif,
-    razon_social: gql.supplier?.legalName || 'Proveedor General',
-    nombre_comercial: gql.supplier?.tradeName || undefined,
+  const proveedor: SupplierLookup = supplier ?? {
+    id: gql.supplierId,
+    identificacion: 'J-00000000-0',
+    razon_social: 'Proveedor General',
     rol_proveedor_activo: true,
-    email: gql.supplier?.email || '',
-    telefono: gql.supplier?.phone || '',
-    direccion_fiscal: gql.supplier?.fiscalAddress || 'Venezuela',
+    email: '',
+    telefono: '',
+    direccion_fiscal: 'Venezuela',
     condicion_pago_default: condicionPago,
     dias_credito_default: gql.creditDays,
     moneda_negociacion_default: (gql.baseCurrency as CurrencyCode) || 'USD'
@@ -206,16 +183,16 @@ export const mapGqlPurchaseQuoteToFrontend = (
     const qty = typeof l.quantity === 'string' ? parseFloat(l.quantity) : Number(l.quantity || 0)
     const cost = typeof l.unitCost === 'string' ? parseFloat(l.unitCost) : Number(l.unitCost || 0)
     const disc = typeof l.discountPercent === 'string' ? parseFloat(l.discountPercent) : Number(l.discountPercent || 0)
-    const net = typeof l.netAmount === 'string' ? parseFloat(l.netAmount) : qty * cost * (1 - disc / 100)
+    const net = typeof l.netSubtotal === 'string' ? parseFloat(l.netSubtotal) : qty * cost * (1 - disc / 100)
     const vat = typeof l.vatAmount === 'string' ? parseFloat(l.vatAmount) : 0
-    const total = typeof l.totalAmount === 'string' ? parseFloat(l.totalAmount) : net + vat
+    const total = typeof l.lineTotal === 'string' ? parseFloat(l.lineTotal) : net + vat
 
     return {
       id: l.id || `line-${idx + 1}`,
-      producto_id: l.variantId,
-      producto_sku: l.variant?.sku || l.name || `VAR-${idx + 1}`,
-      producto_nombre: l.variant?.template?.name || l.name || 'Artículo',
-      uom_code: l.variant?.template?.uomCode || l.uom || 'un',
+      producto_id: l.productId,
+      producto_sku: l.sku || l.name || `VAR-${idx + 1}`,
+      producto_nombre: l.name || 'Artículo',
+      uom_code: l.uom || 'un',
       is_physical_stock: true,
       cantidad: qty,
       costo_unitario: cost,
@@ -228,18 +205,18 @@ export const mapGqlPurchaseQuoteToFrontend = (
     }
   })
 
-  const subtotalUsd = typeof gql.subtotalAmount === 'string' ? parseFloat(gql.subtotalAmount) : Number(gql.subtotalAmount || 0)
-  const vatUsd = typeof gql.vatAmount === 'string' ? parseFloat(gql.vatAmount) : Number(gql.vatAmount || 0)
+  const subtotalUsd = typeof gql.subtotal === 'string' ? parseFloat(gql.subtotal) : Number(gql.subtotal || 0)
+  const vatUsd = typeof gql.vatCredit === 'string' ? parseFloat(gql.vatCredit) : Number(gql.vatCredit || 0)
   const igtfUsd = typeof gql.igtfAmount === 'string' ? parseFloat(gql.igtfAmount) : Number(gql.igtfAmount || 0)
-  const totalUsd = typeof gql.totalAmount === 'string' ? parseFloat(gql.totalAmount) : Number(gql.totalAmount || 0)
+  const totalUsd = typeof gql.totalUsd === 'string' ? parseFloat(gql.totalUsd) : Number(gql.totalUsd || 0)
 
   return {
     id: gql.id,
     correlativo: gql.code || 'BORRADOR',
-    correlativo_orden_compra: gql.state === 'PURCHASE_ORDER' ? gql.code : undefined,
+    correlativo_orden_compra: gql.status === 'PURCHASE_ORDER' ? gql.code : undefined,
     referencia_proveedor: gql.supplierReference || undefined,
     proveedor,
-    estado: gql.state,
+    estado: gql.status,
     condicion_pago: condicionPago,
     dias_credito: gql.creditDays,
     moneda_base: (gql.baseCurrency as CurrencyCode) || 'USD',

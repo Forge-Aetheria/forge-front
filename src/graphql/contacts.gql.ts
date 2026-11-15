@@ -133,7 +133,6 @@ export const GET_BANKS_QUERY = `
       id
       name
       code
-      rif
       active
     }
   }

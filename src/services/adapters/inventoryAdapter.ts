@@ -418,9 +418,7 @@ export const serializeAdjustmentInput = (params: {
   auditType?: string
   lines: Array<{
     variantId: string
-    theoreticalQuantity: number | string
-    countedQuantity: number | string
-    difference: number | string
+    countedQty: number | string
   }>
   idempotencyKey?: string
 }) => {
@@ -431,9 +429,7 @@ export const serializeAdjustmentInput = (params: {
     idempotencyKey: params.idempotencyKey || generateIdempotencyKey(),
     lines: params.lines.map(l => ({
       variantId: l.variantId,
-      theoreticalQuantity: formatDecimalString(l.theoreticalQuantity),
-      countedQuantity: formatDecimalString(l.countedQuantity),
-      difference: formatDecimalString(l.difference)
+      countedQty: formatDecimalString(l.countedQty)
     }))
   }
 }

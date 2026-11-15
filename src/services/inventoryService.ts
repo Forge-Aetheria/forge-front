@@ -28,7 +28,6 @@ import {
 } from '@/graphql/inventory.gql'
 import type {
   GqlProductTemplate,
-  GqlKardexPage,
   GqlStockMove,
   GqlStockLocation,
   GqlVariantAvailability,
@@ -102,13 +101,13 @@ export const getInventoryTemplates = async (forceRefresh = false): Promise<Produ
 
   fetchTemplatesPromise = (async () => {
     try {
-      const res = await executeGraphQL<{ templates: { nodes: GqlProductTemplate[] } }>(
+      const res = await executeGraphQL<{ templates: GqlProductTemplate[] }>(
         GET_TEMPLATES_QUERY,
-        { page: 1, perPage: 100 },
+        { take: 100, skip: 0 },
         { timeoutMs: 5000 }
       )
 
-      const mapped = (res?.templates?.nodes ?? []).map(mapGqlTemplateToFrontend)
+      const mapped = (res?.templates ?? []).map(mapGqlTemplateToFrontend)
 
       cachedTemplates = mapped
 
@@ -139,14 +138,14 @@ export const getInventoryTemplateById = async (id: string): Promise<ProductTempl
  */
 export const getVariantKardex = async (variantId: string): Promise<GqlStockMove[]> => {
   try {
-    const res = await executeGraphQL<{ kardex: GqlKardexPage }>(
+    const res = await executeGraphQL<{ kardex: GqlStockMove[] }>(
       GET_KARDEX_QUERY,
-      { variantId, page: 1, perPage: 50 },
+      { variantId, take: 50, skip: 0 },
       { timeoutMs: 4000 }
     )
 
-    if (res?.kardex?.nodes) {
-      return res.kardex.nodes
+    if (Array.isArray(res?.kardex)) {
+      return res.kardex
     }
   } catch {
     // Si falla o no hay datos, retornar array vacío
@@ -346,7 +345,7 @@ export const resolveDefaultStockLocations = async (): Promise<{ internalLocation
   const locs = await fetchStockLocations()
 
   if (locs.length > 0) {
-    const internal = locs.find(l => l.usage === 'INTERNAL') || locs[0]
+    const internal = locs.find(l => l.locationType === 'INTERNAL') || locs[0]
 
     return { internalLocationId: internal.id }
   }
@@ -452,15 +451,15 @@ export const getStockAdjustments = async (): Promise<StockAdjustmentRecord[]> =>
   const response = await executeGraphQL<{
     inventoryAdjustments: Array<{
       id: string
-      auditNumber: string
+      code: string
       adjustmentState: string
       reason: string
       createdAt: string
       lines: Array<{
         id: string
         variantId: string
-        theoreticalQuantity: string
-        countedQuantity: string
+        theoreticalQty: string
+        countedQty: string
         difference: string
       }>
     }>
@@ -473,7 +472,7 @@ export const getStockAdjustments = async (): Promise<StockAdjustmentRecord[]> =>
 
     return [{
       id: adjustment.id,
-      correlativo: adjustment.auditNumber,
+      correlativo: adjustment.code,
       fecha: adjustment.createdAt,
       producto_id: '',
       producto_nombre: '',
@@ -481,8 +480,8 @@ export const getStockAdjustments = async (): Promise<StockAdjustmentRecord[]> =>
       variante_sku: '',
       uom_code: 'UNI',
       motivo: adjustment.reason as AdjustmentReason,
-      stock_sistema: Number(line.theoreticalQuantity),
-      stock_contado: Number(line.countedQuantity),
+      stock_sistema: Number(line.theoreticalQty),
+      stock_contado: Number(line.countedQty),
       diferencia: Number(line.difference),
       costo_unitario_usd: 0,
       impacto_usd: 0,
@@ -518,9 +517,7 @@ export const applyStockAdjustment = async (input: {
     reason: reasonGql,
     lines: [{
       variantId: input.variante_id,
-      theoreticalQuantity: input.stock_contado,
-      countedQuantity: input.stock_contado,
-      difference: 0
+      countedQty: input.stock_contado
     }],
     idempotencyKey: generateIdempotencyKey()
   })

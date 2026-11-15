@@ -12,8 +12,6 @@ export const GET_ACCOUNTS_QUERY = `
       requiresReconciliation
       isActive
       parentId
-      balanceUsd
-      balanceVes
       createdAt
       updatedAt
     }
@@ -32,8 +30,6 @@ export const GET_ACCOUNT_QUERY = `
       requiresReconciliation
       isActive
       parentId
-      balanceUsd
-      balanceVes
       createdAt
       updatedAt
     }
@@ -56,8 +52,8 @@ export const CREATE_ACCOUNT_MUTATION = `
 `
 
 export const UPDATE_ACCOUNT_MUTATION = `
-  mutation UpdateAccount($id: ID!, $input: UpdateAccountInput!) {
-    updateAccount(id: $id, input: $input) {
+  mutation UpdateAccount($input: UpdateAccountInput!) {
+    updateAccount(input: $input) {
       id
       code
       name
@@ -68,8 +64,8 @@ export const UPDATE_ACCOUNT_MUTATION = `
 `
 
 export const DEACTIVATE_ACCOUNT_MUTATION = `
-  mutation DeactivateAccount($id: ID!) {
-    deactivateAccount(id: $id) {
+  mutation DeactivateAccount($accountId: ID!) {
+    deactivateAccount(accountId: $accountId) {
       id
       isActive
     }
@@ -79,13 +75,9 @@ export const DEACTIVATE_ACCOUNT_MUTATION = `
 export const SEED_DEFAULT_CHART_MUTATION = `
   mutation SeedDefaultChartOfAccounts {
     seedDefaultChartOfAccounts {
-      id
-      code
-      name
-      type
-      normalSide
-      currencyScope
-      isActive
+      accountsCreated
+      journalsCreated
+      alreadySeeded
     }
   }
 `
@@ -126,11 +118,11 @@ export const GET_JOURNAL_ENTRIES_QUERY = `
   query GetJournalEntries($where: JournalEntryWhereInput, $orderBy: [JournalEntryOrderByWithRelationInput!], $take: Int, $skip: Int) {
     journalEntries(where: $where, orderBy: $orderBy, take: $take, skip: $skip) {
       id
-      number
+      entryNumber
       journalId
       postingDate
       description
-      state
+      status
       source
       sourceReference
       exchangeRate
@@ -158,11 +150,11 @@ export const GET_JOURNAL_ENTRY_QUERY = `
   query GetJournalEntry($id: ID!) {
     journalEntry(id: $id) {
       id
-      number
+      entryNumber
       journalId
       postingDate
       description
-      state
+      status
       source
       sourceReference
       exchangeRate
@@ -190,8 +182,8 @@ export const CREATE_JOURNAL_ENTRY_MUTATION = `
   mutation CreateJournalEntry($input: JournalEntryInput!) {
     createJournalEntry(input: $input) {
       id
-      number
-      state
+      entryNumber
+      status
       postingDate
       createdAt
     }
@@ -199,11 +191,11 @@ export const CREATE_JOURNAL_ENTRY_MUTATION = `
 `
 
 export const POST_JOURNAL_ENTRY_MUTATION = `
-  mutation PostJournalEntry($id: ID!, $idempotencyKey: String!) {
-    postJournalEntry(id: $id, idempotencyKey: $idempotencyKey) {
+  mutation PostJournalEntry($entryId: ID!, $idempotencyKey: String!) {
+    postJournalEntry(entryId: $entryId, idempotencyKey: $idempotencyKey) {
       id
-      number
-      state
+      entryNumber
+      status
       postingDate
       updatedAt
     }
@@ -211,11 +203,11 @@ export const POST_JOURNAL_ENTRY_MUTATION = `
 `
 
 export const CANCEL_JOURNAL_ENTRY_MUTATION = `
-  mutation CancelJournalEntry($id: ID!, $reason: String!) {
-    cancelJournalEntry(id: $id, reason: $reason) {
+  mutation CancelJournalEntry($input: CancelJournalEntryInput!) {
+    cancelJournalEntry(input: $input) {
       id
-      number
-      state
+      entryNumber
+      status
     }
   }
 `
@@ -223,9 +215,9 @@ export const CANCEL_JOURNAL_ENTRY_MUTATION = `
 export const REVERSE_JOURNAL_ENTRY_MUTATION = `
   mutation ReverseJournalEntry($input: ReverseJournalEntryInput!) {
     reverseJournalEntry(input: $input) {
-      id
-      number
-      state
+      originalEntryId
+      reversalEntryId
+      affectedAccountIds
     }
   }
 `
@@ -235,22 +227,27 @@ export const GET_INVOICES_QUERY = `
     accountingInvoices(where: $where, orderBy: $orderBy, take: $take, skip: $skip) {
       id
       number
-      type
+      invoiceType
       status
-      partnerId
-      partnerName
+      customerId
+      supplierId
       issueDate
       dueDate
-      currency
       exchangeRate
-      subtotalAmount
-      vatAmount
-      igtfAmount
-      totalAmount
-      pendingAmount
-      journalId
-      journalEntryId
-      partner {
+      subtotal
+      vatTotal
+      total
+      pendingBalance
+      entryId
+      customer {
+        id
+        legalName
+        tradeName
+        docType
+        docNumber
+        checkDigit
+      }
+      supplier {
         id
         legalName
         tradeName
@@ -264,16 +261,20 @@ export const GET_INVOICES_QUERY = `
         quantity
         unitPrice
         vatRate
-        lineTotal
+        subtotal
+        vatAmount
+        total
         accountId
       }
-      payments {
+      allocations {
         id
-        amountAllocated
+        invoiceId
+        appliedUsd
+        appliedVes
         payment {
           id
           number
-          paymentDate
+          createdAt
           amount
           currency
         }
@@ -289,22 +290,28 @@ export const GET_INVOICE_QUERY = `
     accountingInvoice(id: $id) {
       id
       number
-      type
+      invoiceType
       status
-      partnerId
-      partnerName
+      customerId
+      supplierId
       issueDate
       dueDate
-      currency
       exchangeRate
-      subtotalAmount
-      vatAmount
-      igtfAmount
-      totalAmount
-      pendingAmount
-      journalId
-      journalEntryId
-      partner {
+      subtotal
+      vatTotal
+      total
+      pendingBalance
+      entryId
+      customer {
+        id
+        legalName
+        tradeName
+        docType
+        docNumber
+        checkDigit
+        fiscalAddress
+      }
+      supplier {
         id
         legalName
         tradeName
@@ -319,16 +326,20 @@ export const GET_INVOICE_QUERY = `
         quantity
         unitPrice
         vatRate
-        lineTotal
+        subtotal
+        vatAmount
+        total
         accountId
       }
-      payments {
+      allocations {
         id
-        amountAllocated
+        invoiceId
+        appliedUsd
+        appliedVes
         payment {
           id
           number
-          paymentDate
+          createdAt
           amount
           currency
         }
@@ -345,7 +356,7 @@ export const CREATE_CUSTOMER_INVOICE_MUTATION = `
       id
       number
       status
-      totalAmount
+      total
       createdAt
     }
   }
@@ -368,7 +379,7 @@ export const CREATE_SUPPLIER_INVOICE_MUTATION = `
       id
       number
       status
-      totalAmount
+      total
       createdAt
     }
   }
@@ -408,21 +419,21 @@ export const GET_PAYMENTS_QUERY = `
     payments(where: $where, orderBy: $orderBy, take: $take, skip: $skip) {
       id
       number
-      paymentDate
       amount
       currency
       exchangeRate
       reference
-      partnerId
+      contactId
       journalId
       allocations {
         id
         invoiceId
-        amountAllocated
+        appliedUsd
+        appliedVes
         invoice {
           id
           number
-          type
+          invoiceType
         }
       }
       createdAt
@@ -437,7 +448,6 @@ export const REGISTER_PAYMENT_MUTATION = `
       id
       number
       amount
-      paymentDate
       createdAt
     }
   }
@@ -458,8 +468,9 @@ export const GET_CREDIT_NOTES_QUERY = `
       number
       status
       invoiceId
-      amount
-      currency
+      subtotal
+      vatTotal
+      total
       issueDate
       reason
       invoice {
@@ -478,7 +489,7 @@ export const POST_CREDIT_NOTE_MUTATION = `
       id
       number
       status
-      amount
+      total
       createdAt
     }
   }
@@ -504,19 +515,31 @@ export const GET_BALANCE_SHEET_QUERY = `
         balanced
       }
       sections {
-        type
-        total {
+        id
+        label
+        level
+        amounts {
           usd { amount }
           ves { amount }
         }
-        lines {
-          accountId
-          code
-          name
+        subsections {
+          id
+          label
           level
           amounts {
             usd { amount }
             ves { amount }
+          }
+          accounts {
+            accountId
+            accountType
+            normalSide
+            code
+            name
+            amounts {
+              usd { amount }
+              ves { amount }
+            }
           }
         }
       }
@@ -524,6 +547,8 @@ export const GET_BALANCE_SHEET_QUERY = `
         assets { usd { amount } ves { amount } }
         liabilities { usd { amount } ves { amount } }
         equity { usd { amount } ves { amount } }
+        currentResult { usd { amount } ves { amount } }
+        retainedEarnings { usd { amount } ves { amount } }
         balanced
         differenceUsd
         differenceVes
@@ -574,21 +599,21 @@ export const GET_TRIAL_BALANCE_QUERY = `
       }
       accounts {
         accountId
+        accountType
+        normalSide
         code
         name
-        initialDebit { usd { amount } ves { amount } }
-        initialCredit { usd { amount } ves { amount } }
-        periodDebit { usd { amount } ves { amount } }
-        periodCredit { usd { amount } ves { amount } }
-        closingDebit { usd { amount } ves { amount } }
-        closingCredit { usd { amount } ves { amount } }
+        opening { usd { amount } ves { amount } }
+        debit { usd { amount } ves { amount } }
+        credit { usd { amount } ves { amount } }
+        closing { usd { amount } ves { amount } }
       }
       totals {
-        periodDebit { usd { amount } ves { amount } }
-        periodCredit { usd { amount } ves { amount } }
-        closingDebit { usd { amount } ves { amount } }
-        closingCredit { usd { amount } ves { amount } }
+        debit { usd { amount } ves { amount } }
+        credit { usd { amount } ves { amount } }
         balanced
+        differenceUsd
+        differenceVes
       }
     }
   }
@@ -620,7 +645,7 @@ export const GET_GENERAL_LEDGER_QUERY = `
         credit { usd { amount } ves { amount } }
       }
       pagination {
-        totalCount
+        totalItems
         page
         pageSize
         totalPages
@@ -642,16 +667,32 @@ export const UPSERT_EXCHANGE_RATE_MUTATION = `
 `
 
 export const GET_ACCOUNTING_DASHBOARD_QUERY = `
-  query GetAccountingDashboard($asOf: DateTime) {
-    accountingDashboard(asOf: $asOf) {
-      metrics {
-        cashAndBank { usd { amount } ves { amount } }
-        receivables { usd { amount } ves { amount } }
-        payables { usd { amount } ves { amount } }
-        netIncome { usd { amount } ves { amount } }
+  query GetAccountingDashboard($asOf: DateTime!, $dateFrom: DateTime!, $dateTo: DateTime!) {
+    accountingDashboard(asOf: $asOf, dateFrom: $dateFrom, dateTo: $dateTo) {
+      journals {
+        id
+        code
+        name
+        type
+        currency
+        balance { usd { amount } ves { amount } }
+      }
+      kpis {
+        accountsPayable { usd { amount } ves { amount } }
+        accountsReceivable { usd { amount } ves { amount } }
+        liquidity { usd { amount } ves { amount } }
+        netResult { usd { amount } ves { amount } }
+        netResultPeriod { dateFrom dateTo }
+      }
+      meta {
+        generatedAt
+        dateFrom
+        dateTo
+        balanced
+        ratePolicy
+        includeDrafts
+        warnings
       }
     }
   }
 `
-
-

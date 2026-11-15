@@ -23,6 +23,8 @@ import {
   CONVERT_PURCHASE_QUOTE_TO_ORDER_MUTATION,
   CANCEL_PURCHASE_QUOTE_MUTATION,
   RECALCULATE_PURCHASE_QUOTE_BCV_MUTATION,
+  GET_PURCHASE_ORDERS_QUERY,
+  GET_PURCHASE_ORDER_QUERY,
   CREATE_PURCHASE_RECEPTION_MUTATION
 } from '@/graphql/purchases.gql'
 import { GET_PARTNERS_QUERY } from '@/graphql/contacts.gql'
@@ -135,7 +137,7 @@ class PurchasesService {
       )
 
       if (res?.partners && Array.isArray(res.partners) && res.partners.length > 0) {
-        return res.partners.map(p => ({
+        this.suppliers = res.partners.map(p => ({
           id: p.id,
           identificacion: `${p.docType}-${p.docNumber}${p.checkDigit ? `-${p.checkDigit}` : ''}`,
           razon_social: p.legalName,
@@ -148,6 +150,8 @@ class PurchasesService {
           dias_credito_default: 0,
           moneda_negociacion_default: 'USD'
         }))
+
+        return [...this.suppliers]
       }
     } catch {
       // Fallback a proveedores en caché local
@@ -319,11 +323,23 @@ class PurchasesService {
     }
   }
 
+  private mapQuote(gql: GqlPurchaseQuote): PurchaseQuote {
+    return mapGqlPurchaseQuoteToFrontend(
+      gql,
+      this.bcvRate.tasa,
+      this.suppliers.find(supplier => supplier.id === gql.supplierId)
+    )
+  }
+
   // HU2: Consultar y Listar Compras (GET /api/purchases/quotes)
   public async getPurchaseQuotes(filters?: PurchasesFilterState): Promise<PurchaseQuote[]> {
     this.hydrateFromStorage()
 
     try {
+      if (this.suppliers.length === 0) {
+        await this.getSuppliers()
+      }
+
       const res = await executeGraphQL<{ purchaseQuotes: GqlPurchaseQuote[] }>(
         GET_PURCHASE_QUOTES_QUERY,
         { take: 100 },
@@ -331,7 +347,7 @@ class PurchasesService {
       )
 
       if (res?.purchaseQuotes && Array.isArray(res.purchaseQuotes)) {
-        const mapped = res.purchaseQuotes.map(q => mapGqlPurchaseQuoteToFrontend(q, this.bcvRate.tasa))
+        const mapped = res.purchaseQuotes.map(q => this.mapQuote(q))
 
         this.quotes = mapped
       }
@@ -391,7 +407,7 @@ class PurchasesService {
         )
 
         if (res?.purchaseQuote) {
-          const mapped = mapGqlPurchaseQuoteToFrontend(res.purchaseQuote, this.bcvRate.tasa)
+          const mapped = this.mapQuote(res.purchaseQuote)
           const idx = this.quotes.findIndex(q => q.id === id)
 
           if (idx !== -1) {
@@ -447,7 +463,7 @@ class PurchasesService {
       )
 
       if (res?.createPurchaseQuote) {
-        let created = mapGqlPurchaseQuoteToFrontend(res.createPurchaseQuote, this.bcvRate.tasa)
+        let created = this.mapQuote(res.createPurchaseQuote)
 
         // Si se solicitó registrar de inmediato como RFQ, ejecutar mutación de registro
         if (payload.registrar_cotizacion_inmediatamente) {
@@ -456,7 +472,7 @@ class PurchasesService {
               REGISTER_PURCHASE_QUOTE_MUTATION,
               {
                 input: {
-                  quoteId: created.id,
+                  id: created.id,
                   idempotencyKey: generateIdempotencyKey()
                 }
               },
@@ -464,7 +480,7 @@ class PurchasesService {
             )
 
             if (regRes?.registerPurchaseQuote) {
-              created = mapGqlPurchaseQuoteToFrontend(regRes.registerPurchaseQuote, this.bcvRate.tasa)
+              created = this.mapQuote(regRes.registerPurchaseQuote)
             }
           } catch (err) {
             console.warn('[purchasesService] Error al registrar inmediatamente la RFQ:', err)
@@ -719,7 +735,7 @@ return { ...updated }
         RECALCULATE_PURCHASE_QUOTE_BCV_MUTATION,
         {
           input: {
-            quoteId: id,
+            id,
             idempotencyKey: generateIdempotencyKey()
           }
         },
@@ -727,7 +743,7 @@ return { ...updated }
       )
 
       if (res?.recalculatePurchaseQuoteBcv) {
-        const recalculated = mapGqlPurchaseQuoteToFrontend(res.recalculatePurchaseQuoteBcv, this.bcvRate.tasa)
+        const recalculated = this.mapQuote(res.recalculatePurchaseQuoteBcv)
         const idx = this.quotes.findIndex(q => q.id === id)
 
         if (idx !== -1) this.quotes[idx] = recalculated
@@ -792,12 +808,12 @@ return { ...updated }
 
       const res = await executeGraphQL<{ approvePurchaseQuote: GqlPurchaseQuote }>(
         APPROVE_PURCHASE_QUOTE_MUTATION,
-        { input: { quoteId: id, idempotencyKey } },
+        { input: { id, idempotencyKey } },
         { timeoutMs: 10000 }
       )
 
       if (res?.approvePurchaseQuote) {
-        const approved = mapGqlPurchaseQuoteToFrontend(res.approvePurchaseQuote, this.bcvRate.tasa)
+        const approved = this.mapQuote(res.approvePurchaseQuote)
         const idx = this.quotes.findIndex(q => q.id === id)
 
         if (idx !== -1) this.quotes[idx] = approved
@@ -857,12 +873,12 @@ return { ...updated }
 
       const res = await executeGraphQL<{ cancelPurchaseQuote: GqlPurchaseQuote }>(
         CANCEL_PURCHASE_QUOTE_MUTATION,
-        { input: { quoteId: id, reason: motivo_anulacion.trim(), idempotencyKey } },
+        { input: { id, reason: motivo_anulacion.trim(), idempotencyKey } },
         { timeoutMs: 10000 }
       )
 
       if (res?.cancelPurchaseQuote) {
-        const canceled = mapGqlPurchaseQuoteToFrontend(res.cancelPurchaseQuote, this.bcvRate.tasa)
+        const canceled = this.mapQuote(res.cancelPurchaseQuote)
         const idx = this.quotes.findIndex(q => q.id === id)
 
         if (idx !== -1) this.quotes[idx] = canceled
@@ -904,7 +920,7 @@ return { ...updated }
 
       const res = await executeGraphQL<{ convertQuoteToPurchaseOrder: { id: string; code: string; state: string } }>(
         CONVERT_PURCHASE_QUOTE_TO_ORDER_MUTATION,
-        { input: { quoteId, idempotencyKey } },
+        { input: { id: quoteId, idempotencyKey } },
         { timeoutMs: 10000 }
       )
 
@@ -1041,20 +1057,45 @@ return {
         const defaultLoc = await resolveDefaultStockLocations()
         const warehouseId = locations.find(l => l.warehouseId)?.warehouseId || defaultLoc.internalLocationId
 
-        const receptionInput = serializeReceptionInput({
-          orderId: purchaseId,
-          warehouseId,
-          lines: physicalLines.map(l => ({
-            variantId: l.producto_id,
-            quantityReceived: l.cantidad
-          }))
-        })
-
-        await executeGraphQL(
-          CREATE_PURCHASE_RECEPTION_MUTATION,
-          { input: receptionInput },
-          { timeoutMs: 10000 }
+        const ordersRes = await executeGraphQL<{ purchaseOrders: Array<{ id: string }> }>(
+          GET_PURCHASE_ORDERS_QUERY,
+          { where: { quoteId: { equals: purchaseId } }, take: 1 },
+          { timeoutMs: 5000 }
         )
+
+        const orderId = ordersRes?.purchaseOrders?.[0]?.id
+
+        if (orderId) {
+          const orderRes = await executeGraphQL<{
+            purchaseOrder: { lines: Array<{ id: string; productId: string }> }
+          }>(GET_PURCHASE_ORDER_QUERY, { id: orderId }, { timeoutMs: 5000 })
+
+          const orderLines = orderRes?.purchaseOrder?.lines ?? []
+
+          const receptionLines = physicalLines
+            .map(l => {
+              const orderLine = orderLines.find(ol => ol.productId === l.producto_id)
+
+              return orderLine
+                ? { orderLineId: orderLine.id, quantityReceived: l.cantidad }
+                : null
+            })
+            .filter((line): line is { orderLineId: string; quantityReceived: number } => line !== null)
+
+          if (receptionLines.length > 0) {
+            const receptionInput = serializeReceptionInput({
+              orderId,
+              warehouseId,
+              lines: receptionLines
+            })
+
+            await executeGraphQL(
+              CREATE_PURCHASE_RECEPTION_MUTATION,
+              { input: receptionInput },
+              { timeoutMs: 10000 }
+            )
+          }
+        }
       } catch (err) {
         console.warn('[purchasesService] No se pudo crear recepción directa en backend:', err)
       }

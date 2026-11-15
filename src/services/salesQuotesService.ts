@@ -1076,8 +1076,8 @@ return { ...updated };
     try {
       const stockLocations = await fetchStockLocations();
       const defaultLoc = await resolveDefaultStockLocations();
-      const internalLoc = stockLocations.find(l => l.usage === 'INTERNAL') || { id: defaultLoc.internalLocationId };
-      const customerLoc = stockLocations.find(l => l.usage === 'CUSTOMER') || internalLoc;
+      const internalLoc = stockLocations.find(l => l.locationType === 'INTERNAL') || { id: defaultLoc.internalLocationId };
+      const customerLoc = stockLocations.find(l => l.locationType === 'CUSTOMER') || internalLoc;
 
       for (const line of storableLines) {
         const isVarUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(

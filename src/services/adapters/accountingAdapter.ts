@@ -140,11 +140,11 @@ export interface GqlJournalEntryLine {
 
 export interface GqlJournalEntry {
   id: string
-  number: number
+  entryNumber: number
   journalId: string
   postingDate: string
   description: string
-  state: string
+  status: string
   source?: string | null
   sourceReference?: string | null
   exchangeRate?: string | number | null
@@ -236,8 +236,8 @@ export const mapGqlEntryToFrontend = (
 ): JournalEntry => {
   let estado: EntryStatus = 'DRAFT'
 
-  if (gql.state === 'POSTED') estado = 'POSTED'
-  else if (gql.state === 'CANCELLED' || gql.state === 'CANCELED') estado = 'CANCELED'
+  if (gql.status === 'POSTED') estado = 'POSTED'
+  else if (gql.status === 'CANCELLED' || gql.status === 'CANCELED') estado = 'CANCELED'
 
   let origen: EntrySource = 'MANUAL'
 
@@ -279,7 +279,7 @@ export const mapGqlEntryToFrontend = (
 
   return {
     id: gql.id,
-    numeroAsiento: `AS-${String(gql.number).padStart(5, '0')}`,
+    numeroAsiento: `AS-${String(gql.entryNumber).padStart(5, '0')}`,
     fecha: gql.postingDate ? gql.postingDate.slice(0, 10) : new Date().toISOString().slice(0, 10),
     diarioId: gql.journalId,
     diarioNombre,
@@ -300,21 +300,25 @@ export const mapGqlEntryToFrontend = (
 
 export interface GqlInvoiceLine {
   id: string
-  description: string
+  description?: string | null
   quantity: string | number
   unitPrice: string | number
   vatRate?: string | number | null
-  lineTotal?: string | number | null
+  subtotal?: string | number | null
+  vatAmount?: string | number | null
+  total?: string | number | null
   accountId?: string | null
 }
 
 export interface GqlInvoicePaymentAssoc {
   id: string
-  amountAllocated: string | number
+  invoiceId: string
+  appliedUsd: string | number
+  appliedVes: string | number
   payment?: {
     id: string
     number: number
-    paymentDate: string
+    createdAt: string
     amount: string | number
     currency: string
   } | null
@@ -323,22 +327,28 @@ export interface GqlInvoicePaymentAssoc {
 export interface GqlAccountingInvoice {
   id: string
   number: number
-  type: 'CUSTOMER' | 'SUPPLIER' | string
+  invoiceType: 'CUSTOMER' | 'SUPPLIER' | string
   status: string
-  partnerId: string
-  partnerName?: string | null
+  customerId?: string | null
+  supplierId?: string | null
   issueDate: string
   dueDate: string
-  currency: string
   exchangeRate?: string | number | null
-  subtotalAmount?: string | number | null
-  vatAmount?: string | number | null
-  igtfAmount?: string | number | null
-  totalAmount: string | number
-  pendingAmount?: string | number | null
-  journalId?: string | null
-  journalEntryId?: string | null
-  partner?: {
+  subtotal?: string | number | null
+  vatTotal?: string | number | null
+  total: string | number
+  pendingBalance?: string | number | null
+  entryId?: string | null
+  customer?: {
+    id: string
+    legalName: string
+    tradeName?: string | null
+    docType: string
+    docNumber: string
+    checkDigit?: string | null
+    fiscalAddress?: string | null
+  } | null
+  supplier?: {
     id: string
     legalName: string
     tradeName?: string | null
@@ -348,7 +358,7 @@ export interface GqlAccountingInvoice {
     fiscalAddress?: string | null
   } | null
   lines?: GqlInvoiceLine[] | null
-  payments?: GqlInvoicePaymentAssoc[] | null
+  allocations?: GqlInvoicePaymentAssoc[] | null
   createdAt?: string | null
   updatedAt?: string | null
 }
@@ -364,19 +374,24 @@ export const mapGqlInvoiceStatusToFrontend = (status: string): InvoiceStatus => 
 
 export const mapGqlInvoiceToFrontend = (gql: GqlAccountingInvoice): AccountingInvoice => {
   const rate = typeof gql.exchangeRate === 'string' ? parseFloat(gql.exchangeRate) : Number(gql.exchangeRate || 1)
-  const totalUsd = typeof gql.totalAmount === 'string' ? parseFloat(gql.totalAmount) : Number(gql.totalAmount || 0)
-  const subtotalUsd = typeof gql.subtotalAmount === 'string' ? parseFloat(gql.subtotalAmount) : Number(gql.subtotalAmount || totalUsd)
-  const vatUsd = typeof gql.vatAmount === 'string' ? parseFloat(gql.vatAmount) : Number(gql.vatAmount || 0)
-  const pendingUsd = typeof gql.pendingAmount === 'string' ? parseFloat(gql.pendingAmount) : Number(gql.pendingAmount || 0)
+  const totalUsd = typeof gql.total === 'string' ? parseFloat(gql.total) : Number(gql.total || 0)
+  const subtotalUsd = typeof gql.subtotal === 'string' ? parseFloat(gql.subtotal) : Number(gql.subtotal || totalUsd)
+  const vatUsd = typeof gql.vatTotal === 'string' ? parseFloat(gql.vatTotal) : Number(gql.vatTotal || 0)
+  const pendingUsd = typeof gql.pendingBalance === 'string' ? parseFloat(gql.pendingBalance) : Number(gql.pendingBalance || 0)
 
-  const partnerRif = gql.partner
-    ? `${gql.partner.docType}-${gql.partner.docNumber}${gql.partner.checkDigit ? `-${gql.partner.checkDigit}` : ''}`
+  const partner = gql.customer || gql.supplier
+  const partnerId = gql.customerId || gql.supplierId || ''
+
+  const partnerRif = partner
+    ? `${partner.docType}-${partner.docNumber}${partner.checkDigit ? `-${partner.checkDigit}` : ''}`
     : 'J-00000000-0'
 
   const lines: InvoiceLine[] = (gql.lines || []).map((l, idx) => {
     const qty = typeof l.quantity === 'string' ? parseFloat(l.quantity) : Number(l.quantity || 0)
     const price = typeof l.unitPrice === 'string' ? parseFloat(l.unitPrice) : Number(l.unitPrice || 0)
-    const lineTotal = typeof l.lineTotal === 'string' ? parseFloat(l.lineTotal) : Number(l.lineTotal || qty * price)
+    const lineSubtotal = typeof l.subtotal === 'string' ? parseFloat(l.subtotal) : Number(l.subtotal || qty * price)
+    const lineVat = typeof l.vatAmount === 'string' ? parseFloat(l.vatAmount) : Number(l.vatAmount || 0)
+    const lineTotal = typeof l.total === 'string' ? parseFloat(l.total) : Number(l.total || lineSubtotal + lineVat)
 
     return {
       id: l.id || `inv-l-${idx + 1}`,
@@ -386,37 +401,37 @@ export const mapGqlInvoiceToFrontend = (gql: GqlAccountingInvoice): AccountingIn
       cantidad: qty,
       precioUnitarioUsd: price,
       tasaImpuestoPct: 16,
-      subtotalUsd: lineTotal,
-      ivaUsd: Number((lineTotal * 0.16).toFixed(2)),
-      totalUsd: Number((lineTotal * 1.16).toFixed(2))
+      subtotalUsd: lineSubtotal,
+      ivaUsd: lineVat,
+      totalUsd: lineTotal
     }
   })
 
-  const pagosAsociados = (gql.payments || []).map((p, idx) => ({
+  const pagosAsociados = (gql.allocations || []).map((p, idx) => ({
     id: p.id || `assoc-${idx + 1}`,
     pagoId: p.payment?.id || `pag-${idx + 1}`,
     numeroPago: p.payment ? `PAG-${String(p.payment.number).padStart(4, '0')}` : 'PAG-0000',
-    fecha: p.payment?.paymentDate ? p.payment.paymentDate.slice(0, 10) : new Date().toISOString().slice(0, 10),
+    fecha: p.payment?.createdAt ? p.payment.createdAt.slice(0, 10) : new Date().toISOString().slice(0, 10),
     diarioId: 'jou-bank',
     diarioNombre: 'Banco',
     metodoPago: 'TRANSFERENCIA' as PaymentMethod,
     moneda: (p.payment?.currency as CurrencyCode) || 'USD',
-    monto: typeof p.amountAllocated === 'string' ? parseFloat(p.amountAllocated) : Number(p.amountAllocated || 0),
-    montoUsd: typeof p.amountAllocated === 'string' ? parseFloat(p.amountAllocated) : Number(p.amountAllocated || 0),
-    montoVes: Number(((typeof p.amountAllocated === 'string' ? parseFloat(p.amountAllocated) : Number(p.amountAllocated || 0)) * rate).toFixed(2)),
-    creadoEn: p.payment?.paymentDate || new Date().toISOString()
+    monto: typeof p.appliedUsd === 'string' ? parseFloat(p.appliedUsd) : Number(p.appliedUsd || 0),
+    montoUsd: typeof p.appliedUsd === 'string' ? parseFloat(p.appliedUsd) : Number(p.appliedUsd || 0),
+    montoVes: typeof p.appliedVes === 'string' ? parseFloat(p.appliedVes) : Number(p.appliedVes || 0),
+    creadoEn: p.payment?.createdAt || new Date().toISOString()
   }))
 
-  const prefix = gql.type === 'CUSTOMER' ? 'FAC-CLI' : 'FAC-PROV'
+  const prefix = gql.invoiceType === 'CUSTOMER' ? 'FAC-CLI' : 'FAC-PROV'
 
   return {
     id: gql.id,
     numeroFactura: `${prefix}-2026-${String(gql.number).padStart(4, '0')}`,
-    tipo: (gql.type as InvoiceAccountingType) || 'CUSTOMER',
+    tipo: (gql.invoiceType as InvoiceAccountingType) || 'CUSTOMER',
     tipoDocumento: 'FACTURA',
-    moneda: (gql.currency as CurrencyCode) || 'USD',
-    contactoId: gql.partnerId,
-    contactoNombre: gql.partner?.legalName || gql.partnerName || 'Tercero',
+    moneda: 'USD' as CurrencyCode,
+    contactoId: partnerId,
+    contactoNombre: partner?.legalName || 'Tercero',
     contactoRif: partnerRif,
     contactoCuentaContableId: 'acc-cxc',
     contactoCuentaContableNombre: 'Cuentas por Cobrar / Pagar',
@@ -424,7 +439,7 @@ export const mapGqlInvoiceToFrontend = (gql: GqlAccountingInvoice): AccountingIn
     fechaVencimiento: gql.dueDate ? gql.dueDate.slice(0, 10) : new Date().toISOString().slice(0, 10),
     tasaBcv: Number(rate.toFixed(4)),
     estado: mapGqlInvoiceStatusToFrontend(gql.status),
-    diarioId: gql.journalId || 'jou-sales',
+    diarioId: 'jou-sales',
     lineas: lines,
     totalNetoUsd: Number(subtotalUsd.toFixed(2)),
     totalIvaUsd: Number(vatUsd.toFixed(2)),
@@ -432,7 +447,7 @@ export const mapGqlInvoiceToFrontend = (gql: GqlAccountingInvoice): AccountingIn
     totalVes: Number((totalUsd * rate).toFixed(2)),
     saldoPendienteUsd: Number(pendingUsd.toFixed(2)),
     saldoPendienteVes: Number((pendingUsd * rate).toFixed(2)),
-    asientoAsociadoId: gql.journalEntryId || undefined,
+    asientoAsociadoId: gql.entryId || undefined,
     pagosAsociados
   }
 }
@@ -440,21 +455,21 @@ export const mapGqlInvoiceToFrontend = (gql: GqlAccountingInvoice): AccountingIn
 export interface GqlPayment {
   id: string
   number: number
-  paymentDate: string
   amount: string | number
   currency: string
   exchangeRate?: string | number | null
   reference?: string | null
-  partnerId?: string | null
+  contactId?: string | null
   journalId: string
   allocations?: Array<{
     id: string
     invoiceId: string
-    amountAllocated: string | number
+    appliedUsd: string | number
+    appliedVes: string | number
     invoice?: {
       id: string
       number: number
-      type: string
+      invoiceType: string
     } | null
   }> | null
   createdAt?: string | null
@@ -468,7 +483,7 @@ export const mapGqlPaymentToFrontend = (
   const rate = typeof gql.exchangeRate === 'string' ? parseFloat(gql.exchangeRate) : Number(gql.exchangeRate || 1)
 
   const facturasConciliadas: PaymentReconciledInvoice[] = (gql.allocations || []).map(a => {
-    const allocated = typeof a.amountAllocated === 'string' ? parseFloat(a.amountAllocated) : Number(a.amountAllocated || 0)
+    const allocated = typeof a.appliedUsd === 'string' ? parseFloat(a.appliedUsd) : Number(a.appliedUsd || 0)
 
     return {
       facturaId: a.invoiceId,
@@ -483,14 +498,14 @@ export const mapGqlPaymentToFrontend = (
   return {
     id: gql.id,
     numeroPago: `PAG-2026-${String(gql.number).padStart(4, '0')}`,
-    fecha: gql.paymentDate ? gql.paymentDate.slice(0, 10) : new Date().toISOString().slice(0, 10),
+    fecha: gql.createdAt ? gql.createdAt.slice(0, 10) : new Date().toISOString().slice(0, 10),
     diarioId: gql.journalId,
     diarioNombre: journalMap[gql.journalId] || 'Banco',
     metodoPago: 'TRANSFERENCIA',
     moneda: (gql.currency as CurrencyCode) || 'USD',
     monto: Number(amount.toFixed(2)),
     tasaBcvPago: Number(rate.toFixed(4)),
-    contactoId: gql.partnerId || 'ct-general',
+    contactoId: gql.contactId || 'ct-general',
     contactoNombre: 'Tercero',
     referenciaBancaria: gql.reference || undefined,
     estado: 'CONFIRMADO',
@@ -507,8 +522,9 @@ export interface GqlCreditNote {
   number: number
   status: string
   invoiceId: string
-  amount: string | number
-  currency: string
+  subtotal?: string | number | null
+  vatTotal?: string | number | null
+  total: string | number
   issueDate: string
   reason?: string | null
   invoice?: {
@@ -521,7 +537,7 @@ export const mapGqlCreditNoteToFrontend = (
   gql: GqlCreditNote,
   bcvRate: number
 ): AppliedCreditNote => {
-  const amount = typeof gql.amount === 'string' ? parseFloat(gql.amount) : Number(gql.amount || 0)
+  const amount = typeof gql.total === 'string' ? parseFloat(gql.total) : Number(gql.total || 0)
 
   return {
     id: gql.id,

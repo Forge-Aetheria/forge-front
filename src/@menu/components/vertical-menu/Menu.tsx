@@ -118,6 +118,7 @@ const Menu: ForwardRefRenderFunction<HTMLMenuElement, MenuProps> = (props, ref) 
 
   // Refs
   const openSubmenusRef = useRef<OpenSubmenu[]>([])
+  const didSyncSubmenusRef = useRef(false)
 
   // Hooks
   const pathname = usePathname()
@@ -164,7 +165,11 @@ const Menu: ForwardRefRenderFunction<HTMLMenuElement, MenuProps> = (props, ref) 
   )
 
   useEffect(() => {
-    setOpenSubmenu([...openSubmenusRef.current])
+    if (!didSyncSubmenusRef.current) {
+      didSyncSubmenusRef.current = true
+      setOpenSubmenu([...openSubmenusRef.current])
+    }
+
     openSubmenusRef.current = []
   }, [pathname])
 
