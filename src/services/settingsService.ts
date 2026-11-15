@@ -1,6 +1,7 @@
 import { UPSERT_EXCHANGE_RATE_MUTATION } from '@/graphql/accounting.gql'
 import { executeGraphQL } from '@/libs/graphqlClient'
 import { fetchActiveBcvRate, invalidateActiveBcvRateCache } from '@/services/bcvService'
+import { TENANT_AVATAR_UPDATED_EVENT } from '@/utils/tenantAvatar'
 import {
   CHANGE_MY_PASSWORD_MUTATION,
   ME_QUERY,
@@ -231,6 +232,10 @@ export const settingsService = {
     const updated = { ...current, ...input }
 
     await setTenantSetting('company.profile', updated)
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event(TENANT_AVATAR_UPDATED_EVENT))
+    }
 
     return updated
   },

@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 
 import Grid from '@mui/material/Grid'
 import Card from '@mui/material/Card'
@@ -9,7 +9,6 @@ import Typography from '@mui/material/Typography'
 import TextField from '@mui/material/TextField'
 import Button from '@mui/material/Button'
 import Avatar from '@mui/material/Avatar'
-import Divider from '@mui/material/Divider'
 import IconButton from '@mui/material/IconButton'
 import InputAdornment from '@mui/material/InputAdornment'
 import Snackbar from '@mui/material/Snackbar'
@@ -20,18 +19,8 @@ import Skeleton from '@mui/material/Skeleton'
 import CustomChip from '@core/components/mui/Chip'
 import { useAuth } from '@/contexts/AuthContext'
 import { settingsService } from '@/services/settingsService'
-import type { UserProfile } from '@/types/settingsTypes'
-
-const AVATAR_PRESETS = [
-  '/images/avatars/1.png',
-  '/images/avatars/2.png',
-  '/images/avatars/3.png',
-  '/images/avatars/4.png',
-  '/images/avatars/5.png',
-  '/images/avatars/6.png',
-  '/images/avatars/7.png',
-  '/images/avatars/8.png'
-]
+import type { CompanySettings, UserProfile } from '@/types/settingsTypes'
+import { getTenantInitials } from '@/utils/tenantAvatar'
 
 const ROLE_DISPLAY_NAMES: Record<string, string> = {
   ADMIN: 'Administrador General',
@@ -46,11 +35,14 @@ const UserProfileView: React.FC = () => {
   const { refreshUser } = useAuth()
   const [loading, setLoading] = useState(true)
   const [profile, setProfile] = useState<UserProfile | null>(null)
+  const [company, setCompany] = useState<CompanySettings | null>(null)
+  const [tenantAvatarUrl, setTenantAvatarUrl] = useState('')
+  const [uploadingTenantAvatar, setUploadingTenantAvatar] = useState(false)
+  const tenantAvatarInputRef = useRef<HTMLInputElement>(null)
 
   // Personal Info Form State
   const [nombre, setNombre] = useState('')
   const [telefono, setTelefono] = useState('')
-  const [selectedAvatar, setSelectedAvatar] = useState('/images/avatars/1.png')
   const [savingProfile, setSavingProfile] = useState(false)
 
   // Password Form State
@@ -73,12 +65,23 @@ const UserProfileView: React.FC = () => {
     setLoading(true)
 
     try {
-      const data = await settingsService.getUserProfile()
+      const [dataResult, companyResult] = await Promise.allSettled([
+        settingsService.getUserProfile(),
+        settingsService.getCompanySettings()
+      ])
+
+      if (dataResult.status !== 'fulfilled') throw dataResult.reason
+
+      const data = dataResult.value
 
       setProfile(data)
       setNombre(data.nombre)
       setTelefono(data.telefono || '')
-      setSelectedAvatar(data.avatarUrl || '/images/avatars/1.png')
+
+      if (companyResult.status === 'fulfilled') {
+        setCompany(companyResult.value)
+        setTenantAvatarUrl(companyResult.value.logoUrl || '')
+      }
     } catch {
       setToast({ open: true, message: 'Error al cargar los datos del perfil', severity: 'error' })
     } finally {
@@ -104,8 +107,7 @@ const UserProfileView: React.FC = () => {
     try {
       const updated = await settingsService.updateUserProfile({
         nombre: nombre.trim(),
-        telefono: telefono.trim(),
-        avatarUrl: selectedAvatar
+        telefono: telefono.trim()
       })
 
       setProfile(updated)
@@ -116,6 +118,59 @@ const UserProfileView: React.FC = () => {
     } finally {
       setSavingProfile(false)
     }
+  }
+
+  const persistTenantAvatar = async (logoUrl: string, successMessage: string) => {
+    setUploadingTenantAvatar(true)
+
+    try {
+      const updated = await settingsService.updateCompanySettings({ logoUrl })
+
+      setCompany(updated)
+      setTenantAvatarUrl(updated.logoUrl || '')
+      await refreshUser()
+      setToast({ open: true, message: successMessage, severity: 'success' })
+    } catch {
+      setToast({ open: true, message: 'No se pudo actualizar la imagen de la empresa.', severity: 'error' })
+    } finally {
+      setUploadingTenantAvatar(false)
+
+      if (tenantAvatarInputRef.current) {
+        tenantAvatarInputRef.current.value = ''
+      }
+    }
+  }
+
+  const handleTenantAvatarChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+
+    if (!file) return
+
+    if (!file.type.startsWith('image/')) {
+      setToast({ open: true, message: 'Seleccione un archivo de imagen válido.', severity: 'error' })
+
+      return
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      setToast({ open: true, message: 'La imagen supera el límite máximo de 2 MB.', severity: 'error' })
+
+      return
+    }
+
+    const reader = new FileReader()
+
+    reader.onload = event2 => {
+      const result = event2.target?.result as string
+
+      void persistTenantAvatar(result, 'Imagen de la empresa actualizada exitosamente.')
+    }
+
+    reader.readAsDataURL(file)
+  }
+
+  const handleRemoveTenantAvatar = () => {
+    void persistTenantAvatar('', 'Imagen de la empresa eliminada. Se usará el logo con iniciales.')
   }
 
   const handleChangePassword = async (e: React.FormEvent) => {
@@ -213,7 +268,17 @@ const UserProfileView: React.FC = () => {
 
         {profile?.tenantName && (
           <div className='flex items-center gap-2 bg-[#FFFFFF] border border-[#E6E4F0] px-4 py-2 rounded-full shadow-xs'>
-            <i className='tabler-building-store text-[#6C5CE7] text-lg' />
+            {tenantAvatarUrl ? (
+              <img
+                src={tenantAvatarUrl}
+                alt={profile.tenantName}
+                className='w-5 h-5 rounded-full object-cover'
+              />
+            ) : (
+              <span className='w-5 h-5 rounded-full bg-[#F3F0FF] text-[#6C5CE7] text-[9px] font-bold flex items-center justify-center'>
+                {getTenantInitials(profile.tenantName)}
+              </span>
+            )}
             <span className='text-xs font-bold text-[#1E1B2E]'>{profile.tenantName}</span>
           </div>
         )}
@@ -232,17 +297,62 @@ const UserProfileView: React.FC = () => {
             }}
           >
             <CardContent className='p-6 flex flex-col items-center text-center'>
-              <Avatar
-                alt={nombre}
-                src={selectedAvatar}
-                sx={{
-                  width: 100,
-                  height: 100,
-                  mb: 2,
-                  boxShadow: '0 4px 14px rgba(108, 92, 231, 0.25)',
-                  border: '3px solid #FFFFFF'
-                }}
-              />
+              <div className='relative mb-2'>
+                <Avatar
+                  alt={company?.nombreComercial || profile?.tenantName || nombre}
+                  src={tenantAvatarUrl || undefined}
+                  sx={{
+                    width: 100,
+                    height: 100,
+                    bgcolor: '#6C5CE7',
+                    color: '#FFFFFF',
+                    fontSize: '2rem',
+                    fontWeight: 800,
+                    border: '3px solid #FFFFFF',
+                    boxShadow: '0 4px 14px rgba(108, 92, 231, 0.25)'
+                  }}
+                >
+                  {getTenantInitials(company?.nombreComercial || profile?.tenantName)}
+                </Avatar>
+
+                <input
+                  ref={tenantAvatarInputRef}
+                  type='file'
+                  accept='image/png, image/jpeg, image/webp'
+                  hidden
+                  onChange={handleTenantAvatarChange}
+                />
+
+                <IconButton
+                  size='small'
+                  disabled={uploadingTenantAvatar}
+                  onClick={() => tenantAvatarInputRef.current?.click()}
+                  aria-label='Cambiar imagen de la empresa'
+                  sx={{
+                    position: 'absolute',
+                    bottom: -2,
+                    right: -2,
+                    backgroundColor: '#6C5CE7',
+                    color: '#FFFFFF',
+                    border: '2px solid #FFFFFF',
+                    boxShadow: '0 4px 10px rgba(108, 92, 231, 0.35)',
+                    '&:hover': { backgroundColor: '#5B4CDB' }
+                  }}
+                >
+                  {uploadingTenantAvatar ? (
+                    <CircularProgress size={14} color='inherit' />
+                  ) : (
+                    <i className='tabler-plus text-sm' />
+                  )}
+                </IconButton>
+
+                {uploadingTenantAvatar && (
+                  <div className='absolute inset-0 rounded-full bg-black/35 flex items-center justify-center'>
+                    <CircularProgress size={24} sx={{ color: '#FFFFFF' }} />
+                  </div>
+                )}
+              </div>
+
               <Typography variant='h6' className='font-bold text-[#1E1B2E]'>
                 {nombre || 'Usuario'}
               </Typography>
@@ -257,28 +367,16 @@ const UserProfileView: React.FC = () => {
                 variant='tonal'
               />
 
-              <Divider sx={{ my: 3, width: '100%', borderColor: '#E6E4F0' }} />
-
-              <div className='w-full text-left'>
-                <span className='text-xs font-semibold text-[#6B7280] block mb-2'>
-                  Elegir Avatar Predefinido:
-                </span>
-                <div className='flex items-center justify-center gap-2 flex-wrap'>
-                  {AVATAR_PRESETS.map((av, idx) => (
-                    <div
-                      key={idx}
-                      onClick={() => setSelectedAvatar(av)}
-                      className={`cursor-pointer rounded-full p-0.5 border-2 transition-all ${
-                        selectedAvatar === av
-                          ? 'border-[#6C5CE7] scale-110 shadow-xs'
-                          : 'border-transparent hover:border-[#DCD8EC]'
-                      }`}
-                    >
-                      <Avatar src={av} sx={{ width: 34, height: 34 }} />
-                    </div>
-                  ))}
-                </div>
-              </div>
+              {tenantAvatarUrl && (
+                <button
+                  type='button'
+                  onClick={handleRemoveTenantAvatar}
+                  disabled={uploadingTenantAvatar}
+                  className='text-[11px] font-semibold text-[#EF4444] hover:underline mt-3 bg-transparent border-0 cursor-pointer p-0 disabled:opacity-50'
+                >
+                  Quitar imagen
+                </button>
+              )}
             </CardContent>
           </Card>
 

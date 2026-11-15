@@ -26,6 +26,7 @@ import Chip from '@mui/material/Chip'
 import { useAuth } from '@/contexts/AuthContext'
 import { settingsService } from '@/services/settingsService'
 import type { UserProfile } from '@/types/settingsTypes'
+import { getTenantInitials, TENANT_AVATAR_UPDATED_EVENT } from '@/utils/tenantAvatar'
 
 // Hook Imports
 import { useSettings } from '@core/hooks/useSettings'
@@ -53,6 +54,8 @@ const UserDropdown = () => {
   // States
   const [open, setOpen] = useState(false)
   const [profile, setProfile] = useState<UserProfile | null>(null)
+  const [tenantAvatarUrl, setTenantAvatarUrl] = useState('')
+  const [tenantName, setTenantName] = useState('')
 
   // Refs
   const anchorRef = useRef<HTMLDivElement>(null)
@@ -74,6 +77,37 @@ const UserDropdown = () => {
       isMounted = false
     }
   }, [open])
+
+  // Load tenant image (must stay in sync when it changes from Mi perfil)
+  useEffect(() => {
+    let isMounted = true
+
+    const loadTenant = async () => {
+      try {
+        const company = await settingsService.getCompanySettings()
+
+        if (!isMounted) return
+
+        setTenantAvatarUrl(company.logoUrl || '')
+        setTenantName(company.nombreComercial || company.razonSocial || '')
+      } catch {
+        // Fallback to initials.
+      }
+    }
+
+    const handleUpdate = () => {
+      void loadTenant()
+    }
+
+    void loadTenant()
+
+    window.addEventListener(TENANT_AVATAR_UPDATED_EVENT, handleUpdate)
+
+    return () => {
+      isMounted = false
+      window.removeEventListener(TENANT_AVATAR_UPDATED_EVENT, handleUpdate)
+    }
+  }, [])
 
   const handleDropdownOpen = () => {
     setOpen(prev => !prev)
@@ -103,6 +137,7 @@ const UserDropdown = () => {
     : 'U'
 
   const userDisplayName = profile?.nombre || user?.email?.split('@')[0] || 'Usuario'
+  const tenantDisplayName = tenantName || user?.tenantName || ''
 
   const effectiveRole = profile?.rol
     ? String(profile.rol).toUpperCase()
@@ -122,12 +157,12 @@ const UserDropdown = () => {
       >
         <Avatar
           ref={anchorRef}
-          alt={userDisplayName}
-          src={profile?.avatarUrl}
+          alt={tenantDisplayName || userDisplayName}
+          src={tenantAvatarUrl || undefined}
           onClick={handleDropdownOpen}
           className='cursor-pointer bs-[38px] is-[38px] bg-primary text-white font-bold'
         >
-          {userInitial}
+          {tenantDisplayName ? getTenantInitials(tenantDisplayName) : userInitial}
         </Avatar>
       </Badge>
       <Popper
@@ -162,7 +197,7 @@ const UserDropdown = () => {
                         {userDisplayName}
                       </Typography>
                       <Typography variant='caption' className='text-xs text-[#6B7280] truncate w-full' title={profile?.email || user?.email}>
-                        {profile?.email || user?.email || 'admin@vuexy.com'}
+                        {profile?.email || user?.email || 'Sin correo registrado'}
                       </Typography>
                       <div className='flex items-center gap-1.5 mt-1'>
                         <Chip
