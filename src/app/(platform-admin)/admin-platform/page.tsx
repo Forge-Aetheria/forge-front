@@ -72,6 +72,8 @@ const PlatformAdminConsole = () => {
   const [modules, setModules] = useState<string[]>([])
   const [ownerUserId, setOwnerUserId] = useState('')
   const [saving, setSaving] = useState(false)
+  const [deleteConfirm, setDeleteConfirm] = useState('')
+  const [deleting, setDeleting] = useState(false)
 
   const resetElevation = useCallback((message: string | null) => {
     setElevation(null)
@@ -158,6 +160,7 @@ return
       setGraceUntil(dateInputValue(result.tenant.graceUntil))
       setModules(result.tenant.activeModules)
       setOwnerUserId('')
+      setDeleteConfirm('')
     } catch (error) {
       handleError(error)
     } finally {
@@ -237,6 +240,30 @@ return
       handleError(error)
     } finally {
       setSaving(false)
+    }
+  }
+
+  const handleDeleteTenant = async () => {
+    if (!elevation || !detail) return
+    if (deleteConfirm.trim() !== detail.tenant.name) return
+    setDeleting(true)
+    setConsoleError(null)
+    setConsoleNotice(null)
+
+    try {
+      await platformAdminService.deleteTenant(
+        elevation.token,
+        detail.tenant.id,
+        detail.tenant.name
+      )
+      setDetail(null)
+      setDeleteConfirm('')
+      await loadTenants(elevation.token, search)
+      setConsoleNotice(`Tenant "${detail.tenant.name}" eliminado de forma definitiva.`)
+    } catch (error) {
+      handleError(error)
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -511,6 +538,34 @@ return
                     Reconciliar owner
                   </Button>
                 </Stack>
+
+                <Divider />
+                <Typography variant='subtitle1' fontWeight={600} color='error'>
+                  Zona de peligro
+                </Typography>
+                <Alert severity='error'>
+                  Eliminar este tenant borra de forma permanente todos sus usuarios, roles y datos de
+                  negocio. Esta acción no se puede deshacer ni corregir.
+                </Alert>
+                <TextField
+                  label={`Escribe "${detail.tenant.name}" para confirmar`}
+                  value={deleteConfirm}
+                  onChange={(event) => setDeleteConfirm(event.target.value)}
+                  size='small'
+                  fullWidth
+                />
+                <Box>
+                  <Button
+                    variant='contained'
+                    color='error'
+                    onClick={() => void handleDeleteTenant()}
+                    disabled={
+                      deleting || deleteConfirm.trim() !== detail.tenant.name
+                    }
+                  >
+                    {deleting ? 'Eliminando…' : 'Eliminar tenant definitivamente'}
+                  </Button>
+                </Box>
               </Stack>
             </CardContent>
           </Card>

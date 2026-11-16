@@ -1,4 +1,5 @@
 import {
+  DELETE_PLATFORM_TENANT_MUTATION,
   ELEVATE_PLATFORM_ADMIN_MUTATION,
   PLATFORM_ADMIN_ACCESS_QUERY,
   PLATFORM_TENANT_QUERY,
@@ -160,5 +161,20 @@ return response.setPlatformTenantModules
 
     
 return response.reconcilePlatformTenantOwner
+  },
+
+  async deleteTenant(
+    elevationToken: string,
+    tenantId: string,
+    confirmName: string
+  ): Promise<boolean> {
+    const response = await executeGraphQL<{ deletePlatformTenant: boolean }>(
+      DELETE_PLATFORM_TENANT_MUTATION,
+      { input: { tenantId, confirmName } },
+      elevationOptions(elevationToken)
+    )
+
+    
+return response.deletePlatformTenant
   }
 }

@@ -121,3 +121,9 @@ export const RECONCILE_PLATFORM_TENANT_OWNER_MUTATION = `
     }
   }
 `
+
+export const DELETE_PLATFORM_TENANT_MUTATION = `
+  mutation DeletePlatformTenant($input: DeletePlatformTenantInput!) {
+    deletePlatformTenant(input: $input)
+  }
+`
