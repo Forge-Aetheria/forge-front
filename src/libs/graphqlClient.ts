@@ -17,6 +17,7 @@ interface GraphQLResponse<T> {
 export interface RequestOptions {
   token?: string | null
   tenantId?: string | null
+  elevationToken?: string | null
   timeoutMs?: number
 }
 
@@ -51,6 +52,11 @@ export const executeGraphQL = async <T, V = Record<string, unknown>>(
   // Tenant ID Injection if available
   if (options?.tenantId) {
     headers['x-tenant-id'] = options.tenantId
+  }
+
+  // Platform admin elevation (TICK-051)
+  if (options?.elevationToken) {
+    headers['x-platform-elevation'] = options.elevationToken
   }
 
   const timeoutMs = options?.timeoutMs ?? 7000
