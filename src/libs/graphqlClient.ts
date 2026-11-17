@@ -1,7 +1,15 @@
 // Cliente GraphQL nativo y ligero para forge-front
 
-const GRAPHQL_ENDPOINT =
-  process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT || 'http://localhost:4000/graphql'
+const configuredEndpoint = process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT
+const isVercelPreview = process.env.VERCEL_ENV === 'preview'
+
+if (!configuredEndpoint && process.env.NODE_ENV === 'production' && !isVercelPreview) {
+  throw new Error(
+    'NEXT_PUBLIC_GRAPHQL_ENDPOINT es obligatorio en producción; configura el endpoint de forge-backend',
+  )
+}
+
+const GRAPHQL_ENDPOINT = configuredEndpoint || 'http://localhost:4000/graphql'
 
 interface GraphQLResponse<T> {
   data?: T

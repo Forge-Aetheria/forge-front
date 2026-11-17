@@ -32,3 +32,16 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+
+## Environments
+
+- Profile precedence: `.env.local`, `.env.production`, `.env`.
+- `NEXT_PUBLIC_GRAPHQL_ENDPOINT` is required in production; the client fails at build/runtime
+  instead of silently falling back to `localhost`.
+- `NEXT_PUBLIC_APP_URL` and `BASEPATH` configure the public app URL and Next.js base path.
+- Never commit secrets: `NEXT_PUBLIC_*` variables are exposed to the browser.
+
+```bash
+npm run env:whoami
+npm run env:whoami -- --json
+```

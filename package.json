@@ -4,6 +4,7 @@
   "license": "Commercial",
   "private": true,
   "scripts": {
+    "env:whoami": "node scripts/env-whoami.mjs",
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
