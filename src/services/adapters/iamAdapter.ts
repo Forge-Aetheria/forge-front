@@ -1,6 +1,7 @@
 // Adaptador bidireccional entre el esquema GraphQL de IAM (forge-backend / BE-IAM-02) y la UI de forge-front
 
-import type { ErpUser, SystemRole, UserAccountStatus } from '@/types/settingsTypes'
+import type { ErpRole, ErpUser, SystemRole, UserAccountStatus } from '@/types/settingsTypes'
+import { selectPrimaryRole } from '../../utils/roleSet'
 
 export const generateIdempotencyKey = (): string => {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
@@ -68,9 +69,21 @@ export const mapGqlRoleToSystemRole = (roleName?: string): SystemRole => {
 }
 
 export const mapGqlUserToErpUser = (gql: GqlTenantUser): ErpUser => {
-  const firstRole = gql.roles && gql.roles.length > 0 ? gql.roles[0].role : null
-  const roleName = firstRole ? firstRole.name : 'UNASSIGNED'
-  const rol = mapGqlRoleToSystemRole(roleName)
+  const roles: ErpRole[] = (gql.roles ?? [])
+    .map(assignment => assignment.role)
+    .filter(role => Boolean(role?.id))
+    .map(role => ({
+      id: role.id,
+      name: role.name,
+      description: role.description ?? undefined,
+      isSystem: Boolean(role.isSystem)
+    }))
+
+  const primaryRole = selectPrimaryRole(roles)
+
+  const rol: SystemRole = primaryRole
+    ? mapGqlRoleToSystemRole(primaryRole.name)
+    : 'UNASSIGNED'
 
   const createdDate = gql.createdAt
     ? new Date(gql.createdAt).toLocaleDateString('es-VE')
@@ -82,9 +95,10 @@ export const mapGqlUserToErpUser = (gql: GqlTenantUser): ErpUser => {
     email: gql.email,
     telefono: gql.phone || undefined,
     avatarUrl: gql.avatarUrl || '/images/avatars/1.png',
+    roles,
     rol,
-    roleId: firstRole?.id,
-    roleName: firstRole?.name || 'Sin Rol',
+    roleId: primaryRole?.id,
+    roleName: primaryRole?.name || 'Sin Rol',
     estado: mapUserStatusToFrontend(gql.status),
     creadoEn: createdDate
   }

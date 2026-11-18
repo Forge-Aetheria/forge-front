@@ -18,7 +18,11 @@ import Alert from '@mui/material/Alert'
 import CustomChip from '@core/components/mui/Chip'
 
 import { useAuth } from '@/contexts/AuthContext'
-import { settingsService } from '@/services/settingsService'
+import {
+  ErpUserPartialUpdateError,
+  ErpUserRefreshError,
+  settingsService
+} from '@/services/settingsService'
 
 import { CompanySettingsTab } from './tabs/CompanySettingsTab'
 import { BcvSettingsTab } from './tabs/BcvSettingsTab'
@@ -31,13 +35,12 @@ import type {
   BcvRateConfig,
   ErpUser,
   FiscalRulesConfig,
-  SystemRole,
   UserAccountStatus
 } from '@/types/settingsTypes'
 
 const SettingsMainView: React.FC = () => {
   const router = useRouter()
-  const { user } = useAuth()
+  const { user, hasPermission } = useAuth()
 
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState(0)
@@ -146,7 +149,7 @@ const SettingsMainView: React.FC = () => {
     nombre: string
     email: string
     telefono?: string
-    rol: SystemRole
+    initialRoleId: string
     passwordInicial?: string
     estado?: UserAccountStatus
   }) => {
@@ -155,7 +158,7 @@ const SettingsMainView: React.FC = () => {
         nombre: data.nombre,
         email: data.email,
         telefono: data.telefono,
-        rol: data.rol,
+        initialRoleId: data.initialRoleId,
         passwordInicial: data.passwordInicial || '123456',
         estado: data.estado
       })
@@ -175,13 +178,19 @@ const SettingsMainView: React.FC = () => {
       nombre: string
       email?: string
       telefono?: string
-      rol: SystemRole
+      roleIds: string[]
       estado: UserAccountStatus
       password?: string
     }
   ) => {
     try {
-      await settingsService.updateErpUser(id, data)
+      await settingsService.updateErpUser(id, {
+        nombre: data.nombre,
+        telefono: data.telefono,
+        roleIds: data.roleIds,
+        estado: data.estado,
+        password: data.password
+      })
       const freshUsers = await settingsService.getErpUsers()
 
       setErpUsers(freshUsers)
@@ -192,7 +201,26 @@ const SettingsMainView: React.FC = () => {
 
       setToast({ open: true, message: successMsg, severity: 'success' })
     } catch (err: any) {
-      setToast({ open: true, message: err?.message || 'Error al actualizar usuario.', severity: 'error' })
+      if (err instanceof ErpUserRefreshError) {
+        setToast({ open: true, message: err.message, severity: 'warning' })
+
+        try {
+          const freshUsers = await settingsService.getErpUsers()
+
+          setErpUsers(freshUsers)
+        } catch {
+          // The refresh warning already explains the stale view.
+        }
+      } else if (err instanceof ErpUserPartialUpdateError) {
+        setToast({
+          open: true,
+          message: err.message,
+          severity: 'error'
+        })
+      } else {
+        setToast({ open: true, message: err?.message || 'Error al actualizar usuario.', severity: 'error' })
+      }
+
       throw err
     }
   }
@@ -395,6 +423,8 @@ const SettingsMainView: React.FC = () => {
             <UsersManagementTab
               users={erpUsers}
               isAdmin={isAdmin}
+              currentUserId={user?.id}
+              canAssignRoles={hasPermission('iam:user:assign-roles')}
               onCreateUser={handleCreateErpUser}
               onUpdateUser={handleUpdateErpUser}
               onToggleStatus={handleToggleUserStatus}

@@ -15,17 +15,21 @@ import InputAdornment from '@mui/material/InputAdornment'
 
 import CustomChip from '@core/components/mui/Chip'
 
-import { UserCreateEditDrawer } from '../components/UserCreateEditDrawer'
+import { UserCreateEditDrawer, type UserSaveData } from '../components/UserCreateEditDrawer'
+import { mapGqlRoleToSystemRole } from '@/services/adapters/iamAdapter'
+import { wouldRemoveLastAdministrator } from '@/utils/roleSet'
 import type { ErpUser, SystemRole, UserAccountStatus } from '@/types/settingsTypes'
 
 interface Props {
   users: ErpUser[]
   isAdmin?: boolean
+  currentUserId?: string
+  canAssignRoles?: boolean
   onCreateUser: (data: {
     nombre: string
     email: string
     telefono?: string
-    rol: SystemRole
+    initialRoleId: string
     passwordInicial?: string
     estado?: UserAccountStatus
   }) => Promise<void>
@@ -34,7 +38,7 @@ interface Props {
     data: {
       nombre: string
       telefono?: string
-      rol: SystemRole
+      roleIds: string[]
       estado: UserAccountStatus
       password?: string
     }
@@ -54,6 +58,8 @@ const ROLE_CONFIG: Record<SystemRole, { label: string; color: 'primary' | 'info'
 export const UsersManagementTab: React.FC<Props> = ({
   users,
   isAdmin = true,
+  currentUserId,
+  canAssignRoles = true,
   onCreateUser,
   onUpdateUser,
   onToggleStatus
@@ -71,7 +77,9 @@ export const UsersManagementTab: React.FC<Props> = ({
       u =>
         u.nombre.toLowerCase().includes(q) ||
         u.email.toLowerCase().includes(q) ||
-        u.rol.toLowerCase().includes(q)
+        u.rol.toLowerCase().includes(q) ||
+        (u.roleName || '').toLowerCase().includes(q) ||
+        u.roles.some(role => role.name.toLowerCase().includes(q))
     )
   }, [users, search])
 
@@ -85,25 +93,40 @@ export const UsersManagementTab: React.FC<Props> = ({
     setDrawerOpen(true)
   }
 
-  const handleSave = async (data: {
-    nombre: string
-    email: string
-    telefono?: string
-    rol: SystemRole
-    estado: UserAccountStatus
-    passwordInicial?: string
-    password?: string
-  }) => {
+  const assertLastAdministratorPreserved = (user: ErpUser, nextRoleIds: string[]) => {
+    if (wouldRemoveLastAdministrator(user, users, nextRoleIds)) {
+      throw new Error(
+        'No puedes quitar el rol de administrador al último administrador activo del tenant.'
+      )
+    }
+  }
+
+  const handleSave = async (data: UserSaveData) => {
     if (selectedUser) {
+      assertLastAdministratorPreserved(selectedUser, data.roleIds)
+
       await onUpdateUser(selectedUser.id, {
         nombre: data.nombre,
         telefono: data.telefono,
-        rol: data.rol,
+        roleIds: data.roleIds,
         estado: data.estado,
         password: data.password
       })
     } else {
-      await onCreateUser(data)
+      const initialRoleId = data.initialRoleId || data.roleIds[0]
+
+      if (!initialRoleId) {
+        throw new Error('Seleccione el rol inicial del usuario.')
+      }
+
+      await onCreateUser({
+        nombre: data.nombre,
+        email: data.email,
+        telefono: data.telefono,
+        initialRoleId,
+        passwordInicial: data.passwordInicial,
+        estado: data.estado
+      })
     }
   }
 
@@ -191,8 +214,6 @@ export const UsersManagementTab: React.FC<Props> = ({
                 </tr>
               ) : (
                 filteredUsers.map(user => {
-                  const roleKey = String(user.rol || '').toUpperCase() as SystemRole
-                  const roleCfg = ROLE_CONFIG[roleKey] || ROLE_CONFIG.VENTAS
                   const isActive = user.estado === 'ACTIVO'
 
                   return (
@@ -226,14 +247,34 @@ export const UsersManagementTab: React.FC<Props> = ({
                         )}
                       </td>
 
-                      {/* Rol Asignado */}
+                      {/* Roles Asignados */}
                       <td className='py-3 px-4'>
-                        <CustomChip
-                          size='small'
-                          label={roleCfg.label}
-                          variant='tonal'
-                          color={roleCfg.color}
-                        />
+                        {user.roles.length === 0 ? (
+                          <CustomChip
+                            size='small'
+                            label='Sin Rol'
+                            variant='tonal'
+                            color='secondary'
+                          />
+                        ) : (
+                          <div className='flex flex-wrap gap-1.5'>
+                            {user.roles.map(role => {
+                              const roleCfg =
+                                ROLE_CONFIG[mapGqlRoleToSystemRole(role.name)] ||
+                                ROLE_CONFIG.UNASSIGNED
+
+                              return (
+                                <CustomChip
+                                  key={role.id}
+                                  size='small'
+                                  label={role.name}
+                                  variant='tonal'
+                                  color={roleCfg.color}
+                                />
+                              )
+                            })}
+                          </div>
+                        )}
                       </td>
 
                       {/* Estado */}
@@ -303,6 +344,8 @@ export const UsersManagementTab: React.FC<Props> = ({
       <UserCreateEditDrawer
         open={drawerOpen}
         isAdmin={isAdmin}
+        currentUserId={currentUserId}
+        canAssignRoles={canAssignRoles}
         onClose={() => setDrawerOpen(false)}
         userToEdit={selectedUser}
         onSave={handleSave}

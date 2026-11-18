@@ -86,14 +86,30 @@ export interface BcvRateConfig {
 }
 
 // 4. Gestión de Usuarios y Roles (RBAC)
+export interface ErpRole {
+  id: string
+  name: string
+  description?: string
+  isSystem: boolean
+}
+
 export interface ErpUser {
   id: string
   nombre: string
   email: string
   telefono?: string
   avatarUrl?: string
+
+  /** Every role assigned to the user, preserving the provider IDs. */
+  roles: ErpRole[]
+
+  /** Derived primary role for legacy display, search and colour mapping. */
   rol: SystemRole
+
+  /** Derived primary role ID for display only; never use it for writes. */
   roleId?: string
+
+  /** Derived primary role name for display only. */
   roleName?: string
   estado: UserAccountStatus
   ultimoIngreso?: string
@@ -104,7 +120,9 @@ export interface CreateUserInput {
   nombre: string
   email: string
   telefono?: string
-  rol: SystemRole
+
+  /** Explicit role selected in the create form; sent as `roleIds: [initialRoleId]`. */
+  initialRoleId: string
   passwordInicial: string
   estado?: UserAccountStatus
 }
@@ -112,7 +130,9 @@ export interface CreateUserInput {
 export interface UpdateUserInput {
   nombre: string
   telefono?: string
-  rol: SystemRole
+
+  /** Complete next role set. The service diffs it against the persisted assignments. */
+  roleIds: string[]
   estado: UserAccountStatus
   password?: string
 }
