@@ -135,6 +135,22 @@ export const SET_TENANT_USER_ROLES_MUTATION = `
   }
 `
 
+export const ASSIGN_ROLE_TO_USER_MUTATION = `
+  mutation AssignRoleToUser($userId: ID!, $roleId: ID!) {
+    assignRoleToUser(userId: $userId, roleId: $roleId) {
+      id
+      userId
+      roleId
+    }
+  }
+`
+
+export const REVOKE_ROLE_FROM_USER_MUTATION = `
+  mutation RevokeRoleFromUser($userId: ID!, $roleId: ID!) {
+    revokeRoleFromUser(userId: $userId, roleId: $roleId)
+  }
+`
+
 export const ACTIVATE_TENANT_USER_MUTATION = `
   mutation ActivateTenantUser($input: TenantUserStatusInput!) {
     activateTenantUser(input: $input) {
