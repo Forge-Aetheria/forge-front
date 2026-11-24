@@ -24,6 +24,7 @@ import Button from '@mui/material/Button'
 import Menu from '@mui/material/Menu'
 import MenuItem from '@mui/material/MenuItem'
 import Divider from '@mui/material/Divider'
+import LinearProgress from '@mui/material/LinearProgress'
 
 import { useBcvRate } from '@/hooks/useBcvRate'
 
@@ -34,9 +35,22 @@ import type { ProductTemplate, InventoryFilterState } from '@/types/inventoryTyp
 import { calculateFinancials } from '@/services/inventoryService'
 
 // Component Imports
+import EmptyTableState from '@/components/EmptyTableState'
 import InventoryTableFilters from './InventoryTableFilters'
 import InventoryQuickViewDrawer from './InventoryQuickViewDrawer'
 import InventoryMobileList from './components/InventoryMobileList'
+
+export interface InventoryServerPaginationProps {
+  filters: InventoryFilterState
+  onFiltersChange: (next: InventoryFilterState) => void
+  page: number
+  rowsPerPage: number
+  totalCount: number
+  onPageChange: (page: number) => void
+  onRowsPerPageChange: (rowsPerPage: number) => void
+  categories?: string[]
+  loading?: boolean
+}
 
 type Props = {
   initialTemplates: ProductTemplate[]
@@ -45,6 +59,7 @@ type Props = {
   onEditProduct?: (template: ProductTemplate) => void
   onAdjustStock?: (template: ProductTemplate) => void
   initialStockStatusFilter?: InventoryFilterState['stockStatus']
+  serverPagination?: InventoryServerPaginationProps
 }
 
 const InventoryTable = ({
@@ -53,15 +68,16 @@ const InventoryTable = ({
   onToggleFiscal,
   onEditProduct,
   onAdjustStock,
-  initialStockStatusFilter = 'ALL'
+  initialStockStatusFilter = 'ALL',
+  serverPagination
 }: Props) => {
   const bcvRate = useBcvRate()
 
   // States
   const [selectedTemplate, setSelectedTemplate] = useState<ProductTemplate | null>(null)
   const [drawerOpen, setDrawerOpen] = useState(false)
-  const [page, setPage] = useState(0)
-  const [rowsPerPage, setRowsPerPage] = useState(10)
+  const [localPage, setLocalPage] = useState(0)
+  const [localRowsPerPage, setLocalRowsPerPage] = useState(10)
 
   // Selección múltiple y control de columnas
   const [selectedIds, setSelectedIds] = useState<string[]>([])
@@ -85,7 +101,7 @@ const InventoryTable = ({
   const [columnAnchorEl, setColumnAnchorEl] = useState<HTMLElement | null>(null)
   const [batchMenuAnchorEl, setBatchMenuAnchorEl] = useState<HTMLElement | null>(null)
 
-  const [filters, setFilters] = useState<InventoryFilterState>({
+  const [localFilters, setLocalFilters] = useState<InventoryFilterState>({
     search: '',
     productType: 'ALL',
     category: 'ALL',
@@ -93,49 +109,76 @@ const InventoryTable = ({
     operation: 'ALL'
   })
 
+  const filters = serverPagination ? serverPagination.filters : localFilters
+  const page = serverPagination ? serverPagination.page : localPage
+  const rowsPerPage = serverPagination ? serverPagination.rowsPerPage : localRowsPerPage
+
   // Extract unique categories
   const categories = useMemo(() => {
+    if (serverPagination?.categories && serverPagination.categories.length > 0) {
+      return serverPagination.categories
+    }
+
     return Array.from(new Set(initialTemplates.map(t => t.categoryName)))
-  }, [initialTemplates])
+  }, [initialTemplates, serverPagination?.categories])
 
   const handleFilterChange = (key: keyof InventoryFilterState, value: any) => {
-    setFilters(prev => ({ ...prev, [key]: value }))
-    setPage(0)
+    const next = { ...filters, [key]: value }
+
+    if (serverPagination) {
+      serverPagination.onFiltersChange(next)
+      serverPagination.onPageChange(0)
+    } else {
+      setLocalFilters(next)
+      setLocalPage(0)
+    }
   }
 
   const handleResetFilters = () => {
-    setFilters({
+    const empty: InventoryFilterState = {
       search: '',
       productType: 'ALL',
       category: 'ALL',
       stockStatus: 'ALL',
       operation: 'ALL'
-    })
-    setPage(0)
+    }
+
+    if (serverPagination) {
+      serverPagination.onFiltersChange(empty)
+      serverPagination.onPageChange(0)
+    } else {
+      setLocalFilters(empty)
+      setLocalPage(0)
+    }
   }
 
-  // Filter and search logic
+  const isClientRefined =
+    !serverPagination || filters.operation !== 'ALL' || filters.stockStatus !== 'ALL'
+
+  // Filter and search logic (full in-memory when standalone; only operation/stockStatus refinement when server-paginated)
   const filteredTemplates = useMemo(() => {
     return initialTemplates.filter(template => {
-      if (filters.search) {
-        const query = filters.search.toLowerCase()
-        const matchName = template.name.toLowerCase().includes(query)
-        const matchCode = template.defaultCode.toLowerCase().includes(query)
-        const matchBarcode = template.barcode?.toLowerCase().includes(query)
-        const matchTag = template.tags.some(tag => tag.toLowerCase().includes(query))
-        const matchVariantSku = template.variants.some(v => v.sku.toLowerCase().includes(query))
+      if (!serverPagination) {
+        if (filters.search) {
+          const query = filters.search.toLowerCase()
+          const matchName = template.name.toLowerCase().includes(query)
+          const matchCode = template.defaultCode.toLowerCase().includes(query)
+          const matchBarcode = template.barcode?.toLowerCase().includes(query)
+          const matchTag = template.tags.some(tag => tag.toLowerCase().includes(query))
+          const matchVariantSku = template.variants.some(v => v.sku.toLowerCase().includes(query))
 
-        if (!matchName && !matchCode && !matchBarcode && !matchTag && !matchVariantSku) {
+          if (!matchName && !matchCode && !matchBarcode && !matchTag && !matchVariantSku) {
+            return false
+          }
+        }
+
+        if (filters.productType !== 'ALL' && template.productType !== filters.productType) {
           return false
         }
-      }
 
-      if (filters.productType !== 'ALL' && template.productType !== filters.productType) {
-        return false
-      }
-
-      if (filters.category !== 'ALL' && template.categoryName !== filters.category) {
-        return false
+        if (filters.category !== 'ALL' && template.categoryName !== filters.category) {
+          return false
+        }
       }
 
       if (filters.operation === 'CAN_SELL' && !template.canBeSold) return false
@@ -164,12 +207,19 @@ const InventoryTable = ({
 
       return true
     })
-  }, [initialTemplates, filters])
+  }, [initialTemplates, filters, serverPagination])
 
   // Pagination slice
   const paginatedTemplates = useMemo(() => {
+    if (serverPagination && !isClientRefined) {
+      return filteredTemplates
+    }
+
     return filteredTemplates.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-  }, [filteredTemplates, page, rowsPerPage])
+  }, [filteredTemplates, page, rowsPerPage, serverPagination, isClientRefined])
+
+  const displayTotalCount =
+    serverPagination && !isClientRefined ? serverPagination.totalCount : filteredTemplates.length
 
   const handleOpenDrawer = (template: ProductTemplate) => {
     setSelectedTemplate(template)
@@ -242,7 +292,7 @@ const InventoryTable = ({
             size='small'
             variant='tonal'
             color='primary'
-            label={`${filteredTemplates.length} ${filteredTemplates.length === 1 ? 'artículo' : 'artículos'}`}
+            label={`${displayTotalCount} ${displayTotalCount === 1 ? 'artículo' : 'artículos'}`}
           />
 
           {selectedIds.length > 0 && (
@@ -303,6 +353,8 @@ const InventoryTable = ({
           </Button>
         </div>
       </div>
+
+      {serverPagination?.loading && <LinearProgress sx={{ height: 2 }} />}
 
       {/* Mobile View (< 768px) */}
       <div className='block md:hidden'>
@@ -414,17 +466,26 @@ const InventoryTable = ({
           </TableHead>
           <TableBody>
             {paginatedTemplates.length === 0 ? (
-              <TableRow>
-                <TableCell
-                  colSpan={colSpanCount}
-                  className='text-center py-10 text-[#6B7280]'
-                >
-                  <i className='tabler-package-off text-3xl mb-2 inline-block text-[#9CA3AF]' />
-                  <Typography variant='body2'>
-                    No se encontraron artículos con los filtros seleccionados.
-                  </Typography>
-                </TableCell>
-              </TableRow>
+              <EmptyTableState
+                colSpan={colSpanCount}
+                icon='tabler-package-off'
+                title={
+                  initialTemplates.length === 0
+                    ? 'No existen artículos registrados en el catálogo'
+                    : 'No se encontraron artículos con los filtros seleccionados'
+                }
+                description={
+                  initialTemplates.length === 0 ? (
+                    <>
+                      Haz clic en <strong>&ldquo;+ Nuevo&rdquo;</strong> arriba a la derecha para registrar un producto o servicio.
+                    </>
+                  ) : (
+                    'Prueba ajustando la búsqueda o limpia los filtros activos.'
+                  )
+                }
+                actionLabel={initialTemplates.length > 0 ? 'Limpiar filtros' : undefined}
+                onAction={initialTemplates.length > 0 ? handleResetFilters : undefined}
+              />
             ) : (
               paginatedTemplates.map((template, idx) => {
                 const financials = calculateFinancials(
@@ -691,13 +752,26 @@ const InventoryTable = ({
       <TablePagination
         rowsPerPageOptions={[5, 10, 25]}
         component='div'
-        count={filteredTemplates.length}
+        count={displayTotalCount}
         rowsPerPage={rowsPerPage}
         page={page}
-        onPageChange={(_, newPage) => setPage(newPage)}
+        onPageChange={(_, newPage) => {
+          if (serverPagination) {
+            serverPagination.onPageChange(newPage)
+          } else {
+            setLocalPage(newPage)
+          }
+        }}
         onRowsPerPageChange={e => {
-          setRowsPerPage(parseInt(e.target.value, 10))
-          setPage(0)
+          const nextSize = parseInt(e.target.value, 10)
+
+          if (serverPagination) {
+            serverPagination.onRowsPerPageChange(nextSize)
+            serverPagination.onPageChange(0)
+          } else {
+            setLocalRowsPerPage(nextSize)
+            setLocalPage(0)
+          }
         }}
         labelRowsPerPage='Filas por página:'
         labelDisplayedRows={({ from, to, count }) =>

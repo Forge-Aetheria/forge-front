@@ -30,6 +30,7 @@ import TablePagination from '@mui/material/TablePagination'
 
 import CustomChip from '@core/components/mui/Chip'
 import CustomTextField from '@core/components/mui/TextField'
+import EmptyTableState from '@/components/EmptyTableState'
 
 import type { WarehouseOperationOrder, WarehouseOperationType } from '@/types/inventoryTypes'
 import {
@@ -577,17 +578,16 @@ return
               </TableHead>
               <TableBody>
                 {filteredOrders.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={colSpanCount} sx={{ py: 6, textAlign: 'center', color: '#6B7280' }}>
-                      <i className={`${cfg.icon} text-3xl text-[#6C5CE7] mb-2 inline-block`} />
-                      <Typography variant='body1' className='font-semibold text-[#1E1B2E]'>
-                        No se encontraron operaciones en esta vista
-                      </Typography>
-                      <Typography variant='caption' className='text-xs mt-1 block text-[#6B7280]'>
+                  <EmptyTableState
+                    colSpan={colSpanCount}
+                    icon={cfg.icon}
+                    title='No se encontraron operaciones en esta vista'
+                    description={
+                      <>
                         Haz clic en <strong>&ldquo;+ {cfg.newBtnLabel}&rdquo;</strong> arriba a la derecha para registrar una nueva orden.
-                      </Typography>
-                    </TableCell>
-                  </TableRow>
+                      </>
+                    }
+                  />
                 ) : (
                   paginatedOrders.map((order, idx) => {
                     const st = STATUS_META[order.estado] || STATUS_META.READY

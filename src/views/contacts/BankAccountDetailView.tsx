@@ -27,6 +27,12 @@ import Skeleton from '@mui/material/Skeleton'
 
 import CustomTextField from '@core/components/mui/TextField'
 import CustomChip from '@core/components/mui/Chip'
+import {
+  getNumericInputProps,
+  handleNumericKeyDown,
+  sanitizeNumericValue,
+  validateNumericValue
+} from '@/utils/numericInput'
 
 import type {
   BankAccount,
@@ -173,10 +179,33 @@ export const BankAccountDetailView: React.FC<Props> = ({ id }) => {
 return
     }
 
-    if (!numeroCuenta.trim()) {
-      setToast({ open: true, message: 'Ingresa el número de cuenta o identificador.', severity: 'error' })
-      
-return
+    const isVirtualBank =
+      tipoCuenta === 'VIRTUAL' ||
+      banco.includes('Zelle') ||
+      banco.includes('PayPal') ||
+      banco.includes('Binance')
+
+    if (!isVirtualBank) {
+      const accountError = validateNumericValue(numeroCuenta, {
+        fieldLabel: 'Número de cuenta',
+        required: true,
+        minLength: 20,
+        maxLength: 20
+      })
+
+      if (accountError) {
+        setToast({ open: true, message: accountError, severity: 'error' })
+
+        return
+      }
+    } else if (numeroCuenta.trim().length < 4 || numeroCuenta.trim().length > 100) {
+      setToast({
+        open: true,
+        message: 'El identificador de billetera virtual debe tener entre 4 y 100 caracteres.',
+        severity: 'error'
+      })
+
+      return
     }
 
     if (!titular.trim()) {
@@ -191,10 +220,39 @@ return
 return
     }
 
-    if (isPagoMovil && !telefonoPagoMovil.trim()) {
-      setToast({ open: true, message: 'Para Pago Móvil debes registrar el número telefónico.', severity: 'error' })
-      
-return
+    if (!/^[VEJPG]-?\d{5,10}(-\d)?$/.test(identificacionTitular.trim().toUpperCase())) {
+      setToast({
+        open: true,
+        message: 'El RIF o Cédula debe tener un formato válido (ej: J-40192834-5 o V-18456789).',
+        severity: 'error'
+      })
+
+      return
+    }
+
+    if (isPagoMovil) {
+      const phoneError = validateNumericValue(telefonoPagoMovil, {
+        fieldLabel: 'Teléfono Pago Móvil',
+        required: true,
+        minLength: 11,
+        maxLength: 11
+      })
+
+      if (phoneError) {
+        setToast({ open: true, message: phoneError, severity: 'error' })
+
+        return
+      }
+
+      if (!/^04(12|14|16|24|26)\d{7}$/.test(telefonoPagoMovil.trim())) {
+        setToast({
+          open: true,
+          message: 'El teléfono Pago Móvil debe iniciar con 0412, 0414, 0416, 0424 o 0426 (11 dígitos).',
+          severity: 'error'
+        })
+
+        return
+      }
     }
 
     try {
@@ -595,13 +653,49 @@ return
                   <CustomTextField
                     fullWidth
                     label='Número de Cuenta / Identificador *'
-                    placeholder='Ej: 0102-0123-45-1234567890 o email para Zelle'
+                    placeholder={
+                      tipoCuenta === 'VIRTUAL' || banco.includes('Zelle') || banco.includes('PayPal') || banco.includes('Binance')
+                        ? 'Ej: pagos@empresa.com o ID de billetera'
+                        : 'Ej: 01020123451234567890 (20 dígitos)'
+                    }
                     value={numeroCuenta}
-                    onChange={e => setNumeroCuenta(e.target.value)}
+                    onKeyDown={e => {
+                      const isVirtual =
+                        tipoCuenta === 'VIRTUAL' ||
+                        banco.includes('Zelle') ||
+                        banco.includes('PayPal') ||
+                        banco.includes('Binance')
+
+                      if (!isVirtual) {
+                        handleNumericKeyDown(e, { allowDecimal: false })
+                      }
+                    }}
+                    onChange={e => {
+                      const isVirtual =
+                        tipoCuenta === 'VIRTUAL' ||
+                        banco.includes('Zelle') ||
+                        banco.includes('PayPal') ||
+                        banco.includes('Binance')
+
+                      setNumeroCuenta(
+                        isVirtual
+                          ? e.target.value
+                          : sanitizeNumericValue(e.target.value, { allowDecimal: false, maxLength: 20 })
+                      )
+                    }}
+                    slotProps={{
+                      htmlInput:
+                        tipoCuenta === 'VIRTUAL' ||
+                        banco.includes('Zelle') ||
+                        banco.includes('PayPal') ||
+                        banco.includes('Binance')
+                          ? { maxLength: 100 }
+                          : getNumericInputProps({ maxLength: 20 })
+                    }}
                     helperText={
-                      banco.includes('Zelle') || banco.includes('PayPal')
-                        ? 'Ingresa el correo electrónico o identificador de cobro'
-                        : 'Ingresa los 20 dígitos de la cuenta bancaria sin guiones o con formato estándar'
+                      tipoCuenta === 'VIRTUAL' || banco.includes('Zelle') || banco.includes('PayPal') || banco.includes('Binance')
+                        ? 'Ingresa el correo electrónico o identificador de cobro (4 a 100 caracteres)'
+                        : 'Ingresa exactamente los 20 dígitos numéricos de la cuenta bancaria'
                     }
                     required
                   />
@@ -677,10 +771,16 @@ return
                   <CustomTextField
                     fullWidth
                     label='Número Telefónico Receptor (Pago Móvil) *'
-                    placeholder='Ej: 0414-1234567 o 0412-9876543'
+                    placeholder='Ej: 04141234567'
                     value={telefonoPagoMovil}
-                    onChange={e => setTelefonoPagoMovil(e.target.value)}
-                    helperText='Requerido para generar códigos de cobro y liquidaciones de Pago Móvil'
+                    onKeyDown={e => handleNumericKeyDown(e, { allowDecimal: false })}
+                    onChange={e =>
+                      setTelefonoPagoMovil(
+                        sanitizeNumericValue(e.target.value, { allowDecimal: false, maxLength: 11 })
+                      )
+                    }
+                    slotProps={{ htmlInput: getNumericInputProps({ maxLength: 11 }) }}
+                    helperText='11 dígitos numéricos (ej: 0412, 0414, 0416, 0424 o 0426)'
                     required={isPagoMovil}
                   />
                 )}

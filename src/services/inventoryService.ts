@@ -9,6 +9,7 @@ import type {
 import { executeGraphQL } from '@/libs/graphqlClient'
 import {
   GET_TEMPLATES_QUERY,
+  GET_TEMPLATES_PAGINATED_QUERY,
   GET_TEMPLATE_BY_ID_QUERY,
   GET_KARDEX_QUERY,
   GET_CATEGORIES_QUERY,
@@ -42,6 +43,8 @@ import {
 } from '@/services/adapters/inventoryAdapter'
 import { fetchActiveBcvRate } from '@/services/bcvService'
 import { getWarehouseOperationOrders } from '@/services/inventory/operationOrdersService'
+import { buildProductTemplateWhereInput } from '@/services/inventoryWhere'
+import type { ProductTemplateSearchParams } from '@/services/inventoryWhere'
 import { GET_TENANT_SETTING_QUERY, SET_TENANT_SETTING_MUTATION } from '@/graphql/pos.gql'
 
 // Re-export modularized services so all existing '@/services/inventoryService' imports work seamlessly
@@ -121,6 +124,35 @@ export const getInventoryTemplates = async (forceRefresh = false): Promise<Produ
   })()
 
   return fetchTemplatesPromise
+}
+
+export interface PaginatedTemplatesResult {
+  items: ProductTemplate[]
+  total: number
+}
+
+export const searchInventoryTemplates = async (
+  params: ProductTemplateSearchParams & { take: number; skip: number }
+): Promise<PaginatedTemplatesResult> => {
+  const where = buildProductTemplateWhereInput(params)
+
+  const res = await executeGraphQL<{
+    templates: GqlProductTemplate[]
+    inventoryTemplateCount: number
+  }>(
+    GET_TEMPLATES_PAGINATED_QUERY,
+    {
+      where,
+      take: params.take,
+      skip: params.skip
+    },
+    { timeoutMs: 5000 }
+  )
+
+  return {
+    items: (res?.templates ?? []).map(mapGqlTemplateToFrontend),
+    total: res?.inventoryTemplateCount ?? 0
+  }
 }
 
 export const getInventoryTemplateById = async (id: string): Promise<ProductTemplate | null> => {

@@ -25,6 +25,7 @@ import Alert from '@mui/material/Alert'
 import Skeleton from '@mui/material/Skeleton'
 
 import CustomChip from '@core/components/mui/Chip'
+import EmptyTableState from '@/components/EmptyTableState'
 
 import type { BankAccount, BankCurrency } from '@/types/bankAccountTypes'
 import { bankAccountsService } from '@/services/bankAccountsService'
@@ -258,17 +259,12 @@ export const BankAccountsListView: React.FC = () => {
                   </TableRow>
                 ))
               ) : filteredAccounts.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={7} align='center' sx={{ py: 6, color: '#94A3B8' }}>
-                    <i className='tabler-building-bank text-4xl mb-2 text-[#CBD5E1]' />
-                    <Typography variant='subtitle1' sx={{ fontWeight: 600, color: '#64748B' }}>
-                      No se encontraron cuentas bancarias
-                    </Typography>
-                    <Typography variant='caption' sx={{ color: '#94A3B8' }}>
-                      Puedes agregar cuentas bancarias de la empresa o vincularlas a tus clientes y proveedores.
-                    </Typography>
-                  </TableCell>
-                </TableRow>
+                <EmptyTableState
+                  colSpan={7}
+                  icon='tabler-building-bank'
+                  title='No se encontraron cuentas bancarias'
+                  description='Puedes agregar cuentas bancarias de la empresa o vincularlas a tus clientes y proveedores.'
+                />
               ) : (
                 paginatedAccounts.map(acc => (
                   <TableRow key={acc.id} hover>

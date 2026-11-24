@@ -32,6 +32,7 @@ import { useBcvRate } from '@/hooks/useBcvRate'
 
 import CustomTextField from '@core/components/mui/TextField'
 import CustomChip from '@core/components/mui/Chip'
+import EmptyTableState from '@/components/EmptyTableState'
 
 import type { ProductTemplate, StockAdjustmentRecord, AdjustmentReason } from '@/types/inventoryTypes'
 import {
@@ -658,11 +659,16 @@ const InventoryAdjustmentsView = () => {
 
                 {/* HISTORICAL APPLIED ADJUSTMENTS */}
                 {filteredAdjustments.length === 0 && draftRows.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={draftRows.length > 0 ? 8 : 7} className='text-center py-10 text-textSecondary'>
-                      No existen ajustes registrados. Presione <strong>&quot;Nuevo&quot;</strong> arriba para iniciar un conteo rápido.
-                    </TableCell>
-                  </TableRow>
+                  <EmptyTableState
+                    colSpan={draftRows.length > 0 ? 8 : 7}
+                    icon='tabler-adjustments-horizontal'
+                    title='No existen ajustes registrados'
+                    description={
+                      <>
+                        Presiona <strong>&ldquo;+ Nuevo&rdquo;</strong> arriba para iniciar un conteo rápido o ajuste de inventario.
+                      </>
+                    }
+                  />
                 ) : (
                   paginatedAdjustments.map((adj, index) => {
                     const reasonMeta = reasonLabels[adj.motivo] || {
