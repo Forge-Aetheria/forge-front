@@ -1,8 +1,8 @@
 # Tasks: Validate numeric inputs (cost, price, weight, min stock) and barcode length in Product form
 
-- **Ticket**: .agents/tickets/backlog/TICK-003-product-numeric-and-barcode-validation.md
+- **Ticket**: .agents/tickets/backlog/TICK-073-shared-validate-numeric-inputs-cost-price-weight-min-stock-and-barc.md
 - **Repository**: forge-front
-- **Plan**: `.brain/features/TICK-003/plan.md`
+- **Plan**: `.brain/features/TICK-073/plan.md`
 - **Date**: 2026-11-22
 
 ## Conventions

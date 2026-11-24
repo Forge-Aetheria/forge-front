@@ -1,9 +1,9 @@
 # Technical Plan: Validate numeric inputs (cost, price, weight, min stock) and barcode length in Product form
 
-- **Ticket**: .agents/tickets/backlog/TICK-003-product-numeric-and-barcode-validation.md
+- **Ticket**: .agents/tickets/backlog/TICK-073-shared-validate-numeric-inputs-cost-price-weight-min-stock-and-barc.md
 - **Repository**: forge-front
 - **Domain**: shared
-- **Spec**: `.brain/features/TICK-003/spec.md`
+- **Spec**: `.brain/features/TICK-073/spec.md`
 - **Date**: 2026-11-22
 
 ## Summary
@@ -33,7 +33,7 @@ Extract the primary requirement from the spec and the technical strategy to fulf
 
 ## Cross-sidecar integration
 
-Indicate whether this feature consumes or exposes a contract to other repositories. If so, link `.brain/features/TICK-003/contract.md`.
+Indicate whether this feature consumes or exposes a contract to other repositories. If so, link `.brain/features/TICK-073/contract.md`.
 
 ## Testing strategy
 

@@ -1,6 +1,6 @@
 # EARS Specification: Migrate product catalog filtering and pagination to backend GraphQL
 
-- **Ticket**: .agents/tickets/backlog/TICK-001-products-server-side-filtering.md
+- **Ticket**: .agents/tickets/backlog/TICK-071-forge-front-migrate-product-catalog-filtering-and-pagination-to-backend.md
 - **Repository**: forge-front (with `templatesCount` query in `forge-backend`)
 - **Domain**: forge-front
 - **Date**: 2026-11-22

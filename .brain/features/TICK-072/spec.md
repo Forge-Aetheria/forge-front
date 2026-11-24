@@ -1,6 +1,6 @@
 # EARS Specification: Homologate empty state component across inventory and ERP tables
 
-- **Ticket**: .agents/tickets/backlog/TICK-002-homologate-table-empty-states.md
+- **Ticket**: .agents/tickets/backlog/TICK-072-forge-front-homologate-empty-state-component-across-inventory-and-erp-ta.md
 - **Repository**: forge-front
 - **Domain**: forge-front
 - **Date**: 2026-11-22

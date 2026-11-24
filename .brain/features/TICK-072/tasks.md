@@ -1,8 +1,8 @@
 # Tasks: Homologate empty state component across inventory and ERP tables
 
-- **Ticket**: .agents/tickets/backlog/TICK-002-homologate-table-empty-states.md
+- **Ticket**: .agents/tickets/backlog/TICK-072-forge-front-homologate-empty-state-component-across-inventory-and-erp-ta.md
 - **Repository**: forge-front
-- **Plan**: `.brain/features/TICK-002/plan.md`
+- **Plan**: `.brain/features/TICK-072/plan.md`
 - **Date**: 2026-11-22
 
 ## Conventions

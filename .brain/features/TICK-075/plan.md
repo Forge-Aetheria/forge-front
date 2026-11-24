@@ -1,9 +1,9 @@
 # Technical Plan: Align filter inputs vertically in Kardex and Movements Ledger view
 
-- **Ticket**: .agents/tickets/backlog/TICK-005-kardex-filters-visual-alignment.md
+- **Ticket**: .agents/tickets/backlog/TICK-075-forge-front-align-filter-inputs-vertically-in-kardex-and-movements-ledge.md
 - **Repository**: forge-front
 - **Domain**: forge-front
-- **Spec**: `.brain/features/TICK-005/spec.md`
+- **Spec**: `.brain/features/TICK-075/spec.md`
 - **Date**: 2026-11-22
 
 ## Summary

@@ -1,6 +1,6 @@
 # Technical Plan: Standardize primary Guardar button size in OperationOrderDetailView
 
-- **Ticket**: .agents/tickets/backlog/TICK-010-receipts-save-button-size-consistency.md
+- **Ticket**: .agents/tickets/backlog/TICK-010-forge-front-standardize-primary-guardar-button-size-in-opera.md
 - **Repository**: forge-front
 - **Domain**: forge-front
 - **Spec**: `.brain/features/TICK-010/spec.md`

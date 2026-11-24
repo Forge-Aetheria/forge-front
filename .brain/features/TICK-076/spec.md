@@ -1,6 +1,6 @@
 # EARS Specification: Replace native date input with template datepicker and define past-date rule in Receipts
 
-- **Ticket**: .agents/tickets/backlog/TICK-007-receipts-date-picker-and-past-dates.md
+- **Ticket**: .agents/tickets/backlog/TICK-076-forge-front-replace-native-date-input-with-template-datepicker-and-defin.md
 - **Repository**: forge-front
 - **Domain**: forge-front
 - **Date**: 2026-11-22

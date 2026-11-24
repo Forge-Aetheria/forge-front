@@ -1,8 +1,8 @@
 # Tasks: Replace native date input with template datepicker and define past-date rule in Receipts
 
-- **Ticket**: .agents/tickets/backlog/TICK-007-receipts-date-picker-and-past-dates.md
+- **Ticket**: .agents/tickets/backlog/TICK-076-forge-front-replace-native-date-input-with-template-datepicker-and-defin.md
 - **Repository**: forge-front
-- **Plan**: `.brain/features/TICK-007/plan.md`
+- **Plan**: `.brain/features/TICK-076/plan.md`
 - **Date**: 2026-11-22
 
 ## Conventions

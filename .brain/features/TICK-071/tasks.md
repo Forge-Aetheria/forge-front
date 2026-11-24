@@ -1,8 +1,8 @@
 # Tasks: Migrate product catalog filtering and pagination to backend GraphQL
 
-- **Ticket**: .agents/tickets/backlog/TICK-001-products-server-side-filtering.md
+- **Ticket**: .agents/tickets/backlog/TICK-071-forge-front-migrate-product-catalog-filtering-and-pagination-to-backend.md
 - **Repository**: forge-front
-- **Plan**: `.brain/features/TICK-001/plan.md`
+- **Plan**: `.brain/features/TICK-071/plan.md`
 - **Date**: 2026-11-22
 
 ## Conventions

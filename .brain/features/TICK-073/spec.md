@@ -1,6 +1,6 @@
 # EARS Specification: Validate numeric inputs (cost, price, weight, min stock) and barcode length in Product form
 
-- **Ticket**: .agents/tickets/backlog/TICK-003-product-numeric-and-barcode-validation.md
+- **Ticket**: .agents/tickets/backlog/TICK-073-shared-validate-numeric-inputs-cost-price-weight-min-stock-and-barc.md
 - **Repository**: forge-front
 - **Domain**: shared
 - **Date**: 2026-11-22

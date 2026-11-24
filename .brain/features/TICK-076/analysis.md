@@ -1,6 +1,6 @@
-# SDD Analysis: TICK-001
+# SDD Analysis: TICK-076
 
-- **Generado**: 2026-11-22T21:29:55.432Z
+- **Generado**: 2026-11-10T15:32:56.452Z
 - **Repositorio**: forge-front
 - **Estado**: ok
 
@@ -14,11 +14,11 @@
 
 ## Cobertura de requisitos
 
-- Requisitos en spec.md: 8
-- Referenciados en tasks.md: 8
+- Requisitos en spec.md: 15
+- Referenciados en tasks.md: 15
 
 ## Tareas
 
-- Totales: 7
-- Completadas: 7
+- Totales: 6
+- Completadas: 6
 - Pendientes: 0
