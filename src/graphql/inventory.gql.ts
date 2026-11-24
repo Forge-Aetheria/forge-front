@@ -97,7 +97,7 @@ export const GET_TEMPLATES_PAGINATED_QUERY = `
         }
       }
     }
-    templatesCount(where: $where)
+    inventoryTemplateCount(where: $where)
   }
 `
 

@@ -14,7 +14,7 @@ const PRODUCT_TYPE_MAP: Record<ProductType, 'STORABLE' | 'CONSUMABLE' | 'SERVICE
 
 /**
  * Maps frontend catalog filters into a Prisma `ProductTemplateWhereInput` object
- * compatible with `CatalogResolver.templates` and `templatesCount`.
+ * compatible with `CatalogResolver.templates` and `inventoryTemplateCount`.
  */
 export const buildProductTemplateWhereInput = (
   params: ProductTemplateSearchParams

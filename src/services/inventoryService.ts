@@ -138,7 +138,7 @@ export const searchInventoryTemplates = async (
 
   const res = await executeGraphQL<{
     templates: GqlProductTemplate[]
-    templatesCount: number
+    inventoryTemplateCount: number
   }>(
     GET_TEMPLATES_PAGINATED_QUERY,
     {
@@ -151,7 +151,7 @@ export const searchInventoryTemplates = async (
 
   return {
     items: (res?.templates ?? []).map(mapGqlTemplateToFrontend),
-    total: res?.templatesCount ?? 0
+    total: res?.inventoryTemplateCount ?? 0
   }
 }
 
