@@ -50,6 +50,57 @@ export const GET_TEMPLATES_QUERY = `
   }
 `
 
+export const GET_TEMPLATES_PAGINATED_QUERY = `
+  query GetTemplatesPaginated($where: ProductTemplateWhereInput, $take: Int, $skip: Int) {
+    templates(where: $where, take: $take, skip: $skip) {
+      id
+      name
+      uomCode
+      productType
+      basePrice
+      vatAliquot
+      withholdingIslr
+      category {
+        id
+        name
+        completeName
+      }
+      attributes {
+        id
+        attribute {
+          id
+          name
+          displayType
+        }
+      }
+      variants {
+        id
+        sku
+        barcode
+        priceExtra
+        standardCost
+        isActive
+        values {
+          attributeValue {
+            id
+            name
+            htmlColor
+            attribute {
+              name
+            }
+          }
+        }
+        quants {
+          id
+          quantity
+          reservedQuantity
+        }
+      }
+    }
+    templatesCount(where: $where)
+  }
+`
+
 export const GET_TEMPLATE_BY_ID_QUERY = `
   query GetTemplate($id: ID!) {
     template(id: $id) {

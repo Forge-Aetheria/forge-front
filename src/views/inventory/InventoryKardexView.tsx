@@ -24,6 +24,7 @@ import { useBcvRate } from '@/hooks/useBcvRate'
 
 import CustomTextField from '@core/components/mui/TextField'
 import CustomChip from '@core/components/mui/Chip'
+import EmptyTableState from '@/components/EmptyTableState'
 
 import type { ProductTemplate, StockMovement, StockMovementType } from '@/types/inventoryTypes'
 import { getInventoryTemplates, getStockMovements } from '@/services/inventoryService'
@@ -228,11 +229,12 @@ const InventoryKardexView = () => {
       {/* Filters & Table Card */}
       <Card className='border border-[#E6E4F0] shadow-xs rounded-2xl overflow-hidden'>
         <CardContent className='p-5 border-b border-[#E6E4F0] bg-[#FAFAFE]'>
-          <div className='grid grid-cols-1 md:grid-cols-12 gap-4 items-center'>
+          <div className='grid grid-cols-1 md:grid-cols-12 gap-4 items-end'>
             <div className='md:col-span-5'>
               <CustomTextField
                 fullWidth
                 size='small'
+                label='Buscar'
                 placeholder='Buscar por SKU, producto, documento o motivo...'
                 value={searchQuery}
                 onChange={e => {
@@ -365,11 +367,31 @@ const InventoryKardexView = () => {
               </TableHead>
               <TableBody>
                 {filteredMovements.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={13} className='text-center py-10 text-textSecondary'>
-                      No se encontraron movimientos en el Kárdex para los filtros seleccionados.
-                    </TableCell>
-                  </TableRow>
+                  <EmptyTableState
+                    colSpan={13}
+                    icon='tabler-arrows-exchange'
+                    title='No se encontraron movimientos en el Kárdex'
+                    description={
+                      movements.length === 0
+                        ? 'Los movimientos de entrada, salida y ajuste aparecerán aquí conforme se registren operaciones.'
+                        : 'No existen registros para los filtros seleccionados.'
+                    }
+                    actionLabel={
+                      searchQuery || selectedProductId !== 'ALL' || selectedType !== 'ALL'
+                        ? 'Limpiar filtros'
+                        : undefined
+                    }
+                    onAction={
+                      searchQuery || selectedProductId !== 'ALL' || selectedType !== 'ALL'
+                        ? () => {
+                            setSearchQuery('')
+                            setSelectedProductId('ALL')
+                            setSelectedType('ALL')
+                            setPage(0)
+                          }
+                        : undefined
+                    }
+                  />
                 ) : (
                   paginatedMovements.map((mov, index) => {
                     const meta = movementTypeMeta[mov.tipo_movimiento] || {

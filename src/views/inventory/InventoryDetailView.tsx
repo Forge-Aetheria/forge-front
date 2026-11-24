@@ -39,6 +39,7 @@ import { useBcvRate } from '@/hooks/useBcvRate'
 import CustomChip from '@core/components/mui/Chip'
 
 import CustomTextField from '@core/components/mui/TextField'
+import { getNumericInputProps, handleNumericKeyDown, sanitizeNumericValue } from '@/utils/numericInput'
 
 import type {
   ProductTemplate,
@@ -376,6 +377,16 @@ const InventoryDetailView: React.FC<Props> = ({ id }) => {
       setToast({
         open: true,
         message: 'Seleccione o cree una unidad de medida antes de guardar',
+        severity: 'error'
+      })
+
+      return
+    }
+
+    if (barcode.trim() && (barcode.trim().length < 4 || barcode.trim().length > 48)) {
+      setToast({
+        open: true,
+        message: 'El código de barras debe tener entre 4 y 48 caracteres',
         severity: 'error'
       })
 
@@ -1214,7 +1225,9 @@ const InventoryDetailView: React.FC<Props> = ({ id }) => {
                         fullWidth
                         label='Código de Barras (EAN / UPC)'
                         value={barcode}
-                        onChange={e => setBarcode(e.target.value)}
+                        onChange={e => setBarcode(e.target.value.slice(0, 48))}
+                        slotProps={{ htmlInput: { minLength: 4, maxLength: 48 } }}
+                        helperText='Opcional (4 a 48 caracteres; EAN-8/13, UPC o Code-128)'
                         placeholder='7591234567890'
                       />
                     </Grid>
@@ -1226,7 +1239,13 @@ const InventoryDetailView: React.FC<Props> = ({ id }) => {
                           type='number'
                           label='Stock Mínimo de Alerta'
                           value={minStock}
-                          onChange={e => setMinStock(Math.max(0, Number(e.target.value)))}
+                          onKeyDown={e => handleNumericKeyDown(e, { allowDecimal: false })}
+                          onChange={e => {
+                            const sanitized = sanitizeNumericValue(e.target.value, { allowDecimal: false })
+
+                            setMinStock(Math.max(0, parseInt(sanitized, 10) || 0))
+                          }}
+                          slotProps={{ htmlInput: { ...getNumericInputProps({ allowDecimal: false }), min: 0 } }}
                         />
                       </Grid>
                     )}
@@ -1270,7 +1289,13 @@ const InventoryDetailView: React.FC<Props> = ({ id }) => {
                           label='Costo del Producto ($ USD) *'
                           value={standardCost === 0 ? '' : standardCost}
                           placeholder='0.00'
-                          onChange={e => setStandardCost(Math.max(0, parseFloat(e.target.value) || 0))}
+                          onKeyDown={e => handleNumericKeyDown(e, { allowDecimal: true })}
+                          onChange={e => {
+                            const sanitized = sanitizeNumericValue(e.target.value, { allowDecimal: true, maxDecimals: 4 })
+
+                            setStandardCost(Math.max(0, parseFloat(sanitized) || 0))
+                          }}
+                          slotProps={{ htmlInput: { ...getNumericInputProps({ allowDecimal: true }), min: 0, step: 'any' } }}
                           helperText={`≈ Bs. ${(standardCost * bcvRate).toLocaleString('es-VE', { maximumFractionDigits: 2 })}`}
                         />
                       </Grid>
@@ -1282,7 +1307,13 @@ const InventoryDetailView: React.FC<Props> = ({ id }) => {
                           label='Precio de Venta ($ USD) *'
                           value={basePrice === 0 ? '' : basePrice}
                           placeholder='0.00'
-                          onChange={e => setBasePrice(Math.max(0, parseFloat(e.target.value) || 0))}
+                          onKeyDown={e => handleNumericKeyDown(e, { allowDecimal: true })}
+                          onChange={e => {
+                            const sanitized = sanitizeNumericValue(e.target.value, { allowDecimal: true, maxDecimals: 4 })
+
+                            setBasePrice(Math.max(0, parseFloat(sanitized) || 0))
+                          }}
+                          slotProps={{ htmlInput: { ...getNumericInputProps({ allowDecimal: true }), min: 0, step: 'any' } }}
                           helperText={
                             fiscalEnabled
                               ? `Con IVA (${financials.taxLabel || '0%'}): $${financials.totalPriceWithTax.toFixed(2)} (Bs. ${financials.totalPriceWithTaxVes.toLocaleString('es-VE', { maximumFractionDigits: 2 })})`
@@ -1431,7 +1462,13 @@ const InventoryDetailView: React.FC<Props> = ({ id }) => {
                           label='Peso (kg)'
                           placeholder='0.00'
                           value={weight === 0 ? '' : weight}
-                          onChange={e => setWeight(Math.max(0, parseFloat(e.target.value) || 0))}
+                          onKeyDown={e => handleNumericKeyDown(e, { allowDecimal: true })}
+                          onChange={e => {
+                            const sanitized = sanitizeNumericValue(e.target.value, { allowDecimal: true, maxDecimals: 4 })
+
+                            setWeight(Math.max(0, parseFloat(sanitized) || 0))
+                          }}
+                          slotProps={{ htmlInput: { ...getNumericInputProps({ allowDecimal: true }), min: 0, step: 'any' } }}
                           helperText='Peso unitario del producto para control de carga y envíos'
                           InputProps={{
                             endAdornment: <span className='text-xs text-[#6B7280] font-medium'>kg</span>
@@ -1558,7 +1595,13 @@ const InventoryDetailView: React.FC<Props> = ({ id }) => {
                           label='Stock Mínimo de Seguridad'
                           value={minStock === 0 ? '' : minStock}
                           placeholder='0'
-                          onChange={e => setMinStock(Math.max(0, parseInt(e.target.value, 10) || 0))}
+                          onKeyDown={e => handleNumericKeyDown(e, { allowDecimal: false })}
+                          onChange={e => {
+                            const sanitized = sanitizeNumericValue(e.target.value, { allowDecimal: false })
+
+                            setMinStock(Math.max(0, parseInt(sanitized, 10) || 0))
+                          }}
+                          slotProps={{ htmlInput: { ...getNumericInputProps({ allowDecimal: false }), min: 0 } }}
                           helperText='Nivel umbral para alertas de reabastecimiento en almacén'
                           disabled={productType === 'service'}
                         />

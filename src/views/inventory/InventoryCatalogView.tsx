@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -11,10 +11,11 @@ import Snackbar from '@mui/material/Snackbar'
 import Alert from '@mui/material/Alert'
 import Skeleton from '@mui/material/Skeleton'
 
-import type { ProductTemplate } from '@/types/inventoryTypes'
+import type { InventoryFilterState, ProductTemplate } from '@/types/inventoryTypes'
 import {
-  getInventoryTemplates,
   getInventoryFiscalConfig,
+  getProductCategories,
+  searchInventoryTemplates,
   setInventoryFiscalEnabled
 } from '@/services/inventoryService'
 import InventoryTable from './InventoryTable'
@@ -23,8 +24,25 @@ import StockAdjustmentModal from './components/StockAdjustmentModal'
 const InventoryCatalogView = () => {
   const router = useRouter()
   const [templates, setTemplates] = useState<ProductTemplate[]>([])
+  const [categories, setCategories] = useState<string[]>([])
   const [fiscalEnabled, setFiscalEnabled] = useState<boolean>(true)
   const [loading, setLoading] = useState(true)
+  const [tableLoading, setTableLoading] = useState(false)
+
+  // Server-side filter & pagination state
+  const [filters, setFilters] = useState<InventoryFilterState>({
+    search: '',
+    productType: 'ALL',
+    category: 'ALL',
+    stockStatus: 'ALL',
+    operation: 'ALL'
+  })
+
+  const [debouncedSearch, setDebouncedSearch] = useState('')
+  const [page, setPage] = useState(0)
+  const [rowsPerPage, setRowsPerPage] = useState(10)
+  const [totalCount, setTotalCount] = useState(0)
+  const requestIdRef = useRef(0)
 
   // Modals
   const [adjustModalOpen, setAdjustModalOpen] = useState(false)
@@ -36,19 +54,62 @@ const InventoryCatalogView = () => {
     severity: 'success' | 'info' | 'warning'
   }>({ open: false, message: '', severity: 'success' })
 
-  const loadCatalog = async () => {
-    setLoading(true)
-    const data = await getInventoryTemplates()
-    const fiscalConfig = await getInventoryFiscalConfig()
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(filters.search)
+    }, 300)
 
-    setTemplates(data)
-    setFiscalEnabled(fiscalConfig.enabled)
-    setLoading(false)
-  }
+    return () => clearTimeout(timer)
+  }, [filters.search])
 
   useEffect(() => {
-    loadCatalog()
+    const initMetadata = async () => {
+      try {
+        const [fiscalConfig, cats] = await Promise.all([
+          getInventoryFiscalConfig(),
+          getProductCategories()
+        ])
+
+        setFiscalEnabled(fiscalConfig.enabled)
+        setCategories(cats.map(c => c.name))
+      } catch (err) {
+        console.error('[InventoryCatalogView] Error cargando metadatos:', err)
+      }
+    }
+
+    void initMetadata()
   }, [])
+
+  const loadCatalog = useCallback(async () => {
+    const reqId = ++requestIdRef.current
+    const needsClientRefinement = filters.stockStatus !== 'ALL' || filters.operation !== 'ALL'
+
+    setTableLoading(true)
+
+    try {
+      const result = await searchInventoryTemplates({
+        search: debouncedSearch,
+        productType: filters.productType,
+        category: filters.category,
+        take: needsClientRefinement ? 100 : rowsPerPage,
+        skip: needsClientRefinement ? 0 : page * rowsPerPage
+      })
+
+      if (reqId !== requestIdRef.current) return
+
+      setTemplates(result.items)
+      setTotalCount(result.total)
+    } finally {
+      if (reqId === requestIdRef.current) {
+        setLoading(false)
+        setTableLoading(false)
+      }
+    }
+  }, [debouncedSearch, filters.productType, filters.category, filters.stockStatus, filters.operation, page, rowsPerPage])
+
+  useEffect(() => {
+    void loadCatalog()
+  }, [loadCatalog])
 
   const handleToggleFiscal = (enabled: boolean) => {
     setFiscalEnabled(enabled)
@@ -107,6 +168,17 @@ const InventoryCatalogView = () => {
           onToggleFiscal={handleToggleFiscal}
           onEditProduct={handleOpenEdit}
           onAdjustStock={handleOpenAdjust}
+          serverPagination={{
+            filters,
+            onFiltersChange: setFilters,
+            page,
+            rowsPerPage,
+            totalCount,
+            onPageChange: setPage,
+            onRowsPerPageChange: setRowsPerPage,
+            categories,
+            loading: tableLoading
+          }}
         />
       )}
 

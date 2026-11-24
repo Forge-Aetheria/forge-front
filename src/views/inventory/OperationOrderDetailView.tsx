@@ -28,6 +28,8 @@ import TableCell from '@mui/material/TableCell'
 import CustomChip from '@core/components/mui/Chip'
 import CustomTextField from '@core/components/mui/TextField'
 import CustomAutocomplete from '@core/components/mui/Autocomplete'
+import AppReactDatepicker, { formatLocalDate, parseLocalDate } from '@/components/AppReactDatepicker'
+import { getNumericInputProps, handleNumericKeyDown, sanitizeNumericValue } from '@/utils/numericInput'
 import {
   getWarehouseOperationOrderById,
   createWarehouseOperationOrder,
@@ -451,9 +453,7 @@ return
                   color: '#6B7280',
                   textTransform: 'none',
                   fontWeight: 600,
-                  fontSize: '0.85rem',
-                  px: 2.5,
-                  py: 0.8,
+                  px: 3,
                   '&:hover': {
                     borderColor: '#6C5CE7',
                     color: '#6C5CE7',
@@ -473,9 +473,7 @@ return
                   backgroundColor: '#6C5CE7',
                   textTransform: 'none',
                   fontWeight: 600,
-                  fontSize: '0.85rem',
-                  px: 3,
-                  py: 0.8,
+                  px: 3.5,
                   '&:hover': { backgroundColor: '#5B4CDB' }
                 }}
                 startIcon={<i className={submitting ? 'tabler-loader-2 animate-spin text-base' : 'tabler-device-floppy text-base'} />}
@@ -498,9 +496,7 @@ return
                         color: '#EF4444',
                         textTransform: 'none',
                         fontWeight: 600,
-                        fontSize: '0.85rem',
                         px: 3,
-                        py: 0.8,
                         '&:hover': {
                           borderColor: '#EF4444',
                           backgroundColor: '#FEF2F2'
@@ -519,9 +515,7 @@ return
                         backgroundColor: '#6C5CE7',
                         textTransform: 'none',
                         fontWeight: 600,
-                        fontSize: '0.85rem',
-                        px: 3,
-                        py: 0.8,
+                        px: 3.5,
                         '&:hover': { backgroundColor: '#5B4CDB' }
                       }}
                       startIcon={<i className='tabler-check text-base' />}
@@ -532,7 +526,6 @@ return
                 )}
                 <Button
                   variant='outlined'
-                  size='small'
                   onClick={() => window.print()}
                   sx={{
                     borderRadius: '9999px',
@@ -540,9 +533,7 @@ return
                     color: '#6B7280',
                     textTransform: 'none',
                     fontWeight: 600,
-                    fontSize: '0.85rem',
-                    px: 2.5,
-                    py: 0.8,
+                    px: 3,
                     '&:hover': {
                       borderColor: '#6C5CE7',
                       color: '#6C5CE7',
@@ -616,14 +607,12 @@ return
             </Grid>
 
             <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-              <CustomTextField
-                fullWidth
-                type='date'
+              <AppReactDatepicker
                 label='Fecha Programada'
-                value={fechaProgramada}
-                onChange={e => setFechaProgramada(e.target.value)}
+                selected={parseLocalDate(fechaProgramada)}
+                onChange={(date: Date | null) => setFechaProgramada(formatLocalDate(date))}
+                minDate={isCreate ? new Date() : undefined}
                 disabled={!isCreate && order?.estado !== 'DRAFT'}
-                InputLabelProps={{ shrink: true }}
               />
             </Grid>
 
@@ -752,17 +741,27 @@ return
                       </TableCell>
                       <TableCell align='center' sx={{ py: 1.5, px: 2, width: 140 }}>
                         <CustomTextField
-                          type='number'
+                          type='text'
                           size='small'
                           value={line.cantidad}
+                          onKeyDown={e => handleNumericKeyDown(e, { allowDecimal: true })}
                           onChange={e => {
-                            const val = e.target.value
+                            const val = sanitizeNumericValue(e.target.value, {
+                              allowDecimal: true,
+                              maxDecimals: 4
+                            })
 
                             setLines(prev =>
                               prev.map(l => (l.tempId === line.tempId ? { ...l, cantidad: val } : l))
                             )
                           }}
-                          inputProps={{ min: '1', style: { textAlign: 'center' } }}
+                          error={line.cantidad !== '' && Number(line.cantidad) <= 0}
+                          slotProps={{
+                            htmlInput: {
+                              ...getNumericInputProps({ allowDecimal: true }),
+                              style: { textAlign: 'center' }
+                            }
+                          }}
                         />
                       </TableCell>
                       <TableCell align='center' sx={{ py: 1.5, px: 2, fontSize: '0.75rem', fontWeight: 600, color: '#6B7280' }}>
