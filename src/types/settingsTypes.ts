@@ -86,11 +86,52 @@ export interface BcvRateConfig {
 }
 
 // 4. Gestión de Usuarios y Roles (RBAC)
+export interface ErpPermission {
+  id: string
+  action: string
+  module: string
+  description?: string
+}
+
+export interface PermissionModuleGroup {
+  module: string
+  permissions: ErpPermission[]
+}
+
 export interface ErpRole {
   id: string
   name: string
   description?: string
   isSystem: boolean
+
+  /** Permissions granted to the role (action-level catalog). */
+  permissions?: ErpPermission[]
+
+  /** Provider `updatedAt`, used as the optimistic-concurrency precondition. */
+  updatedAt?: string
+}
+
+export interface CreateRoleInput {
+  name: string
+  description?: string
+}
+
+export interface UpdateRoleInput {
+  id: string
+  name?: string
+  description?: string
+}
+
+export interface SetRolePermissionsInput {
+  id: string
+
+  /** Complete next set (the backend replaces the whole set). */
+  permissionIds: string[]
+
+  /** Current persisted set, used to detect reductions and set `confirmReplace`. */
+  previousPermissionIds?: string[]
+  confirmReplace?: boolean
+  expectedUpdatedAt?: string
 }
 
 export interface ErpUser {

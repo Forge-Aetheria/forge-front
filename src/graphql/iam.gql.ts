@@ -68,6 +68,7 @@ export const GET_ROLES_QUERY = `
       name
       description
       isSystem
+      updatedAt
       permissions {
         permission {
           id
@@ -200,10 +201,29 @@ export const DELETE_ROLE_MUTATION = `
 `
 
 export const SET_ROLE_PERMISSIONS_MUTATION = `
-  mutation SetRolePermissions($id: ID!, $permissionIds: [ID!]!) {
-    setRolePermissions(id: $id, permissionIds: $permissionIds) {
+  mutation SetRolePermissions(
+    $id: ID!
+    $permissionIds: [ID!]!
+    $confirmReplace: Boolean
+    $expectedUpdatedAt: DateTime
+  ) {
+    setRolePermissions(
+      id: $id
+      permissionIds: $permissionIds
+      confirmReplace: $confirmReplace
+      expectedUpdatedAt: $expectedUpdatedAt
+    ) {
       id
       name
+      updatedAt
+      permissions {
+        permission {
+          id
+          action
+          module
+          description
+        }
+      }
     }
   }
 `

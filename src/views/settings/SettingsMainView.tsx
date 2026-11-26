@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 
 import { useRouter } from 'next/navigation'
 
@@ -28,11 +28,15 @@ import { CompanySettingsTab } from './tabs/CompanySettingsTab'
 import { BcvSettingsTab } from './tabs/BcvSettingsTab'
 import { UsersManagementTab } from './tabs/UsersManagementTab'
 import { FiscalRulesTab } from './tabs/FiscalRulesTab'
+import { RolesManagementTab } from './tabs/RolesManagementTab'
+import type { RoleSaveData } from './components/RoleEditorView'
 
 import type {
   UserProfile,
   CompanySettings,
   BcvRateConfig,
+  ErpPermission,
+  ErpRole,
   ErpUser,
   FiscalRulesConfig,
   UserAccountStatus
@@ -40,7 +44,7 @@ import type {
 
 const SettingsMainView: React.FC = () => {
   const router = useRouter()
-  const { user, hasPermission } = useAuth()
+  const { user, hasPermission, hasModule, refreshUser } = useAuth()
 
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState(0)
@@ -51,6 +55,33 @@ const SettingsMainView: React.FC = () => {
   const [bcvConfig, setBcvConfig] = useState<BcvRateConfig | null>(null)
   const [erpUsers, setErpUsers] = useState<ErpUser[]>([])
   const [fiscalRules, setFiscalRules] = useState<FiscalRulesConfig | null>(null)
+  const [roles, setRoles] = useState<ErpRole[]>([])
+  const [permissions, setPermissions] = useState<ErpPermission[]>([])
+  const [rolesLoading, setRolesLoading] = useState(false)
+  const [catalogError, setCatalogError] = useState('')
+
+  const canReadRoles = hasPermission('iam:role:read')
+  const canCreateRole = hasPermission('iam:role:create')
+  const canUpdateRole = hasPermission('iam:role:update')
+  const canDeleteRole = hasPermission('iam:role:delete')
+  const canSetRolePermissions = hasPermission('iam:role:set-permissions')
+
+  // `iam:role:*` is part of the tenant permission catalog, so the owner/admin can
+  // grant any of these actions to any custom role via the matrix. Whoever holds
+  // any role-management permission sees the surface; owner/admin always does.
+  const canManageRoles =
+    canReadRoles ||
+    canCreateRole ||
+    canUpdateRole ||
+    canDeleteRole ||
+    canSetRolePermissions
+
+  const effectiveRole = profile?.rol
+    ? String(profile.rol).toUpperCase()
+    : String(user?.role || (user?.roles && user?.roles[0]) || 'UNASSIGNED').toUpperCase()
+
+  const isAdmin = effectiveRole === 'ADMIN' || effectiveRole === 'OWNER'
+  const showRolesTab = canManageRoles || isAdmin
 
   // Toast
   const [toast, setToast] = useState<{
@@ -59,24 +90,37 @@ const SettingsMainView: React.FC = () => {
     severity: 'success' | 'error' | 'info' | 'warning'
   }>({ open: false, message: '', severity: 'success' })
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true)
 
-    const [prof, comp, bcv, usrs, rules] = await Promise.allSettled([
-      settingsService.getUserProfile(),
-      settingsService.getCompanySettings(),
-      settingsService.getBcvSettings(),
-      settingsService.getErpUsers(),
-      settingsService.getFiscalRules()
-    ])
+    const [prof, comp, bcv, usrs, rules, rolesResult, permissionsResult] =
+      await Promise.allSettled([
+        settingsService.getUserProfile(),
+        settingsService.getCompanySettings(),
+        settingsService.getBcvSettings(),
+        settingsService.getErpUsers(),
+        settingsService.getFiscalRules(),
+        showRolesTab ? settingsService.getRoles() : Promise.resolve<ErpRole[]>([]),
+        showRolesTab ? settingsService.getPermissions() : Promise.resolve<ErpPermission[]>([])
+      ])
 
     if (prof.status === 'fulfilled') setProfile(prof.value)
     if (comp.status === 'fulfilled') setCompany(comp.value)
     if (bcv.status === 'fulfilled') setBcvConfig(bcv.value)
     if (usrs.status === 'fulfilled') setErpUsers(usrs.value)
     if (rules.status === 'fulfilled') setFiscalRules(rules.value)
+    if (rolesResult.status === 'fulfilled') setRoles(rolesResult.value)
 
-    const failed = [prof, comp, bcv, usrs, rules].find(
+    if (permissionsResult.status === 'fulfilled') {
+      setPermissions(permissionsResult.value)
+      setCatalogError('')
+    } else if (showRolesTab) {
+      setCatalogError('No se pudo cargar el catálogo de permisos; no es posible editar roles.')
+    }
+
+    const results = [prof, comp, bcv, usrs, rules]
+
+    const failed = results.find(
       result => result.status === 'rejected'
     ) as PromiseRejectedResult | undefined
 
@@ -91,11 +135,11 @@ const SettingsMainView: React.FC = () => {
     }
 
     setLoading(false)
-  }
+  }, [showRolesTab])
 
   useEffect(() => {
     loadData()
-  }, [])
+  }, [loadData])
 
   // Handlers for Company
   const handleSaveCompany = async (data: Partial<CompanySettings>) => {
@@ -253,12 +297,75 @@ const SettingsMainView: React.FC = () => {
     }
   }
 
-  // RBAC Guard: Only ADMIN or OWNER (Strict RBAC based on backend role)
-  const effectiveRole = profile?.rol
-    ? String(profile.rol).toUpperCase()
-    : String(user?.role || (user?.roles && user?.roles[0]) || 'UNASSIGNED').toUpperCase()
+  // Handlers for Roles
+  const refreshRoles = async () => {
+    const fresh = await settingsService.getRoles()
 
-  const isAdmin = effectiveRole === 'ADMIN' || effectiveRole === 'OWNER'
+    setRoles(fresh)
+  }
+
+  const handleCreateRole = async (data: RoleSaveData) => {
+    setRolesLoading(true)
+
+    try {
+      const created = await settingsService.createRole({
+        name: data.name,
+        description: data.description
+      })
+
+      if (data.permissionIds.length > 0) {
+        await settingsService.setRolePermissions({
+          id: created.id,
+          permissionIds: data.permissionIds,
+          previousPermissionIds: []
+        })
+      }
+
+      await refreshRoles()
+      await refreshUser().catch(() => undefined)
+      setToast({ open: true, message: 'Rol creado correctamente.', severity: 'success' })
+    } finally {
+      setRolesLoading(false)
+    }
+  }
+
+  const handleUpdateRole = async (data: RoleSaveData) => {
+    if (!data.id) return
+
+    setRolesLoading(true)
+
+    try {
+      // Permissions first: `expectedUpdatedAt` must match the version the editor
+      // loaded. Calling updateRole first would bump Role.updatedAt and make the
+      // permission write fail with a false "data changed" conflict.
+      await settingsService.setRolePermissions({
+        id: data.id,
+        permissionIds: data.permissionIds,
+        previousPermissionIds: data.previousPermissionIds,
+        confirmReplace: data.confirmReplace,
+        expectedUpdatedAt: data.expectedUpdatedAt
+      })
+
+      await settingsService.updateRole({
+        id: data.id,
+        name: data.name,
+        description: data.description
+      })
+
+      await refreshRoles()
+      await refreshUser().catch(() => undefined)
+      setToast({ open: true, message: 'Rol actualizado correctamente.', severity: 'success' })
+    } finally {
+      setRolesLoading(false)
+    }
+  }
+
+  const handleDeleteRole = async (role: ErpRole) => {
+    await settingsService.deleteRole(role.id)
+    await refreshRoles()
+    await refreshUser().catch(() => undefined)
+    setToast({ open: true, message: 'Rol eliminado correctamente.', severity: 'success' })
+  }
 
   if (loading) {
     return (
@@ -346,7 +453,7 @@ const SettingsMainView: React.FC = () => {
         )}
       </div>
 
-      {/* Tabs de Navegación de Ajustes (4 Pestañas) */}
+      {/* Tabs de Navegación de Ajustes */}
       <Card
         sx={{
           backgroundColor: '#FFFFFF',
@@ -396,13 +503,20 @@ const SettingsMainView: React.FC = () => {
             <Tab
               icon={<i className='tabler-users text-base' />}
               iconPosition='start'
-              label='Usuarios & Roles (RBAC)'
+              label='Usuarios'
             />
             <Tab
               icon={<i className='tabler-scale text-base' />}
               iconPosition='start'
               label='Fiscalidad & Reglas'
             />
+            {showRolesTab && (
+              <Tab
+                icon={<i className='tabler-shield-lock text-base' />}
+                iconPosition='start'
+                label='Roles & Permisos'
+              />
+            )}
           </Tabs>
         </CardContent>
 
@@ -433,6 +547,24 @@ const SettingsMainView: React.FC = () => {
 
           {activeTab === 3 && fiscalRules && (
             <FiscalRulesTab fiscalRules={fiscalRules} onSave={handleSaveFiscalRules} />
+          )}
+
+          {activeTab === 4 && showRolesTab && (
+            <RolesManagementTab
+              roles={roles}
+              permissions={permissions}
+              loading={rolesLoading}
+              catalogError={catalogError}
+              canCreate={canCreateRole}
+              canUpdate={canUpdateRole}
+              canDelete={canDeleteRole}
+              canSetPermissions={canSetRolePermissions}
+              hasModule={hasModule}
+              onCreate={handleCreateRole}
+              onUpdate={handleUpdateRole}
+              onDelete={handleDeleteRole}
+              onError={message => setToast({ open: true, message, severity: 'error' })}
+            />
           )}
         </div>
       </Card>
