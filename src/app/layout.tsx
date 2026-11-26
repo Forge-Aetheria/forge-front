@@ -13,6 +13,9 @@ import { getSystemMode } from '@core/utils/serverHelpers'
 // Style Imports
 import '@/app/globals.css'
 
+// Mock Provider for E2E
+import MockProvider from '@/components/providers/MockProvider'
+
 // Generated Icon CSS Imports
 import '@assets/iconify-icons/generated-icons.css'
 
@@ -40,7 +43,7 @@ const RootLayout = async (props: ChildrenType) => {
     <html id='__next' lang='en' dir={direction} suppressHydrationWarning>
       <body className='flex is-full min-bs-full flex-auto flex-col' suppressHydrationWarning>
         <InitColorSchemeScript attribute='data' defaultMode={systemMode} />
-        {children}
+        <MockProvider>{children}</MockProvider>
       </body>
     </html>
   )
