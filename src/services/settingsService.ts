@@ -10,23 +10,36 @@ import {
 import {
   ACTIVATE_TENANT_USER_MUTATION,
   ASSIGN_ROLE_TO_USER_MUTATION,
+  CREATE_ROLE_MUTATION,
   DEACTIVATE_TENANT_USER_MUTATION,
+  DELETE_ROLE_MUTATION,
   GET_ASSIGNABLE_ROLES_QUERY,
   GET_MY_PERMISSIONS_QUERY,
+  GET_PERMISSIONS_QUERY,
+  GET_ROLES_QUERY,
   GET_TENANT_LICENSE_QUERY,
   GET_TENANT_ONBOARDING_QUERY,
   GET_TENANT_USERS_QUERY,
   INVITE_TENANT_USER_MUTATION,
   REVOKE_ROLE_FROM_USER_MUTATION,
+  SET_ROLE_PERMISSIONS_MUTATION,
+  UPDATE_ROLE_MUTATION,
   UPDATE_TENANT_USER_MUTATION
 } from '@/graphql/iam.gql'
 import { diffRoleIds, validateRoleIds } from '@/utils/roleSet'
+import { fetchAllPages } from '@/utils/pagination'
+import { isReduction } from '@/utils/rolePermissions'
 import { GET_TENANT_SETTING_QUERY, SET_TENANT_SETTING_MUTATION } from '@/graphql/pos.gql'
 import {
   mapGqlUserToErpUser,
   type GqlRole,
   type GqlTenantUser
 } from '@/services/adapters/iamAdapter'
+import {
+  mapGqlPermissionToErpPermission,
+  mapGqlRoleToErpRole,
+  type GqlPermission
+} from '@/services/adapters/roleAdapter'
 import type { AuthenticatedUser, ChangeMyPasswordResult } from '@/types/authTypes'
 import type {
   BcvRateAuditEntry,
@@ -34,11 +47,16 @@ import type {
   ChangePasswordInput,
   CommercialPoliciesSettings,
   CompanySettings,
+  CreateRoleInput,
   CreateUserInput,
+  ErpPermission,
+  ErpRole,
   ErpUser,
   FiscalRulesConfig,
+  SetRolePermissionsInput,
   SystemRole,
   UpdateProfileInput,
+  UpdateRoleInput,
   UpdateUserInput,
   UserProfile
 } from '@/types/settingsTypes'
@@ -430,6 +448,107 @@ export const settingsService = {
     )
 
     return response.assignableRoles || []
+  },
+
+  /** Every tenant role (paginated) with its permissions and `updatedAt`. */
+  async getRoles(): Promise<ErpRole[]> {
+    const roles = await fetchAllPages<GqlRole>(async ({ take, skip }) => {
+      const response = await executeGraphQL<{ roles: GqlRole[] }>(
+        GET_ROLES_QUERY,
+        { take, skip },
+        { timeoutMs: 8000 }
+      )
+
+      return response.roles || []
+    })
+
+    return roles.map(mapGqlRoleToErpRole)
+  },
+
+  /** Full global permission catalog (paginated; the backend caps `take` at 100). */
+  async getPermissions(): Promise<ErpPermission[]> {
+    const permissions = await fetchAllPages<GqlPermission>(async ({ take, skip }) => {
+      const response = await executeGraphQL<{ permissions: GqlPermission[] }>(
+        GET_PERMISSIONS_QUERY,
+        { take, skip },
+        { timeoutMs: 8000 }
+      )
+
+      return response.permissions || []
+    })
+
+    if (permissions.length === 0) {
+      throw new Error('No se pudo cargar el catálogo de permisos.')
+    }
+
+    return permissions.map(mapGqlPermissionToErpPermission)
+  },
+
+  async createRole(input: CreateRoleInput): Promise<ErpRole> {
+    const response = await executeGraphQL<{ createRole: GqlRole }>(
+      CREATE_ROLE_MUTATION,
+      {
+        input: {
+          name: input.name.trim(),
+          description: input.description?.trim() || undefined
+        }
+      },
+      { timeoutMs: 8000 }
+    )
+
+    return mapGqlRoleToErpRole(response.createRole)
+  },
+
+  async updateRole(input: UpdateRoleInput): Promise<ErpRole> {
+    const response = await executeGraphQL<{ updateRole: GqlRole }>(
+      UPDATE_ROLE_MUTATION,
+      {
+        input: {
+          id: input.id,
+          ...(input.name !== undefined && { name: input.name.trim() }),
+          ...(input.description !== undefined && { description: input.description.trim() })
+        }
+      },
+      { timeoutMs: 8000 }
+    )
+
+    return mapGqlRoleToErpRole(response.updateRole)
+  },
+
+  async deleteRole(id: string): Promise<void> {
+    await executeGraphQL(DELETE_ROLE_MUTATION, { id }, { timeoutMs: 8000 })
+  },
+
+  /**
+   * Replaces the role's permission set. Sets `confirmReplace` automatically when
+   * the next set removes permissions, and forwards the optimistic-concurrency
+   * precondition when available.
+   */
+  async setRolePermissions(input: SetRolePermissionsInput): Promise<ErpRole> {
+    const reduction = input.previousPermissionIds
+      ? isReduction(input.previousPermissionIds, input.permissionIds)
+      : false
+
+    const variables: Record<string, unknown> = {
+      id: input.id,
+      permissionIds: input.permissionIds
+    }
+
+    if (reduction || input.confirmReplace === true) {
+      variables.confirmReplace = true
+    }
+
+    if (input.expectedUpdatedAt) {
+      variables.expectedUpdatedAt = input.expectedUpdatedAt
+    }
+
+    const response = await executeGraphQL<{ setRolePermissions: GqlRole }>(
+      SET_ROLE_PERMISSIONS_MUTATION,
+      variables,
+      { timeoutMs: 12000 }
+    )
+
+    return mapGqlRoleToErpRole(response.setRolePermissions)
   },
 
   async getErpUsers(): Promise<ErpUser[]> {

@@ -21,6 +21,7 @@ export interface GqlRole {
   name: string
   description?: string | null
   isSystem?: boolean | null
+  updatedAt?: string | null
   permissions?: Array<{
     permission: {
       id: string
